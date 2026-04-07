@@ -15,12 +15,12 @@ import streamlit.components.v1 as components
 # ── Voix ElevenLabs recommandées (toutes compatibles français) ─────────────────
 # Changez VOICE_ID pour choisir une autre voix
 # Liste complète : https://elevenlabs.io/voice-library
-VOICE_ID = "EXAVITQu4vr4xnSDxMaL"   # Bella — douce, chaleureuse, naturelle
+VOICE_ID = "XB0fDUnXU5powFXDhCwa"   # Charlotte — naturelle, chaleureuse, très humaine
 
 VOICE_SETTINGS = {
-    "stability":         0.75,   # 0-1 : plus haut = plus stable/posée
-    "similarity_boost":  0.85,   # 0-1 : plus haut = plus fidèle à la voix
-    "style":             0.35,   # 0-1 : expressivité
+    "stability":         0.50,   # moins stable = plus vivante, plus naturelle
+    "similarity_boost":  0.80,
+    "style":             0.55,   # plus d'expressivité
     "use_speaker_boost": True,
 }
 

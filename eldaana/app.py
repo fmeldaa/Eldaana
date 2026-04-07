@@ -51,6 +51,28 @@ st.markdown("""
     }
     #MainMenu { visibility: hidden; }
     footer { visibility: hidden; }
+
+    /* ── Sidebar : texte blanc sur fond sombre ── */
+    [data-testid="stSidebar"] {
+        background-color: #1A0A2E !important;
+    }
+    [data-testid="stSidebar"] * {
+        color: #F0E6FF !important;
+    }
+    [data-testid="stSidebar"] .stButton > button {
+        color: #C9A84C !important;
+        border-color: #C9A84C !important;
+        background: transparent !important;
+    }
+    [data-testid="stSidebar"] .stButton > button:hover {
+        background: rgba(201,168,76,0.15) !important;
+    }
+
+    /* ── Zone de saisie : texte visible ── */
+    .stChatInput textarea {
+        color: #1A0A2E !important;
+        background: white !important;
+    }
 </style>
 """, unsafe_allow_html=True)
 

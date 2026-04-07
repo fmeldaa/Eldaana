@@ -1,0 +1,25 @@
+# Secrets — NE JAMAIS mettre sur GitHub
+eldaana/.streamlit/secrets.toml
+.env
+
+# Données utilisateurs — privées, restent en local
+eldaana/user_data/
+
+# Photos garde-robe
+eldaana/user_data/wardrobe/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.egg-info/
+dist/
+build/
+
+# Fichiers temporaires
+*.bak
+*.swp
+*.swo
+.DS_Store
+Thumbs.db

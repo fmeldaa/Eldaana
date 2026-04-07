@@ -1,0 +1,16 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python -c \":*)",
+      "Bash(pip install:*)",
+      "Bash(pandoc \"C:\\\\Users\\\\fmeld\\\\Autres docs\\\\Documents\\\\Eldaana.docx\" -o - --track-changes=all)",
+      "Bash(pandoc \"C:\\\\Users\\\\fmeld\\\\Autres docs\\\\Documents\\\\Eldaana.docx\" -t plain)",
+      "Bash(findstr /v \"notice\")",
+      "Bash(python -c \"from storage import db_load, db_save; print\\(''''storage.py OK''''\\)\")",
+      "Bash(python -c \"from storage import db_load, db_save; print\\(''OK''\\)\")",
+      "Bash(python -c \"from storage import db_load, db_save; print\\(''storage OK''\\)\")",
+      "Bash(git --version)",
+      "Bash(gh --version)"
+    ]
+  }
+}

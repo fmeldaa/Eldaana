@@ -61,23 +61,18 @@ st.markdown("""
         border: 1.5px solid #c084fc !important;
         border-radius: 10px !important;
     }
-    /* Selectbox — force blanc sur fond sombre du thème */
-    div[data-baseweb="select"],
-    div[data-baseweb="select"] > div:first-child {
-        background-color: #ffffff !important;
-        color: #1A0A2E !important;
-        border: 1.5px solid #c084fc !important;
-        border-radius: 10px !important;
+    /* Override variable Streamlit secondaryBackground */
+    :root {
+        --secondary-background-color: #EDE9F6 !important;
     }
-    div[data-baseweb="select"] * {
-        background-color: #ffffff !important;
-        color: #1A0A2E !important;
-    }
-    ul[data-baseweb="menu"],
-    ul[data-baseweb="menu"] li {
-        background-color: #ffffff !important;
-        color: #1A0A2E !important;
-    }
+    /* Selectbox */
+    div[data-baseweb="select"] { background: #ffffff !important; }
+    div[data-baseweb="select"] > div { background: #ffffff !important; color: #1A0A2E !important; border: 1.5px solid #c084fc !important; border-radius: 10px !important; }
+    div[data-baseweb="select"] > div > div { background: #ffffff !important; color: #1A0A2E !important; }
+    div[data-baseweb="select"] svg { color: #7c3aed !important; fill: #7c3aed !important; }
+    ul[data-baseweb="menu"] { background: #ffffff !important; }
+    ul[data-baseweb="menu"] li { background: #ffffff !important; color: #1A0A2E !important; }
+    ul[data-baseweb="menu"] li:hover { background: #f3e8ff !important; }
     /* Labels */
     [data-testid="stWidgetLabel"] p,
     .stTextInput label, .stSelectbox label {

@@ -191,7 +191,7 @@ def show_onboarding() -> bool:
         else:
             prenom = prefill.get("prenom", "")
 
-        sexe  = st.selectbox("Vous êtes *", sexe_opts)
+        sexe  = st.radio("Vous êtes *", sexe_opts, horizontal=True)
         ville = st.text_input(
             "Votre ville *",
             placeholder="Ex : Paris, Lyon, Dakar, Montréal…",

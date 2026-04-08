@@ -259,8 +259,8 @@ def show_profile_form(profile: dict):
         with c1:
             prenom = st.text_input("Prénom",  value=profile.get("prenom", ""))
             ville  = st.text_input("Ville",   value=profile.get("ville",  ""))
-            age    = st.number_input("Âge", min_value=0, max_value=120,
-                                     value=int(profile.get("age") or 0))
+            age    = st.number_input("Âge", min_value=11, max_value=120,
+                                     value=max(11, int(profile.get("age") or 11)))
         with c2:
             sexe       = st.selectbox("Sexe", sexe_opts, index=_idx(sexe_opts, profile.get("sexe", "")))
             profession = st.text_input("Profession", value=profile.get("profession", ""),
@@ -272,11 +272,17 @@ def show_profile_form(profile: dict):
         situation   = st.selectbox("Situation amoureuse", sit_opts,
                                    index=_idx(sit_opts, profile.get("situation_maritale", "")))
         fam = profile.get("famille", {})
-        a_enfants = st.radio("Enfants ?", ["Non", "Oui"],
-                             index=1 if fam.get("a_enfants") else 0, horizontal=True)
+        st.markdown("**Enfants ?**")
+        a_enfants_val = "Oui" if fam.get("a_enfants") else "Non"
+        col_enf1, col_enf2 = st.columns(2)
+        with col_enf1:
+            enf_non = st.checkbox("Non", value=(a_enfants_val == "Non"), key="enf_non")
+        with col_enf2:
+            enf_oui = st.checkbox("Oui", value=(a_enfants_val == "Oui"), key="enf_oui")
+        a_enfants = "Oui" if enf_oui else "Non"
         nb_enfants = 0
         if a_enfants == "Oui":
-            nb_enfants = st.number_input("Nombre", min_value=1, max_value=20,
+            nb_enfants = st.number_input("Nombre d'enfants", min_value=1, max_value=20,
                                          value=int(fam.get("nb_enfants") or 1))
         hobbies = st.text_area("Hobbies / Centres d'intérêt",
                                value=", ".join(profile.get("hobbies", [])),
@@ -288,8 +294,11 @@ def show_profile_form(profile: dict):
             alim = st.selectbox("Régime alimentaire", alim_opts,
                                 index=_idx(alim_opts, profile.get("habitudes_alimentaires", "")))
         with c4:
-            transport = st.selectbox("Transport principal", transp_opts,
-                                     index=_idx(transp_opts, profile.get("transport", "")))
+            st.markdown("**Transports utilisés**")
+            saved_transport = profile.get("transport", "")
+            saved_list = [t.strip() for t in saved_transport.split(",")] if saved_transport else []
+            transport_checks = {t: st.checkbox(t, value=(t in saved_list), key=f"tr_{t}") for t in transp_opts}
+            transport = ", ".join([t for t, v in transport_checks.items() if v])
 
         st.markdown("**👗 Garde-robe** *(optionnel)*")
         gdr = profile.get("garde_robe", {})

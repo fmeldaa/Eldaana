@@ -52,6 +52,22 @@ st.markdown("""
     #MainMenu { visibility: hidden; }
     footer { visibility: hidden; }
 
+    /* ── Champs de formulaire lisibles ── */
+    input[type="text"], input[type="email"], input[type="number"],
+    textarea, .stTextInput input, .stSelectbox select,
+    [data-testid="stTextInput"] input,
+    [data-testid="stTextArea"] textarea {
+        background-color: #ffffff !important;
+        color: #1A0A2E !important;
+        border: 1.5px solid #c084fc !important;
+        border-radius: 10px !important;
+    }
+    /* Labels des champs */
+    .stTextInput label, .stSelectbox label, .stTextArea label,
+    [data-testid="stWidgetLabel"] {
+        color: #1A0A2E !important;
+    }
+
     /* ── Sidebar : texte blanc sur fond sombre ── */
     [data-testid="stSidebar"] {
         background-color: #1A0A2E !important;

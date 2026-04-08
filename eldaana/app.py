@@ -61,21 +61,20 @@ st.markdown("""
         border: 1.5px solid #c084fc !important;
         border-radius: 10px !important;
     }
-    /* Selectbox */
-    div[data-baseweb="select"] > div,
-    div[data-baseweb="select"] div,
-    div[data-baseweb="select"] span,
-    div[data-baseweb="select"] input {
+    /* Selectbox — force blanc sur fond sombre du thème */
+    div[data-baseweb="select"],
+    div[data-baseweb="select"] > div:first-child {
         background-color: #ffffff !important;
         color: #1A0A2E !important;
-    }
-    div[data-baseweb="select"] > div {
         border: 1.5px solid #c084fc !important;
         border-radius: 10px !important;
     }
-    /* Dropdown options */
-    ul[data-baseweb="menu"] li,
-    div[data-baseweb="popover"] div {
+    div[data-baseweb="select"] * {
+        background-color: #ffffff !important;
+        color: #1A0A2E !important;
+    }
+    ul[data-baseweb="menu"],
+    ul[data-baseweb="menu"] li {
         background-color: #ffffff !important;
         color: #1A0A2E !important;
     }

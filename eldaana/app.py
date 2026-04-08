@@ -53,19 +53,37 @@ st.markdown("""
     footer { visibility: hidden; }
 
     /* ── Champs de formulaire lisibles ── */
-    input[type="text"], input[type="email"], input[type="number"],
-    textarea, .stTextInput input, .stSelectbox select,
     [data-testid="stTextInput"] input,
-    [data-testid="stTextArea"] textarea {
+    [data-testid="stTextArea"] textarea,
+    [data-testid="stNumberInput"] input {
         background-color: #ffffff !important;
         color: #1A0A2E !important;
         border: 1.5px solid #c084fc !important;
         border-radius: 10px !important;
     }
-    /* Labels des champs */
-    .stTextInput label, .stSelectbox label, .stTextArea label,
-    [data-testid="stWidgetLabel"] {
+    /* Selectbox */
+    div[data-baseweb="select"] > div,
+    div[data-baseweb="select"] div,
+    div[data-baseweb="select"] span,
+    div[data-baseweb="select"] input {
+        background-color: #ffffff !important;
         color: #1A0A2E !important;
+    }
+    div[data-baseweb="select"] > div {
+        border: 1.5px solid #c084fc !important;
+        border-radius: 10px !important;
+    }
+    /* Dropdown options */
+    ul[data-baseweb="menu"] li,
+    div[data-baseweb="popover"] div {
+        background-color: #ffffff !important;
+        color: #1A0A2E !important;
+    }
+    /* Labels */
+    [data-testid="stWidgetLabel"] p,
+    .stTextInput label, .stSelectbox label {
+        color: #1A0A2E !important;
+        font-weight: 500 !important;
     }
 
     /* ── Sidebar : texte blanc sur fond sombre ── */

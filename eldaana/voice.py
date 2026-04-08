@@ -1,33 +1,29 @@
 """
 voice.py — Voix d'Eldaana.
-
-Mode prioritaire : ElevenLabs (vraie voix humaine, envoûtante)
-Mode fallback    : Web Speech Synthesis du navigateur (si pas de clé ElevenLabs)
+Priorité : OpenAI TTS (voix shimmer — qualité ChatGPT)
+Fallback  : Web Speech Synthesis navigateur
 """
 
 import re
-import json
 import base64
 import streamlit as st
 import streamlit.components.v1 as components
 
 
-# ── Voix ElevenLabs recommandées (toutes compatibles français) ─────────────────
-# Changez VOICE_ID pour choisir une autre voix
-# Liste complète : https://elevenlabs.io/voice-library
-VOICE_ID = "XB0fDUnXU5powFXDhCwa"   # Charlotte — naturelle, chaleureuse, très humaine
-
-VOICE_SETTINGS = {
-    "stability":         0.50,   # moins stable = plus vivante, plus naturelle
-    "similarity_boost":  0.80,
-    "style":             0.55,   # plus d'expressivité
-    "use_speaker_boost": True,
-}
-
-
 # ── Nettoyage du texte ─────────────────────────────────────────────────────────
 
 def _clean(text: str) -> str:
+    # Supprime TOUS les emojis
+    emoji_pattern = re.compile(
+        "["
+        "\U0001F000-\U0001FFFF"
+        "\U0001f926-\U0001f937"
+        "\U00010000-\U0010ffff"
+        "\u2600-\u2B55"
+        "\u200d\u23cf\u23e9\u231a\ufe0f\u3030"
+        "]+", flags=re.UNICODE)
+    text = emoji_pattern.sub('', text)
+    # Supprime le Markdown
     text = re.sub(r'\*\*(.+?)\*\*', r'\1', text)
     text = re.sub(r'\*(.+?)\*',     r'\1', text)
     text = re.sub(r'#{1,6}\s+',     '',    text)
@@ -36,38 +32,39 @@ def _clean(text: str) -> str:
     text = re.sub(r'^[-•*]\s+',     '',    text, flags=re.MULTILINE)
     text = re.sub(r'\n+',           ' ',   text)
     text = re.sub(r'\s+',           ' ',   text).strip()
-    # Limite à 500 caractères pour rester dans le quota free
-    return text[:500] if len(text) > 500 else text
+    return text[:600] if len(text) > 600 else text
 
 
-# ── ElevenLabs ────────────────────────────────────────────────────────────────
+# ── OpenAI TTS ────────────────────────────────────────────────────────────────
 
-def _elevenlabs_configured() -> bool:
+def _openai_configured() -> bool:
     try:
-        _ = st.secrets["elevenlabs"]["api_key"]
+        _ = st.secrets["openai"]["api_key"]
         return True
     except Exception:
         return False
 
 
-def _speak_elevenlabs(text: str):
-    """Génère l'audio via ElevenLabs et le joue dans le navigateur."""
+def _speak_openai(text: str) -> bool:
+    """Voix OpenAI TTS — qualité ChatGPT (shimmer = douce et naturelle)."""
     try:
         import requests as _http
-        api_key = st.secrets["elevenlabs"]["api_key"]
-        voice_id = st.secrets["elevenlabs"].get("voice_id", VOICE_ID)
+        api_key = st.secrets["openai"]["api_key"]
+        voice   = st.secrets["openai"].get("voice", "shimmer")  # shimmer / nova / alloy
 
-        url = f"https://api.elevenlabs.io/v1/text-to-speech/{voice_id}"
-        headers = {
-            "xi-api-key":   api_key,
-            "Content-Type": "application/json",
-        }
-        payload = {
-            "text":           text,
-            "model_id":       "eleven_multilingual_v2",
-            "voice_settings": VOICE_SETTINGS,
-        }
-        resp = _http.post(url, json=payload, headers=headers, timeout=15)
+        resp = _http.post(
+            "https://api.openai.com/v1/audio/speech",
+            headers={
+                "Authorization": f"Bearer {api_key}",
+                "Content-Type":  "application/json",
+            },
+            json={
+                "model": "tts-1-hd",   # haute qualité
+                "input": text,
+                "voice": voice,
+            },
+            timeout=20,
+        )
 
         if resp.status_code == 200:
             audio_b64 = base64.b64encode(resp.content).decode("utf-8")
@@ -88,11 +85,10 @@ def _speak_elevenlabs(text: str):
 # ── Fallback : Web Speech Synthesis ───────────────────────────────────────────
 
 def _speak_browser(text: str):
-    """Lecture via l'API du navigateur (fallback si pas ElevenLabs)."""
+    import json
     preferred_voices = [
         "Microsoft Hortense", "Microsoft Julie",
-        "Amélie", "Marie", "Virginie", "Audrey",
-        "Google français", "Google French",
+        "Amélie", "Marie", "Google français", "Google French",
     ]
     voices_json = json.dumps(preferred_voices)
     js = f"""
@@ -120,20 +116,16 @@ def _speak_browser(text: str):
 # ── Interface publique ─────────────────────────────────────────────────────────
 
 def speak(text: str):
-    """
-    Lit le texte à voix haute.
-    Utilise ElevenLabs si configuré, sinon le navigateur.
-    """
     clean_text = _clean(text)
-    if _elevenlabs_configured():
-        success = _speak_elevenlabs(clean_text)
-        if success:
+    if not clean_text:
+        return
+    if _openai_configured():
+        if _speak_openai(clean_text):
             return
     _speak_browser(clean_text)
 
 
 def stop():
-    """Arrête la lecture en cours (navigateur uniquement)."""
     components.html(
         "<script>window.speechSynthesis.cancel();</script>",
         height=0, scrolling=False,

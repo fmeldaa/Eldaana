@@ -183,15 +183,13 @@ def show_onboarding() -> bool:
         )
         st.markdown("##### Juste 3 infos pour commencer :")
 
-    sexe_opts = ["Femme", "Homme", "Non-binaire", "Préfère ne pas préciser"]
-
     with st.form("onboarding"):
         if not from_google:
             prenom = st.text_input("Votre prénom *", placeholder="Comment vous appelez-vous ?")
         else:
             prenom = prefill.get("prenom", "")
 
-        sexe  = st.radio("Vous êtes *", sexe_opts, horizontal=True)
+        sexe  = ""
         ville = st.text_input(
             "Votre ville *",
             placeholder="Ex : Paris, Lyon, Dakar, Montréal…",

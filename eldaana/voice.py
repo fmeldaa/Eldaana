@@ -6,6 +6,7 @@ Fallback  : Web Speech Synthesis navigateur
 
 import re
 import base64
+import io
 import streamlit as st
 import streamlit.components.v1 as components
 
@@ -67,15 +68,8 @@ def _speak_openai(text: str) -> bool:
         )
 
         if resp.status_code == 200:
-            audio_b64 = base64.b64encode(resp.content).decode("utf-8")
-            components.html(f"""
-            <script>
-            (function() {{
-                const audio = new Audio('data:audio/mpeg;base64,{audio_b64}');
-                audio.play().catch(e => console.log('Autoplay blocked:', e));
-            }})();
-            </script>
-            """, height=0, scrolling=False)
+            import io
+            st.audio(io.BytesIO(resp.content), format="audio/mp3", autoplay=True)
             return True
     except Exception:
         pass

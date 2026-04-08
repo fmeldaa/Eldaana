@@ -61,9 +61,20 @@ st.markdown("""
         border: 1.5px solid #c084fc !important;
         border-radius: 10px !important;
     }
-    /* Override variable Streamlit secondaryBackground */
-    :root {
-        --secondary-background-color: #EDE9F6 !important;
+    /* Form background blanc */
+    [data-testid="stForm"] {
+        background-color: #ffffff !important;
+        border: 1.5px solid #c084fc !important;
+        border-radius: 12px !important;
+    }
+    [data-testid="stForm"] * {
+        background-color: transparent !important;
+        color: #1A0A2E !important;
+    }
+    [data-testid="stForm"] input {
+        background-color: #ffffff !important;
+        border: 1.5px solid #c084fc !important;
+        border-radius: 10px !important;
     }
     /* Selectbox */
     div[data-baseweb="select"] { background: #ffffff !important; }

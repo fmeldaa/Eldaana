@@ -183,19 +183,18 @@ def show_onboarding() -> bool:
         )
         st.markdown("##### Juste 3 infos pour commencer :")
 
-    with st.form("onboarding"):
-        if not from_google:
-            prenom = st.text_input("Votre prénom *", placeholder="Comment vous appelez-vous ?")
-        else:
-            prenom = prefill.get("prenom", "")
+    if not from_google:
+        prenom = st.text_input("Votre prénom *", placeholder="Comment vous appelez-vous ?")
+    else:
+        prenom = prefill.get("prenom", "")
 
-        sexe  = ""
-        ville = st.text_input(
-            "Votre ville *",
-            placeholder="Ex : Paris, Lyon, Dakar, Montréal…",
-            help="Pour la météo et les suggestions du jour",
-        )
-        submitted = st.form_submit_button("C'est parti avec Eldaana ✨", use_container_width=True)
+    sexe  = ""
+    ville = st.text_input(
+        "Votre ville *",
+        placeholder="Ex : Paris, Lyon, Dakar, Montréal…",
+        help="Pour la météo et les suggestions du jour",
+    )
+    submitted = st.button("C'est parti avec Eldaana ✨", use_container_width=True, type="primary")
 
     if submitted:
         errors = []

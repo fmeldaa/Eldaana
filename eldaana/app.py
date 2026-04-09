@@ -152,7 +152,9 @@ weather = st.session_state.weather
 if weather:
     GREETING = build_briefing(weather, profile)
 else:
-    GREETING = f"Bonjour {prenom} 🌸 C'est Eldaana. Comment puis-je te soutenir aujourd'hui ?"
+    genre = profile.get("sexe", "").lower() if profile else ""
+    accord = "heureuse" if genre == "femme" else "heureux"
+    GREETING = f"Bonjour {prenom} — Comment puis-je te rendre {accord} aujourd'hui ?"
 
 # ── PAGE : PROFIL (mode de vie) ────────────────────────────────────────────────
 if st.session_state.page == "profile":
@@ -230,7 +232,7 @@ with col1:
 with col2:
     st.markdown('<p class="eldaana-title">Eldaana</p>', unsafe_allow_html=True)
     st.markdown(
-        '<p class="eldaana-subtitle">Votre assistante IA bienveillante — confidentielle et à votre écoute</p>',
+        '<p class="eldaana-subtitle">Ta confidente. Ta présence. Là pour toi.</p>',
         unsafe_allow_html=True,
     )
 st.divider()

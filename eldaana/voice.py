@@ -46,12 +46,24 @@ def _openai_configured() -> bool:
         return False
 
 
+VOICE_OPTIONS = {
+    "Nova — Chaleureuse & naturelle 🌸":     "nova",
+    "Shimmer — Douce & apaisante ✨":        "shimmer",
+    "Coral — Enjouée & dynamique 🌺":        "coral",
+    "Sage — Posée & mature 🍃":              "sage",
+    "Fable — Narrative & élégante 📖":       "fable",
+}
+
 def _speak_openai(text: str) -> bool:
-    """Voix OpenAI TTS — qualité ChatGPT (shimmer = douce et naturelle)."""
+    """Voix OpenAI TTS — haute qualité, voix choisie par l'utilisateur."""
     try:
         import requests as _http
         api_key = st.secrets["openai"]["api_key"]
-        voice   = st.secrets["openai"].get("voice", "shimmer")  # shimmer / nova / alloy
+
+        # Priorité : choix du profil > secrets > nova par défaut
+        voice = st.session_state.get("eldaana_voice", None)
+        if not voice:
+            voice = st.secrets["openai"].get("voice", "nova")
 
         resp = _http.post(
             "https://api.openai.com/v1/audio/speech",
@@ -60,9 +72,10 @@ def _speak_openai(text: str) -> bool:
                 "Content-Type":  "application/json",
             },
             json={
-                "model": "tts-1-hd",   # haute qualité
+                "model": "tts-1-hd",
                 "input": text,
                 "voice": voice,
+                "speed": 0.95,   # légèrement plus lente = plus chaleureuse
             },
             timeout=20,
         )

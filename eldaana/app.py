@@ -10,7 +10,7 @@ from onboarding import (
     logout,
 )
 from weather import get_weather, build_briefing
-from voice import speak, stop
+from voice import speak, stop, VOICE_OPTIONS
 from social_connect import show_social_connect
 from pathlib import Path
 
@@ -229,6 +229,23 @@ with st.sidebar:
     else:
         st.session_state.voice_on = False
         stop()
+
+    # Sélecteur de voix
+    if st.session_state.voice_on:
+        voice_labels = list(VOICE_OPTIONS.keys())
+        saved_voice  = st.session_state.get("eldaana_voice", "nova")
+        # Trouver le label correspondant à la voix sauvegardée
+        default_label = next(
+            (l for l, v in VOICE_OPTIONS.items() if v == saved_voice),
+            voice_labels[0]
+        )
+        chosen_label = st.selectbox(
+            "🎙️ Voix d'Eldaana",
+            voice_labels,
+            index=voice_labels.index(default_label),
+            key="voice_selector",
+        )
+        st.session_state.eldaana_voice = VOICE_OPTIONS[chosen_label]
 
     st.markdown("<br>", unsafe_allow_html=True)
 

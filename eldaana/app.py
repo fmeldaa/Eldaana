@@ -10,7 +10,7 @@ from onboarding import (
     logout,
 )
 from weather import get_weather, build_briefing
-from voice import speak, stop, VOICE_OPTIONS, prepare_audio_async
+from voice import speak, stop, VOICE_OPTIONS, prepare_audio_async  # noqa
 from social_connect import show_social_connect
 from pathlib import Path
 
@@ -297,34 +297,19 @@ if user_input:
         st.markdown(user_input)
 
     with st.chat_message("assistant", avatar=LOGO):
-        # Streaming texte — collecte en parallèle pour TTS
-        collected  = []
-        tts_future = [None]   # liste pour capture dans le générateur
-        tts_done   = [False]
-        voice_on   = st.session_state.get("voice_on", True)
+        with client.messages.stream(
+            model="claude-opus-4-6",
+            max_tokens=1024,
+            system=get_system_prompt(profile),
+            messages=st.session_state.messages,
+        ) as stream:
+            reply = st.write_stream(stream.text_stream)
 
-        def stream_and_collect():
-            with client.messages.stream(
-                model="claude-opus-4-6",
-                max_tokens=1024,
-                system=get_system_prompt(profile),
-                messages=st.session_state.messages,
-            ) as stream:
-                for chunk in stream.text_stream:
-                    collected.append(chunk)
-                    # Lancer TTS dès 150 chars — pendant que le reste arrive
-                    if (voice_on
-                            and not tts_done[0]
-                            and sum(len(c) for c in collected) >= 150):
-                        tts_future[0] = prepare_audio_async("".join(collected))
-                        tts_done[0]   = True
-                    yield chunk
-
-        reply = st.write_stream(stream_and_collect())
-
-    # Audio : le Future a ~500ms d'avance sur le texte complet
+    # Dès que le texte est complet → lancer TTS en parallèle immédiatement
+    voice_on = st.session_state.get("voice_on", True)
     if voice_on:
-        speak(reply, precomputed=tts_future[0])
+        tts_future = prepare_audio_async(reply)
+        speak(reply, precomputed=tts_future)
 
     st.session_state.display_messages.append({"role": "assistant", "content": reply})
     st.session_state.messages.append({"role": "assistant", "content": reply})

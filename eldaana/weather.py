@@ -193,8 +193,7 @@ def build_briefing(weather: dict, profile: dict) -> str:
         "",
         f"**👗 Suggestion tenue :** {outfit}",
         "",
-        "Dis-moi comment tu vas et ce qui t'attend aujourd'hui — "
-        "je t'aide à préparer ta journée. 💜",
+        "Dis-moi comment tu vas — comment puis-je te rendre heureux aujourd'hui ? 💜",
     ]
 
     return "\n".join(lines)

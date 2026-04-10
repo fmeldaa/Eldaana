@@ -1,14 +1,17 @@
 """
 voice.py — Voix d'Eldaana.
-Priorité : OpenAI TTS (voix shimmer — qualité ChatGPT)
+Priorité : OpenAI TTS (tts-1, démarrage en parallèle du streaming texte)
 Fallback  : Web Speech Synthesis navigateur
 """
 
 import re
-import base64
 import io
+import concurrent.futures
 import streamlit as st
 import streamlit.components.v1 as components
+
+# Pool de threads pour lancer TTS en parallèle du streaming
+_executor = concurrent.futures.ThreadPoolExecutor(max_workers=2)
 
 
 # ── Nettoyage du texte ─────────────────────────────────────────────────────────
@@ -54,17 +57,10 @@ VOICE_OPTIONS = {
     "Fable — Narrative & élégante 📖":       "fable",
 }
 
-def _speak_openai(text: str) -> bool:
-    """Voix OpenAI TTS — haute qualité, voix choisie par l'utilisateur."""
+def _call_openai_tts(text: str, api_key: str, voice: str) -> bytes | None:
+    """Appel HTTP OpenAI TTS — tts-1 pour la rapidité."""
     try:
         import requests as _http
-        api_key = st.secrets["openai"]["api_key"]
-
-        # Priorité : choix du profil > secrets > nova par défaut
-        voice = st.session_state.get("eldaana_voice", None)
-        if not voice:
-            voice = st.secrets["openai"].get("voice", "nova")
-
         resp = _http.post(
             "https://api.openai.com/v1/audio/speech",
             headers={
@@ -72,17 +68,56 @@ def _speak_openai(text: str) -> bool:
                 "Content-Type":  "application/json",
             },
             json={
-                "model": "tts-1-hd",
+                "model": "tts-1",   # tts-1 = 2x plus rapide que tts-1-hd
                 "input": text,
                 "voice": voice,
-                "speed": 0.95,   # légèrement plus lente = plus chaleureuse
+                "speed": 0.95,
             },
             timeout=20,
         )
-
         if resp.status_code == 200:
-            import io
-            st.audio(io.BytesIO(resp.content), format="audio/mp3", autoplay=True)
+            return resp.content
+    except Exception:
+        pass
+    return None
+
+
+def prepare_audio_async(text: str) -> "concurrent.futures.Future | None":
+    """Lance la génération TTS en arrière-plan. Retourne un Future."""
+    try:
+        api_key = st.secrets["openai"]["api_key"]
+        voice   = st.session_state.get("eldaana_voice",
+                  st.secrets["openai"].get("voice", "nova"))
+        clean   = _clean(text)
+        if not clean:
+            return None
+        return _executor.submit(_call_openai_tts, clean, api_key, voice)
+    except Exception:
+        return None
+
+
+def _speak_openai(text: str, precomputed: "concurrent.futures.Future | None" = None) -> bool:
+    """Joue la voix OpenAI TTS. Utilise le Future pré-calculé si disponible."""
+    try:
+        api_key = st.secrets["openai"]["api_key"]
+        voice   = st.session_state.get("eldaana_voice",
+                  st.secrets["openai"].get("voice", "nova"))
+
+        audio_bytes = None
+
+        # Cas 1 : audio déjà en cours de génération (parallèle)
+        if precomputed is not None:
+            try:
+                audio_bytes = precomputed.result(timeout=8)
+            except Exception:
+                pass
+
+        # Cas 2 : pas de pré-calcul → générer maintenant sur le texte complet
+        if audio_bytes is None:
+            audio_bytes = _call_openai_tts(text, api_key, voice)
+
+        if audio_bytes:
+            st.audio(io.BytesIO(audio_bytes), format="audio/mp3", autoplay=True)
             return True
     except Exception:
         pass
@@ -122,12 +157,12 @@ def _speak_browser(text: str):
 
 # ── Interface publique ─────────────────────────────────────────────────────────
 
-def speak(text: str):
+def speak(text: str, precomputed=None):
     clean_text = _clean(text)
     if not clean_text:
         return
     if _openai_configured():
-        if _speak_openai(clean_text):
+        if _speak_openai(clean_text, precomputed=precomputed):
             return
     _speak_browser(clean_text)
 

@@ -11,6 +11,7 @@ from onboarding import (
 )
 from weather import get_weather, build_briefing
 from voice import speak, stop
+from social_connect import show_social_connect
 from pathlib import Path
 
 # ── Configuration de la page ──────────────────────────────────────────────────
@@ -156,6 +157,23 @@ else:
     accord = "heureuse" if genre == "femme" else "heureux"
     GREETING = f"Bonjour {prenom} — Comment puis-je te rendre {accord} aujourd'hui ?"
 
+# ── PAGE : VIE NUMÉRIQUE ──────────────────────────────────────────────────────
+if st.session_state.page == "social":
+    col1, col2 = st.columns([1, 6])
+    with col1:
+        if logo_path.exists():
+            st.image(str(logo_path), width=64)
+    with col2:
+        st.markdown('<p class="eldaana-title">Eldaana</p>', unsafe_allow_html=True)
+        st.markdown('<p class="eldaana-subtitle">Ma vie numérique</p>', unsafe_allow_html=True)
+    st.divider()
+    show_social_connect(profile)
+    st.markdown("<br>", unsafe_allow_html=True)
+    if st.button("← Retour à la conversation"):
+        st.session_state.page = "chat"
+        st.rerun()
+    st.stop()
+
 # ── PAGE : PROFIL (mode de vie) ────────────────────────────────────────────────
 if st.session_state.page == "profile":
     col1, col2 = st.columns([1, 6])
@@ -194,6 +212,10 @@ with st.sidebar:
 
     if st.button("✏️ Enrichir mon profil", use_container_width=True):
         st.session_state.page = "profile"
+        st.rerun()
+
+    if st.button("🌐 Ma vie numérique", use_container_width=True):
+        st.session_state.page = "social"
         st.rerun()
 
     st.markdown("<br>", unsafe_allow_html=True)

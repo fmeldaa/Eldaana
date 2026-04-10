@@ -1,4 +1,5 @@
 from datetime import datetime
+from social_connect import format_social_for_prompt
 
 
 def _format_profile(profile: dict) -> str:
@@ -39,6 +40,11 @@ def _format_profile(profile: dict) -> str:
     gdr = profile.get("garde_robe", {})
     if isinstance(gdr, dict) and gdr.get("description"):
         lines.append(f"- Style : {gdr['description']}")
+
+    # Vie numérique & réseaux sociaux
+    social_section = format_social_for_prompt(profile)
+    if social_section:
+        lines.append(social_section)
 
     return "\n".join(lines)
 

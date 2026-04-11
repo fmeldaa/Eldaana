@@ -59,6 +59,30 @@ NETWORKS = {
         "question": "Quel est ton usage de l'email ? Pro, perso, newsletters ?",
         "placeholder": "Ex : 'Email pro intense, boîte perso surtout pour les commandes et newsletters tech'",
     },
+    "Spotify": {
+        "emoji": "🎧",
+        "color": "#1DB954",
+        "question": "Quels genres musicaux, artistes ou playlists tu écoutes le plus ?",
+        "placeholder": "Ex : 'R&B, afrobeats, drill. Artistes : Burna Boy, Drake, Ninho. J'écoute surtout le soir en rentrant.'",
+    },
+    "YouTube": {
+        "emoji": "▶️",
+        "color": "#FF0000",
+        "question": "Quel type de contenu tu regardes sur YouTube ?",
+        "placeholder": "Ex : 'Documentaires, tech, vlogs, musique. Je regarde beaucoup de rap français et des débats.'",
+    },
+    "Deezer": {
+        "emoji": "🎵",
+        "color": "#A238FF",
+        "question": "Tes goûts musicaux sur Deezer — genres, humeurs, moments d'écoute ?",
+        "placeholder": "Ex : 'Jazz le matin, rap le soir. Playlists chill pour travailler, électro pour le sport.'",
+    },
+    "Shazam": {
+        "emoji": "🔵",
+        "color": "#0088FF",
+        "question": "Quel style de musique tu identifies souvent ? Dans quels contextes ?",
+        "placeholder": "Ex : 'Je Shazam surtout en soirée ou dans les cafés. Beaucoup d'afro et de soul.'",
+    },
 }
 
 

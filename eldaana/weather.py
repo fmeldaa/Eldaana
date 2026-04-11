@@ -5,6 +5,7 @@ et génération du briefing du matin personnalisé.
 
 import requests
 from datetime import datetime
+from timezone_utils import get_local_now
 
 GEOCODING_URL = "https://geocoding-api.open-meteo.com/v1/search"
 WEATHER_URL   = "https://api.open-meteo.com/v1/forecast"
@@ -99,6 +100,12 @@ def get_weather(city: str) -> dict | None:
     wcode = current.get("weathercode", 0)
     desc, emoji = WEATHER_CODES.get(wcode, ("Conditions variables", "🌡️"))
 
+    # Timezone via timezonefinder
+    from timezone_utils import get_timezone_for_coords
+    import pytz
+    tz      = get_timezone_for_coords(lat, lon)
+    tz_name = str(tz) if tz != pytz.utc else None
+
     return {
         "city":         city_name,
         "temp_current": round(current.get("temperature_2m", 0)),
@@ -110,6 +117,9 @@ def get_weather(city: str) -> dict | None:
         "humidity":     round(current.get("relative_humidity_2m", 0)),
         "rain_prob":    (daily.get("precipitation_probability_max") or [0])[0],
         "weathercode":  wcode,
+        "timezone":     tz_name,
+        "lat":          lat,
+        "lon":          lon,
     }
 
 
@@ -157,8 +167,9 @@ def build_briefing(weather: dict, profile: dict) -> str:
     Génère le briefing personnalisé du matin / début de journée.
     C'est le premier message qu'Eldaana envoie à l'ouverture de l'app.
     """
-    now    = datetime.now()
-    hour   = now.hour
+    tz_name = weather.get("timezone") or profile.get("timezone")
+    now     = get_local_now(tz_name=tz_name)
+    hour    = now.hour
     prenom = profile.get("prenom", "")
     sexe   = profile.get("sexe", "")
 

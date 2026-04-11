@@ -3,3 +3,5 @@ streamlit>=1.40.0
 requests>=2.31.0
 streamlit-oauth>=0.1.4
 supabase>=2.7.0
+timezonefinder>=6.2.0
+pytz>=2024.1

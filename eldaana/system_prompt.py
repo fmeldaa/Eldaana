@@ -1,5 +1,6 @@
 from datetime import datetime
 from social_connect import format_social_for_prompt
+from timezone_utils import get_local_now
 
 
 def _format_profile(profile: dict) -> str:
@@ -50,12 +51,15 @@ def _format_profile(profile: dict) -> str:
 
 
 def get_system_prompt(profile: dict = None) -> str:
-    now          = datetime.now()
-    jours_fr     = ["lundi","mardi","mercredi","jeudi","vendredi","samedi","dimanche"]
-    mois_fr      = ["janvier","février","mars","avril","mai","juin",
-                    "juillet","août","septembre","octobre","novembre","décembre"]
-    date_str     = f"{jours_fr[now.weekday()]} {now.day} {mois_fr[now.month-1]} {now.year}"
-    heure_str    = now.strftime("%H:%M")
+    # Heure locale selon le fuseau du user
+    tz_name  = profile.get("timezone") if profile else None
+    now      = get_local_now(tz_name=tz_name)
+
+    jours_fr = ["lundi","mardi","mercredi","jeudi","vendredi","samedi","dimanche"]
+    mois_fr  = ["janvier","février","mars","avril","mai","juin",
+                "juillet","août","septembre","octobre","novembre","décembre"]
+    date_str  = f"{jours_fr[now.weekday()]} {now.day} {mois_fr[now.month-1]} {now.year}"
+    heure_str = now.strftime("%H:%M")
     prenom       = profile.get("prenom", "") if profile else ""
     profile_sec  = _format_profile(profile) if profile else ""
 

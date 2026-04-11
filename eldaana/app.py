@@ -142,10 +142,17 @@ if st.session_state.page == "onboarding":
 profile = load_profile() or {}
 prenom  = profile.get("prenom", "")
 
-# ── Météo : récupérée une seule fois par session ───────────────────────────────
+# ── Météo + timezone : récupérés une seule fois par session ───────────────────
 if "weather" not in st.session_state:
     ville = profile.get("ville", "")
     st.session_state.weather = get_weather(ville) if ville else None
+    # Stocker le timezone dans le profil pour l'utiliser partout
+    if st.session_state.weather and st.session_state.weather.get("timezone"):
+        tz = st.session_state.weather["timezone"]
+        if profile.get("timezone") != tz:
+            profile["timezone"] = tz
+            from onboarding import save_profile
+            save_profile(profile)
 
 weather = st.session_state.weather
 

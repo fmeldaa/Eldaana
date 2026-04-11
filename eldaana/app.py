@@ -267,7 +267,11 @@ with st.sidebar:
     if "voice_on" not in st.session_state:
         st.session_state.voice_on = True
     voice_label = "🔊 Voix activée" if st.session_state.voice_on else "🔇 Voix désactivée"
-    if st.toggle(voice_label, value=st.session_state.voice_on, key="voice_toggle"):
+    st.markdown(
+        f'<p style="color:#F0E6FF;font-size:0.85rem;margin:4px 0 2px 0;">{voice_label}</p>',
+        unsafe_allow_html=True
+    )
+    if st.toggle("voix", value=st.session_state.voice_on, key="voice_toggle", label_visibility="collapsed"):
         st.session_state.voice_on = True
     else:
         st.session_state.voice_on = False

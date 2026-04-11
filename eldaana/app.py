@@ -107,6 +107,33 @@ st.markdown("""
     [data-testid="stSidebar"] .stButton > button:hover {
         background: rgba(201,168,76,0.15) !important;
     }
+    /* ── Selectbox voix dans la sidebar ── */
+    [data-testid="stSidebar"] div[data-baseweb="select"] > div {
+        background-color: #2D1456 !important;
+        border: 1.5px solid #7B2FBE !important;
+        border-radius: 10px !important;
+        color: #FFFFFF !important;
+    }
+    [data-testid="stSidebar"] div[data-baseweb="select"] > div > div {
+        color: #FFFFFF !important;
+        background-color: transparent !important;
+    }
+    [data-testid="stSidebar"] div[data-baseweb="select"] svg {
+        fill: #C9A84C !important;
+        color: #C9A84C !important;
+    }
+    /* Dropdown menu */
+    [data-testid="stSidebar"] ul[data-baseweb="menu"] {
+        background-color: #2D1456 !important;
+        border: 1px solid #7B2FBE !important;
+    }
+    [data-testid="stSidebar"] ul[data-baseweb="menu"] li {
+        background-color: #2D1456 !important;
+        color: #FFFFFF !important;
+    }
+    [data-testid="stSidebar"] ul[data-baseweb="menu"] li:hover {
+        background-color: #7B2FBE !important;
+    }
 
     /* ── Zone de saisie : texte visible ── */
     .stChatInput textarea {

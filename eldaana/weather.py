@@ -6,6 +6,7 @@ et génération du briefing du matin personnalisé.
 import requests
 from datetime import datetime
 from timezone_utils import get_local_now
+from transport_alerts import get_transport_alerts, format_transport_for_briefing
 
 GEOCODING_URL = "https://geocoding-api.open-meteo.com/v1/search"
 WEATHER_URL   = "https://api.open-meteo.com/v1/forecast"
@@ -203,6 +204,16 @@ def build_briefing(weather: dict, profile: dict) -> str:
     lines += [
         "",
         f"**👗 Suggestion tenue :** {outfit}",
+    ]
+
+    # Alertes transport en temps réel
+    transport_section = format_transport_for_briefing(
+        get_transport_alerts(profile, weather)
+    )
+    if transport_section:
+        lines.append(transport_section)
+
+    lines += [
         "",
         "Dis-moi comment tu vas — comment puis-je te rendre heureux aujourd'hui ? 💜",
     ]

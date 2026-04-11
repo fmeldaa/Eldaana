@@ -1,6 +1,7 @@
 from datetime import datetime
 from social_connect import format_social_for_prompt
 from timezone_utils import get_local_now
+from transport_alerts import format_transport_for_prompt
 
 
 def _format_profile(profile: dict) -> str:
@@ -46,6 +47,11 @@ def _format_profile(profile: dict) -> str:
     social_section = format_social_for_prompt(profile)
     if social_section:
         lines.append(social_section)
+
+    # Transport
+    transport_section = format_transport_for_prompt(profile)
+    if transport_section:
+        lines.append(transport_section)
 
     return "\n".join(lines)
 

@@ -300,6 +300,43 @@ def show_profile_form(profile: dict):
             transport_checks = {t: st.checkbox(t, value=(t in saved_list), key=f"tr_{t}") for t in transp_opts}
             transport = ", ".join([t for t, v in transport_checks.items() if v])
 
+        # ── Détail transport pour les alertes ──
+        st.markdown("**🚦 Mes lignes & trajets** *(pour les alertes en temps réel)*")
+        transport_info = profile.get("transport_detail", {})
+        all_lines = [
+            "RER A", "RER B", "RER C", "RER D", "RER E",
+            "Métro 1", "Métro 2", "Métro 3", "Métro 4", "Métro 5",
+            "Métro 6", "Métro 7", "Métro 8", "Métro 9", "Métro 10",
+            "Métro 11", "Métro 12", "Métro 13", "Métro 14",
+            "Transilien H", "Transilien J", "Transilien K", "Transilien L",
+            "Transilien N", "Transilien P", "Transilien R", "Transilien U",
+            "TGV", "Intercités", "TER", "Autre ligne",
+        ]
+        tc_lines = st.multiselect(
+            "Lignes empruntées",
+            all_lines,
+            default=transport_info.get("lines", []),
+            placeholder="Ex : RER B, Métro 13…",
+        )
+        c5, c6 = st.columns(2)
+        with c5:
+            depart_heure = st.text_input(
+                "Heure de départ habituelle",
+                value=transport_info.get("depart_heure", ""),
+                placeholder="Ex : 08:00",
+            )
+        with c6:
+            has_car = st.checkbox(
+                "🚗 J'utilise aussi la voiture",
+                value=transport_info.get("has_car", False),
+                key="has_car"
+            )
+        trajet_desc = st.text_input(
+            "Décris ton trajet principal *(optionnel)*",
+            value=transport_info.get("trajet_desc", ""),
+            placeholder="Ex : Saint-Denis → Paris 15e via RER B + Métro 13",
+        )
+
         st.markdown("**👗 Garde-robe** *(optionnel)*")
         gdr = profile.get("garde_robe", {})
         if not isinstance(gdr, dict):
@@ -335,6 +372,12 @@ def show_profile_form(profile: dict):
             "hobbies":   [h.strip() for h in hobbies.split(",") if h.strip()],
             "habitudes_alimentaires": alim,
             "transport": transport,
+            "transport_detail": {
+                "lines":        tc_lines,
+                "depart_heure": depart_heure.strip(),
+                "has_car":      has_car,
+                "trajet_desc":  trajet_desc.strip(),
+            },
             "garde_robe": {"description": garde_desc, "photos": saved_photos},
             "onboarding_lifestyle_complete": True,
         })

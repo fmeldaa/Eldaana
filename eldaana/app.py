@@ -113,6 +113,8 @@ st.markdown("""
         border: 1.5px solid #C9A84C !important;
         border-radius: 20px !important;
         color: #F0E6FF !important;
+        box-shadow: none !important;
+        outline: none !important;
     }
     [data-testid="stSidebar"] div[data-baseweb="select"] > div > div {
         color: #F0E6FF !important;

@@ -263,24 +263,31 @@ with st.sidebar:
 
     st.markdown("<br>", unsafe_allow_html=True)
 
-    # Toggle voix
+    # Toggle voix — sur une seule ligne
     if "voice_on" not in st.session_state:
         st.session_state.voice_on = True
-    voice_label = "🔊 Voix activée" if st.session_state.voice_on else "🔇 Voix désactivée"
-    st.markdown(
-        f'<p style="color:#F0E6FF;font-size:0.85rem;margin:4px 0 2px 0;">{voice_label}</p>',
-        unsafe_allow_html=True
-    )
-    if st.toggle("voix", value=st.session_state.voice_on, key="voice_toggle", label_visibility="collapsed"):
+
+    col_tog, col_lbl = st.columns([1, 3])
+    with col_tog:
+        voice_on = st.toggle("v", value=st.session_state.voice_on,
+                             key="voice_toggle", label_visibility="collapsed")
+    with col_lbl:
+        lbl = "🔊 Voix activée" if voice_on else "🔇 Désactivée"
+        st.markdown(
+            f'<p style="color:#F0E6FF;font-size:0.85rem;margin:8px 0 0 0;">{lbl}</p>',
+            unsafe_allow_html=True
+        )
+
+    if voice_on:
         st.session_state.voice_on = True
     else:
         st.session_state.voice_on = False
         stop()
 
-    # Sélecteur de voix
-    if st.session_state.voice_on:
+    # Sélecteur de voix — toujours visible si voix activée
+    if voice_on:
         st.markdown(
-            '<p style="color:#F0E6FF;font-size:0.82rem;margin:6px 0 4px 0;">'
+            '<p style="color:#F0E6FF;font-size:0.82rem;margin:8px 0 4px 0;">'
             '🎙️ Choix de la voix</p>',
             unsafe_allow_html=True
         )

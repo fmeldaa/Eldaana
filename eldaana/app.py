@@ -99,6 +99,12 @@ st.markdown("""
     [data-testid="stSidebar"] * {
         color: #F0E6FF !important;
     }
+    /* Toggle label */
+    [data-testid="stSidebar"] [data-testid="stToggle"] p,
+    [data-testid="stSidebar"] [data-testid="stToggle"] label,
+    [data-testid="stSidebar"] [data-testid="stToggle"] span {
+        color: #F0E6FF !important;
+    }
     [data-testid="stSidebar"] .stButton > button {
         color: #C9A84C !important;
         border-color: #C9A84C !important;

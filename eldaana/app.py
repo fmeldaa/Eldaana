@@ -107,18 +107,21 @@ st.markdown("""
     [data-testid="stSidebar"] .stButton > button:hover {
         background: rgba(201,168,76,0.15) !important;
     }
-    /* ── Selectbox voix sidebar : transparent, bordure dorée, texte blanc ── */
-    [data-testid="stSidebar"] div[data-baseweb="select"] > div {
+    /* ── Selectbox voix sidebar ── */
+    [data-testid="stSidebar"] [data-testid="stSelectbox"],
+    [data-testid="stSidebar"] [data-testid="stSelectbox"] > div,
+    [data-testid="stSidebar"] [data-testid="stSelectbox"] > div > div,
+    [data-testid="stSidebar"] div[data-baseweb="select"],
+    [data-testid="stSidebar"] div[data-baseweb="select"] > div,
+    [data-testid="stSidebar"] div[data-baseweb="select"] > div > div {
         background: #1A0A2E !important;
-        border: 1.5px solid #C9A84C !important;
-        border-radius: 20px !important;
-        color: #F0E6FF !important;
         box-shadow: none !important;
         outline: none !important;
-    }
-    [data-testid="stSidebar"] div[data-baseweb="select"] > div > div {
         color: #F0E6FF !important;
-        background: #1A0A2E !important;
+    }
+    [data-testid="stSidebar"] div[data-baseweb="select"] > div {
+        border: 1.5px solid #C9A84C !important;
+        border-radius: 20px !important;
     }
     [data-testid="stSidebar"] div[data-baseweb="select"] svg {
         fill: #C9A84C !important;

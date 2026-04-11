@@ -107,17 +107,30 @@ st.markdown("""
     [data-testid="stSidebar"] .stButton > button:hover {
         background: rgba(201,168,76,0.15) !important;
     }
-    /* ── Radio voix dans la sidebar — texte blanc, point doré ── */
-    [data-testid="stSidebar"] [data-testid="stRadio"] label {
+    /* ── Selectbox voix sidebar : transparent, bordure dorée, texte blanc ── */
+    [data-testid="stSidebar"] div[data-baseweb="select"] > div {
+        background: transparent !important;
+        border: 1.5px solid #C9A84C !important;
+        border-radius: 20px !important;
         color: #F0E6FF !important;
-        font-size: 0.82rem !important;
     }
-    [data-testid="stSidebar"] [data-testid="stRadio"] [data-testid="stMarkdownContainer"] p {
+    [data-testid="stSidebar"] div[data-baseweb="select"] > div > div {
+        color: #F0E6FF !important;
+        background: transparent !important;
+    }
+    [data-testid="stSidebar"] div[data-baseweb="select"] svg {
+        fill: #C9A84C !important;
+    }
+    [data-testid="stSidebar"] ul[data-baseweb="menu"] {
+        background-color: #1A0A2E !important;
+        border: 1px solid #C9A84C !important;
+    }
+    [data-testid="stSidebar"] ul[data-baseweb="menu"] li {
+        background-color: #1A0A2E !important;
         color: #F0E6FF !important;
     }
-    [data-testid="stSidebar"] [data-testid="stRadio"] input:checked + div {
-        background-color: #C9A84C !important;
-        border-color: #C9A84C !important;
+    [data-testid="stSidebar"] ul[data-baseweb="menu"] li:hover {
+        background-color: rgba(201,168,76,0.2) !important;
     }
 
     /* ── Zone de saisie : texte visible ── */
@@ -249,7 +262,7 @@ with st.sidebar:
         st.session_state.voice_on = False
         stop()
 
-    # Sélecteur de voix — style boutons sidebar
+    # Sélecteur de voix
     if st.session_state.voice_on:
         voice_labels = list(VOICE_OPTIONS.keys())
         saved_voice  = st.session_state.get("eldaana_voice", "nova")
@@ -257,12 +270,11 @@ with st.sidebar:
             (l for l, v in VOICE_OPTIONS.items() if v == saved_voice),
             voice_labels[0]
         )
-        chosen_label = st.radio(
-            "🎙️ Voix",
+        chosen_label = st.selectbox(
+            "🎙️ Voix d'Eldaana",
             voice_labels,
             index=voice_labels.index(default_label),
             key="voice_selector",
-            label_visibility="collapsed",
         )
         st.session_state.eldaana_voice = VOICE_OPTIONS[chosen_label]
 

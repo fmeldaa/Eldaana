@@ -269,6 +269,11 @@ with st.sidebar:
 
     # Sélecteur de voix
     if st.session_state.voice_on:
+        st.markdown(
+            '<p style="color:#F0E6FF;font-size:0.82rem;margin:6px 0 4px 0;">'
+            '🎙️ Choix de la voix</p>',
+            unsafe_allow_html=True
+        )
         voice_labels = list(VOICE_OPTIONS.keys())
         saved_voice  = st.session_state.get("eldaana_voice", "nova")
         default_label = next(
@@ -276,10 +281,11 @@ with st.sidebar:
             voice_labels[0]
         )
         chosen_label = st.selectbox(
-            "🎙️ Voix d'Eldaana",
+            "voix",
             voice_labels,
             index=voice_labels.index(default_label),
             key="voice_selector",
+            label_visibility="collapsed",
         )
         st.session_state.eldaana_voice = VOICE_OPTIONS[chosen_label]
 

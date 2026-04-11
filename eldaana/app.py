@@ -107,32 +107,30 @@ st.markdown("""
     [data-testid="stSidebar"] .stButton > button:hover {
         background: rgba(201,168,76,0.15) !important;
     }
-    /* ── Selectbox voix dans la sidebar ── */
+    /* ── Selectbox voix dans la sidebar — même style que les autres fields ── */
     [data-testid="stSidebar"] div[data-baseweb="select"] > div {
-        background-color: #2D1456 !important;
-        border: 1.5px solid #7B2FBE !important;
+        background-color: #ffffff !important;
+        border: 1.5px solid #c084fc !important;
         border-radius: 10px !important;
-        color: #FFFFFF !important;
+        color: #1A0A2E !important;
     }
     [data-testid="stSidebar"] div[data-baseweb="select"] > div > div {
-        color: #FFFFFF !important;
-        background-color: transparent !important;
+        color: #1A0A2E !important;
+        background-color: #ffffff !important;
     }
     [data-testid="stSidebar"] div[data-baseweb="select"] svg {
-        fill: #C9A84C !important;
-        color: #C9A84C !important;
+        fill: #7c3aed !important;
+        color: #7c3aed !important;
     }
-    /* Dropdown menu */
     [data-testid="stSidebar"] ul[data-baseweb="menu"] {
-        background-color: #2D1456 !important;
-        border: 1px solid #7B2FBE !important;
+        background-color: #ffffff !important;
     }
     [data-testid="stSidebar"] ul[data-baseweb="menu"] li {
-        background-color: #2D1456 !important;
-        color: #FFFFFF !important;
+        background-color: #ffffff !important;
+        color: #1A0A2E !important;
     }
     [data-testid="stSidebar"] ul[data-baseweb="menu"] li:hover {
-        background-color: #7B2FBE !important;
+        background-color: #f3e8ff !important;
     }
 
     /* ── Zone de saisie : texte visible ── */

@@ -109,14 +109,14 @@ st.markdown("""
     }
     /* ── Selectbox voix sidebar : transparent, bordure dorée, texte blanc ── */
     [data-testid="stSidebar"] div[data-baseweb="select"] > div {
-        background: transparent !important;
+        background: #1A0A2E !important;
         border: 1.5px solid #C9A84C !important;
         border-radius: 20px !important;
         color: #F0E6FF !important;
     }
     [data-testid="stSidebar"] div[data-baseweb="select"] > div > div {
         color: #F0E6FF !important;
-        background: transparent !important;
+        background: #1A0A2E !important;
     }
     [data-testid="stSidebar"] div[data-baseweb="select"] svg {
         fill: #C9A84C !important;

@@ -13,7 +13,7 @@ from datetime import datetime
 
 # ─── Navitia : perturbations transports en commun ────────────────────────────
 
-NAVITIA_BASE = "https://api.navitia.io/v1"
+NAVITIA_BASE = "https://prim.iledefrance-mobilites.fr/marketplace/v2/navitia"
 
 # Correspondance noms courants → IDs Navitia Île-de-France
 LINE_IDS = {
@@ -68,7 +68,7 @@ def get_line_disruptions(line_name: str) -> list[dict]:
     try:
         r = requests.get(
             f"{NAVITIA_BASE}/coverage/fr-idf/lines/{line_id}/disruptions",
-            auth=(api_key, ""),
+            headers={"apikey": api_key},
             params={"count": 5},
             timeout=5,
         )
@@ -100,7 +100,7 @@ def _search_disruptions_by_name(line_name: str, api_key: str) -> list[dict]:
     try:
         r = requests.get(
             f"{NAVITIA_BASE}/coverage/fr-idf/disruptions",
-            auth=(api_key, ""),
+            headers={"apikey": api_key},
             params={"count": 20},
             timeout=5,
         )

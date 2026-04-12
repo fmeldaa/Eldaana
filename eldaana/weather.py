@@ -163,6 +163,38 @@ def outfit_suggestion(weather: dict, sexe: str = "") -> str:
     return " — ".join(parts) if parts else "tenue adaptée à la météo"
 
 
+def build_wakeup_message(weather: dict, profile: dict) -> str:
+    """
+    Message parlé au réveil : heure + météo + message positif.
+    Optimisé pour la synthèse vocale (pas de markdown).
+    """
+    tz_name   = weather.get("timezone") or profile.get("timezone")
+    now       = get_local_now(tz_name=tz_name)
+    prenom    = profile.get("prenom", "")
+    sexe      = profile.get("sexe", "").lower()
+    heure_str = now.strftime("%Hh%M")
+
+    wcode = weather.get("weathercode", 0)
+    if wcode == 0:
+        positif = "Le soleil est là, ça s'annonce comme une belle journée !"
+    elif wcode in [71, 73, 75, 77, 85, 86]:
+        positif = "Il neige dehors, prends ton temps, c'est beau !"
+    elif wcode >= 51:
+        positif = "Un peu de pluie ne t'arrêtera pas, tu vas briller aujourd'hui !"
+    else:
+        positif = "Quelques nuages, mais rien qui tienne face à toi aujourd'hui !"
+
+    accord = "prête" if sexe == "femme" else "prêt"
+
+    return (
+        f"Bonjour {prenom} ! Il est {heure_str}. "
+        f"Aujourd'hui à {weather['city']} : {weather['description']}, "
+        f"{weather['temp_current']} degrés, avec un max de {weather['temp_max']}. "
+        f"{positif} "
+        f"Tu es {accord} pour cette nouvelle journée ?"
+    )
+
+
 def build_briefing(weather: dict, profile: dict) -> str:
     """
     Génère le briefing personnalisé du matin / début de journée.

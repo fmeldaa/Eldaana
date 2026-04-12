@@ -337,6 +337,15 @@ def show_profile_form(profile: dict):
             placeholder="Ex : Saint-Denis → Paris 15e via RER B + Métro 13",
         )
 
+        # ── Réveil ──
+        st.markdown("**⏰ Heure de réveil** *(pour la notification matinale)*")
+        heure_reveil = st.text_input(
+            "Heure de réveil",
+            value=profile.get("heure_reveil", ""),
+            placeholder="Ex : 07:00",
+            help="Eldaana t'enverra une notification à cette heure avec la météo et un message positif",
+        )
+
         st.markdown("**👗 Garde-robe** *(optionnel)*")
         gdr = profile.get("garde_robe", {})
         if not isinstance(gdr, dict):
@@ -379,6 +388,7 @@ def show_profile_form(profile: dict):
                 "trajet_desc":  trajet_desc.strip(),
             },
             "garde_robe": {"description": garde_desc, "photos": saved_photos},
+            "heure_reveil": heure_reveil.strip(),
             "onboarding_lifestyle_complete": True,
         })
         save_profile(profile)

@@ -9,7 +9,7 @@ from onboarding import (
     profile_summary,
     logout,
 )
-from weather import get_weather, build_briefing
+from weather import get_weather, build_briefing, build_wakeup_message
 from voice import speak, stop, VOICE_OPTIONS, prepare_audio_async  # noqa
 from social_connect import show_social_connect
 from pathlib import Path
@@ -192,6 +192,22 @@ if "weather" not in st.session_state:
 
 weather = st.session_state.weather
 
+# ── Détection mode réveil (notification Android → ?wakeup=1) ─────────────────
+if st.query_params.get("wakeup") == "1" and st.session_state.get("page") == "chat":
+    st.session_state.page = "wakeup"
+
+# ── Injection config Android (alarme réveil) ──────────────────────────────────
+# L'app Android lit cet élément caché via JS pour programmer l'alarme quotidienne
+heure_reveil = profile.get("heure_reveil", "")
+if heure_reveil:
+    st.markdown(
+        f'<div id="eldaana-config" '
+        f'data-wakeup="{heure_reveil}" '
+        f'data-prenom="{prenom}" '
+        f'style="display:none;position:absolute;width:0;height:0;"></div>',
+        unsafe_allow_html=True,
+    )
+
 # ── Message d'accueil ──────────────────────────────────────────────────────────
 if weather:
     GREETING = build_briefing(weather, profile)
@@ -319,6 +335,83 @@ with st.sidebar:
         logout()
         st.session_state.page = "onboarding"
         st.rerun()
+
+# ── PAGE : RÉVEIL ─────────────────────────────────────────────────────────────
+if st.session_state.page == "wakeup":
+    col1, col2 = st.columns([1, 6])
+    with col1:
+        if logo_path.exists():
+            st.image(str(logo_path), width=72)
+    with col2:
+        st.markdown('<p class="eldaana-title">Bonjour ☀️</p>', unsafe_allow_html=True)
+        st.markdown(
+            '<p class="eldaana-subtitle">C\'est l\'heure de commencer ta journée</p>',
+            unsafe_allow_html=True,
+        )
+    st.divider()
+
+    # Construction du message de réveil
+    if weather:
+        wakeup_txt = build_wakeup_message(weather, profile)
+        # Carte météo visuelle
+        st.markdown(f"""
+        <div style="
+            background: linear-gradient(135deg, #fdf4ff 0%, #e8f8ff 100%);
+            border: 1.5px solid #c084fc;
+            border-radius: 20px;
+            padding: 2rem 1.5rem;
+            text-align: center;
+            margin: 0.5rem 0 1.5rem 0;
+        ">
+            <p style="font-size:3.5rem;margin:0 0 0.5rem 0;">{weather['emoji']}</p>
+            <p style="font-size:1.6rem;font-weight:700;color:#7c3aed;margin:0 0 0.25rem 0;">
+                {weather['temp_current']}°C
+            </p>
+            <p style="color:#6b7280;margin:0 0 0.25rem 0;">
+                {weather['description']} à {weather['city']}
+            </p>
+            <p style="color:#9ca3af;font-size:0.85rem;margin:0;">
+                Min {weather['temp_min']}° · Max {weather['temp_max']}°
+            </p>
+        </div>
+        """, unsafe_allow_html=True)
+    else:
+        genre = profile.get("sexe", "").lower()
+        accord = "prête" if genre == "femme" else "prêt"
+        wakeup_txt = (
+            f"Bonjour {prenom} ! C'est l'heure de se lever. "
+            f"Tu es {accord} pour une belle journée ?"
+        )
+
+    # Message positif
+    st.markdown(f"""
+    <p style="
+        text-align:center;
+        font-size:1.05rem;
+        color:#4b5563;
+        font-style:italic;
+        margin: 0 0 1.5rem 0;
+        padding: 0 1rem;
+    ">{wakeup_txt.split(". ")[-2] if ". " in wakeup_txt else ""}</p>
+    """, unsafe_allow_html=True)
+
+    # TTS automatique au premier chargement
+    if st.session_state.get("voice_on", True) and not st.session_state.get("wakeup_spoken"):
+        tts_future = prepare_audio_async(wakeup_txt)
+        speak(wakeup_txt, precomputed=tts_future)
+        st.session_state.wakeup_spoken = True
+
+    col_a, col_b = st.columns(2)
+    with col_a:
+        if st.button("🔊 Réécouter", use_container_width=True):
+            speak(wakeup_txt)
+    with col_b:
+        if st.button("💜 Commencer ma journée", use_container_width=True, type="primary"):
+            st.session_state.page = "chat"
+            st.session_state.wakeup_spoken = False
+            st.query_params.clear()
+            st.rerun()
+    st.stop()
 
 # ── PAGE : CHAT ────────────────────────────────────────────────────────────────
 

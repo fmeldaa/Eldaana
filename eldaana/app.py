@@ -12,6 +12,7 @@ from onboarding import (
 from weather import get_weather, build_briefing, build_wakeup_message
 from voice import speak, stop, VOICE_OPTIONS, prepare_audio_async  # noqa
 from social_connect import show_social_connect
+from gemini_search import should_search_web, search_web, format_web_results_for_prompt
 from pathlib import Path
 
 # ── Configuration de la page ──────────────────────────────────────────────────
@@ -448,11 +449,18 @@ if user_input:
     with st.chat_message("user"):
         st.markdown(user_input)
 
+    # ── Recherche web Gemini si nécessaire ────────────────────────────────────
+    system_prompt = get_system_prompt(profile)
+    if should_search_web(user_input):
+        web_results = search_web(user_input)
+        if web_results:
+            system_prompt += format_web_results_for_prompt(web_results, user_input)
+
     with st.chat_message("assistant", avatar=LOGO):
         with client.messages.stream(
             model="claude-opus-4-6",
             max_tokens=1024,
-            system=get_system_prompt(profile),
+            system=system_prompt,
             messages=st.session_state.messages,
         ) as stream:
             reply = st.write_stream(stream.text_stream)

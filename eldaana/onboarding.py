@@ -280,10 +280,11 @@ def show_profile_form(profile: dict):
         with col_enf2:
             enf_oui = st.checkbox("Oui", value=(a_enfants_val == "Oui"), key="enf_oui")
         a_enfants = "Oui" if enf_oui else "Non"
-        nb_enfants = 0
-        if a_enfants == "Oui":
-            nb_enfants = st.number_input("Nombre d'enfants", min_value=1, max_value=20,
-                                         value=int(fam.get("nb_enfants") or 1))
+        nb_enfants = st.number_input(
+            "Nombre d'enfants",
+            min_value=0, max_value=20,
+            value=int(fam.get("nb_enfants") or 0),
+        )
         hobbies = st.text_area("Hobbies / Centres d'intérêt",
                                value=", ".join(profile.get("hobbies", [])),
                                placeholder="Ex : Lecture, sport, cuisine, voyages…")

@@ -57,7 +57,8 @@ def search_web(query: str) -> str | None:
         text = response.text.strip() if response.text else None
         return text
 
-    except Exception:
+    except Exception as e:
+        st.session_state["gemini_last_error"] = str(e)
         return None
 
 

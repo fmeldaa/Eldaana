@@ -452,9 +452,14 @@ if user_input:
     # ── Recherche web Gemini si nécessaire ────────────────────────────────────
     system_prompt = get_system_prompt(profile)
     if should_search_web(user_input):
-        web_results = search_web(user_input)
+        with st.spinner("🔍 Recherche web en cours..."):
+            web_results = search_web(user_input)
         if web_results:
             system_prompt += format_web_results_for_prompt(web_results, user_input)
+            st.toast("✅ Infos web récupérées via Gemini", icon="🌐")
+        else:
+            err = st.session_state.get("gemini_last_error", "inconnu")
+            st.toast(f"⚠️ Gemini : {err[:80]}", icon="⚠️")
 
     with st.chat_message("assistant", avatar=LOGO):
         with client.messages.stream(

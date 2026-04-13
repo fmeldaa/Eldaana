@@ -13,6 +13,11 @@ from weather import get_weather, build_briefing, build_wakeup_message
 from voice import speak, stop, VOICE_OPTIONS, prepare_audio_async  # noqa
 from social_connect import show_social_connect
 from gemini_search import should_search_web, search_web, format_web_results_for_prompt
+from shopping import (
+    detect_purchases_in_message, add_purchase,
+    get_reminders, mark_reminded, format_reminders_for_prompt,
+    format_shopping_for_prompt, show_shopping_page,
+)
 from pathlib import Path
 
 # ── Configuration de la page ──────────────────────────────────────────────────
@@ -231,6 +236,23 @@ else:
     accord = "heureuse" if genre == "femme" else "heureux"
     GREETING = f"Bonjour {prenom} — Comment puis-je te rendre {accord} aujourd'hui ?"
 
+# ── PAGE : COURSES ────────────────────────────────────────────────────────────
+if st.session_state.page == "shopping":
+    col1, col2 = st.columns([1, 6])
+    with col1:
+        if logo_path.exists():
+            st.image(str(logo_path), width=64)
+    with col2:
+        st.markdown('<p class="eldaana-title">Eldaana</p>', unsafe_allow_html=True)
+        st.markdown('<p class="eldaana-subtitle">Mes courses</p>', unsafe_allow_html=True)
+    st.divider()
+    show_shopping_page(profile)
+    st.markdown("<br>", unsafe_allow_html=True)
+    if st.button("← Retour à la conversation"):
+        st.session_state.page = "chat"
+        st.rerun()
+    st.stop()
+
 # ── PAGE : VIE NUMÉRIQUE ──────────────────────────────────────────────────────
 if st.session_state.page == "social":
     col1, col2 = st.columns([1, 6])
@@ -290,6 +312,10 @@ with st.sidebar:
 
     if st.button("🌐 Ma vie numérique", use_container_width=True):
         st.session_state.page = "social"
+        st.rerun()
+
+    if st.button("🛒 Mes courses", use_container_width=True):
+        st.session_state.page = "shopping"
         st.rerun()
 
     st.markdown("<br>", unsafe_allow_html=True)
@@ -463,17 +489,36 @@ if user_input:
     with st.chat_message("user"):
         st.markdown(user_input)
 
-    # ── Recherche web Gemini si nécessaire ────────────────────────────────────
+    # ── Détection automatique d'achats ───────────────────────────────────────
+    user_id   = profile.get("user_id", "")
+    purchases = detect_purchases_in_message(user_input)
+    if purchases:
+        added = add_purchase(user_id, purchases)
+        if added:
+            noms = ", ".join(a["name"] for a in added)
+            st.toast(f"🛒 Achat enregistré : {noms}", icon="✅")
+
+    # ── Recherche web si nécessaire ───────────────────────────────────────────
     system_prompt = get_system_prompt(profile)
     if should_search_web(user_input):
         with st.spinner("🔍 Recherche web en cours..."):
             web_results = search_web(user_input)
         if web_results:
             system_prompt += format_web_results_for_prompt(web_results, user_input)
-            st.toast("✅ Infos web récupérées via Gemini", icon="🌐")
+            st.toast("✅ Infos web récupérées", icon="🌐")
         else:
             err = st.session_state.get("gemini_last_error", "inconnu")
-            st.toast(f"⚠️ Gemini : {err[:80]}", icon="⚠️")
+            st.toast(f"⚠️ Recherche : {err[:80]}", icon="⚠️")
+
+    # ── Rappels courses dans le contexte ─────────────────────────────────────
+    reminders = get_reminders(user_id)
+    if reminders:
+        system_prompt += format_reminders_for_prompt(reminders)
+        for r in reminders:
+            mark_reminded(user_id, r["name"])
+
+    # ── Suivi courses général ─────────────────────────────────────────────────
+    system_prompt += format_shopping_for_prompt(user_id)
 
     with st.chat_message("assistant", avatar=LOGO):
         with client.messages.stream(

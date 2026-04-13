@@ -150,8 +150,43 @@ st.markdown("""
         color: #1A0A2E !important;
         background: white !important;
     }
+
+    /* ── Checkboxes : fond sombre + check blanc quand cochées ── */
+    [data-testid="stCheckbox"] label {
+        cursor: pointer;
+    }
+    [data-testid="stCheckbox"] span[data-testid="stMarkdownContainer"] p {
+        color: #1A0A2E !important;
+        font-weight: 500;
+    }
+    /* Case non cochée */
+    [data-testid="stCheckbox"] input[type="checkbox"] + div {
+        width: 20px !important;
+        height: 20px !important;
+        border-radius: 5px !important;
+        border: 2px solid #c084fc !important;
+        background: white !important;
+        transition: all 0.2s ease;
+    }
+    /* Case cochée : fond violet foncé + check blanc */
+    [data-testid="stCheckbox"] input[type="checkbox"]:checked + div {
+        background: #1A0A2E !important;
+        border-color: #7B2FBE !important;
+    }
+    [data-testid="stCheckbox"] input[type="checkbox"]:checked + div svg {
+        fill: #ffffff !important;
+        color: #ffffff !important;
+    }
+    [data-testid="stCheckbox"] input[type="checkbox"]:checked + div path {
+        stroke: #ffffff !important;
+        fill: #ffffff !important;
+    }
 </style>
 """, unsafe_allow_html=True)
+
+# ── Langue de l'app (définie au premier lancement Android) ───────────────────
+if "lang" not in st.session_state:
+    st.session_state.lang = st.query_params.get("lang", "fr")
 
 # ── Clé API Anthropic (locale ou Streamlit Cloud) ─────────────────────────────
 import os

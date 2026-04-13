@@ -151,35 +151,14 @@ st.markdown("""
         background: white !important;
     }
 
-    /* ── Checkboxes : fond sombre + check blanc quand cochées ── */
-    [data-testid="stCheckbox"] label {
-        cursor: pointer;
+    /* ── Checkboxes : couleur violette ── */
+    [data-testid="stCheckbox"] svg {
+        color: #7B2FBE !important;
+        fill: #7B2FBE !important;
     }
-    [data-testid="stCheckbox"] span[data-testid="stMarkdownContainer"] p {
+    [data-testid="stCheckbox"] p {
         color: #1A0A2E !important;
-        font-weight: 500;
-    }
-    /* Case non cochée */
-    [data-testid="stCheckbox"] input[type="checkbox"] + div {
-        width: 20px !important;
-        height: 20px !important;
-        border-radius: 5px !important;
-        border: 2px solid #c084fc !important;
-        background: white !important;
-        transition: all 0.2s ease;
-    }
-    /* Case cochée : fond violet foncé + check blanc */
-    [data-testid="stCheckbox"] input[type="checkbox"]:checked + div {
-        background: #1A0A2E !important;
-        border-color: #7B2FBE !important;
-    }
-    [data-testid="stCheckbox"] input[type="checkbox"]:checked + div svg {
-        fill: #ffffff !important;
-        color: #ffffff !important;
-    }
-    [data-testid="stCheckbox"] input[type="checkbox"]:checked + div path {
-        stroke: #ffffff !important;
-        fill: #ffffff !important;
+        font-weight: 500 !important;
     }
 </style>
 """, unsafe_allow_html=True)

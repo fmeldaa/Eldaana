@@ -10,7 +10,17 @@
       "Bash(python -c \"from storage import db_load, db_save; print\\(''OK''\\)\")",
       "Bash(python -c \"from storage import db_load, db_save; print\\(''storage OK''\\)\")",
       "Bash(git --version)",
-      "Bash(gh --version)"
+      "Bash(gh --version)",
+      "Bash(dir /s /b \"C:\\\\Users\\\\fmeld\\\\Autres docs\\\\Documents\\\\These Pro\\\\eldaana_android\\\\app\\\\build\\\\outputs\\\\apk\")",
+      "Bash(dir /s /b 'C:\\\\Users\\\\fmeld\\\\Autres docs\\\\Documents\\\\These Pro\\\\eldaana_android')",
+      "Bash(findstr /i \"apk\")",
+      "Bash(copy \"C:\\\\Users\\\\fmeld\\\\Autres docs\\\\Documents\\\\These Pro\\\\eldaana\\\\logo.png\" \"C:\\\\Users\\\\fmeld\\\\Autres docs\\\\Documents\\\\These Pro\\\\eldaana_android\\\\app\\\\src\\\\main\\\\res\\\\mipmap-xxxhdpi\\\\ic_launcher.png\")",
+      "Bash(copy \"C:\\\\Users\\\\fmeld\\\\Autres docs\\\\Documents\\\\These Pro\\\\eldaana\\\\logo.png\" \"C:\\\\Users\\\\fmeld\\\\Autres docs\\\\Documents\\\\These Pro\\\\eldaana_android\\\\app\\\\src\\\\main\\\\res\\\\mipmap-xxhdpi\\\\ic_launcher.png\")",
+      "Bash(copy \"C:\\\\Users\\\\fmeld\\\\Autres docs\\\\Documents\\\\These Pro\\\\eldaana\\\\logo.png\" \"C:\\\\Users\\\\fmeld\\\\Autres docs\\\\Documents\\\\These Pro\\\\eldaana_android\\\\app\\\\src\\\\main\\\\res\\\\mipmap-xhdpi\\\\ic_launcher.png\")",
+      "Bash(copy \"C:\\\\Users\\\\fmeld\\\\Autres docs\\\\Documents\\\\These Pro\\\\eldaana\\\\logo.png\" \"C:\\\\Users\\\\fmeld\\\\Autres docs\\\\Documents\\\\These Pro\\\\eldaana_android\\\\app\\\\src\\\\main\\\\res\\\\mipmap-hdpi\\\\ic_launcher.png\")",
+      "Bash(copy \"C:\\\\Users\\\\fmeld\\\\Autres docs\\\\Documents\\\\These Pro\\\\eldaana\\\\logo.png\" \"C:\\\\Users\\\\fmeld\\\\Autres docs\\\\Documents\\\\These Pro\\\\eldaana_android\\\\app\\\\src\\\\main\\\\res\\\\mipmap-mdpi\\\\ic_launcher.png\")",
+      "Bash(./gradlew assembleDebug)",
+      "Bash(JAVA_HOME=\"C:/Program Files/Android/Android Studio/jbr\" ./gradlew assembleDebug)"
     ]
   }
 }

@@ -18,6 +18,11 @@ from shopping import (
     get_reminders, mark_reminded, format_reminders_for_prompt,
     format_shopping_for_prompt, show_shopping_page,
 )
+from budget import show_budget_page, format_budget_for_prompt
+from humeur import show_humeur_widget, format_humeur_for_prompt
+from voyance import show_voyance_page
+from dashboard import show_dashboard
+from rgpd import show_rgpd_page
 from pathlib import Path
 
 # ── Configuration de la page ──────────────────────────────────────────────────
@@ -253,6 +258,74 @@ if st.session_state.page == "shopping":
         st.rerun()
     st.stop()
 
+# ── PAGE : BUDGET ────────────────────────────────────────────────────────────
+if st.session_state.page == "budget":
+    col1, col2 = st.columns([1, 6])
+    with col1:
+        if logo_path.exists():
+            st.image(str(logo_path), width=64)
+    with col2:
+        st.markdown('<p class="eldaana-title">Eldaana</p>', unsafe_allow_html=True)
+        st.markdown('<p class="eldaana-subtitle">Mon budget</p>', unsafe_allow_html=True)
+    st.divider()
+    show_budget_page(profile)
+    st.markdown("<br>", unsafe_allow_html=True)
+    if st.button("← Retour à la conversation"):
+        st.session_state.page = "chat"
+        st.rerun()
+    st.stop()
+
+# ── PAGE : VOYANCE ────────────────────────────────────────────────────────────
+if st.session_state.page == "voyance":
+    col1, col2 = st.columns([1, 6])
+    with col1:
+        if logo_path.exists():
+            st.image(str(logo_path), width=64)
+    with col2:
+        st.markdown('<p class="eldaana-title">Eldaana</p>', unsafe_allow_html=True)
+        st.markdown('<p class="eldaana-subtitle">Prédictions & Voyance</p>', unsafe_allow_html=True)
+    st.divider()
+    show_voyance_page(profile)
+    st.markdown("<br>", unsafe_allow_html=True)
+    if st.button("← Retour à la conversation"):
+        st.session_state.page = "chat"
+        st.rerun()
+    st.stop()
+
+# ── PAGE : TABLEAU DE BORD ────────────────────────────────────────────────────
+if st.session_state.page == "dashboard":
+    col1, col2 = st.columns([1, 6])
+    with col1:
+        if logo_path.exists():
+            st.image(str(logo_path), width=64)
+    with col2:
+        st.markdown('<p class="eldaana-title">Eldaana</p>', unsafe_allow_html=True)
+        st.markdown('<p class="eldaana-subtitle">Mon tableau de bord</p>', unsafe_allow_html=True)
+    st.divider()
+    show_dashboard(profile, weather)
+    st.markdown("<br>", unsafe_allow_html=True)
+    if st.button("← Retour à la conversation"):
+        st.session_state.page = "chat"
+        st.rerun()
+    st.stop()
+
+# ── PAGE : RGPD ───────────────────────────────────────────────────────────────
+if st.session_state.page == "rgpd":
+    col1, col2 = st.columns([1, 6])
+    with col1:
+        if logo_path.exists():
+            st.image(str(logo_path), width=64)
+    with col2:
+        st.markdown('<p class="eldaana-title">Eldaana</p>', unsafe_allow_html=True)
+        st.markdown('<p class="eldaana-subtitle">Vie privée & RGPD</p>', unsafe_allow_html=True)
+    st.divider()
+    show_rgpd_page(profile)
+    st.markdown("<br>", unsafe_allow_html=True)
+    if st.button("← Retour à la conversation"):
+        st.session_state.page = "chat"
+        st.rerun()
+    st.stop()
+
 # ── PAGE : VIE NUMÉRIQUE ──────────────────────────────────────────────────────
 if st.session_state.page == "social":
     col1, col2 = st.columns([1, 6])
@@ -306,6 +379,10 @@ with st.sidebar:
     if not profile.get("onboarding_lifestyle_complete"):
         st.info("💡 Plus Eldaana vous connaît, plus elle est précise !")
 
+    if st.button("🏠 Tableau de bord", use_container_width=True):
+        st.session_state.page = "dashboard"
+        st.rerun()
+
     if st.button("✏️ Enrichir mon profil", use_container_width=True):
         st.session_state.page = "profile"
         st.rerun()
@@ -316,6 +393,18 @@ with st.sidebar:
 
     if st.button("🛒 Mes courses", use_container_width=True):
         st.session_state.page = "shopping"
+        st.rerun()
+
+    if st.button("💰 Mon budget", use_container_width=True):
+        st.session_state.page = "budget"
+        st.rerun()
+
+    if st.button("🔮 Voyance", use_container_width=True):
+        st.session_state.page = "voyance"
+        st.rerun()
+
+    if st.button("🔒 Vie privée", use_container_width=True):
+        st.session_state.page = "rgpd"
         st.rerun()
 
     st.markdown("<br>", unsafe_allow_html=True)
@@ -469,6 +558,11 @@ with col2:
     )
 st.divider()
 
+# ── Humeur du jour (widget compact en haut du chat) ───────────────────────────
+user_id_chat = profile.get("user_id", "")
+with st.expander("😊 Comment tu te sens aujourd'hui ?", expanded=False):
+    show_humeur_widget(user_id_chat)
+
 # État de la conversation
 if "messages" not in st.session_state:
     st.session_state.messages = []
@@ -498,8 +592,16 @@ if user_input:
             noms = ", ".join(a["name"] for a in added)
             st.toast(f"🛒 Achat enregistré : {noms}", icon="✅")
 
-    # ── Recherche web si nécessaire ───────────────────────────────────────────
+    # ── Construction du prompt système enrichi ────────────────────────────────
     system_prompt = get_system_prompt(profile)
+
+    # Humeur du jour
+    system_prompt += format_humeur_for_prompt(user_id)
+
+    # Budget
+    system_prompt += format_budget_for_prompt(user_id)
+
+    # ── Recherche web si nécessaire ───────────────────────────────────────────
     if should_search_web(user_input):
         with st.spinner("🔍 Recherche web en cours..."):
             web_results = search_web(user_input)

@@ -220,6 +220,9 @@ def show_onboarding() -> bool:
                 "google_sub":     prefill.get("google_sub", ""),
                 # Champs enrichis — complétés plus tard
                 "age":                    None,
+                "poids":                  None,
+                "taille":                 None,
+                "budget_mensuel":         0,
                 "profession":             "",
                 "orientation_sexuelle":   "",
                 "situation_maritale":     "",
@@ -228,6 +231,7 @@ def show_onboarding() -> bool:
                 "habitudes_alimentaires": "",
                 "transport":              "",
                 "garde_robe":             {"description": "", "photos": []},
+                "consents":               {"profil": True, "claude": True, "suggestions": True},
                 "onboarding_complete":         True,
                 "onboarding_lifestyle_complete": False,
             }
@@ -261,10 +265,23 @@ def show_profile_form(profile: dict):
             ville  = st.text_input("Ville",   value=profile.get("ville",  ""))
             age    = st.number_input("Âge", min_value=11, max_value=120,
                                      value=max(11, int(profile.get("age") or 11)))
+            poids  = st.number_input("Poids (kg) *(optionnel)*", min_value=0, max_value=300,
+                                     value=int(profile.get("poids") or 0),
+                                     help="Utilisé pour des suggestions santé/alimentation personnalisées")
+            taille = st.number_input("Taille (cm) *(optionnel)*", min_value=0, max_value=250,
+                                     value=int(profile.get("taille") or 0),
+                                     help="Utilisé pour des suggestions de tenue vestimentaire")
         with c2:
             sexe       = st.selectbox("Sexe", sexe_opts, index=_idx(sexe_opts, profile.get("sexe", "")))
             profession = st.text_input("Profession", value=profile.get("profession", ""),
                                        placeholder="Ex : Infirmière, Étudiant…")
+            budget_mensuel = st.number_input(
+                "Budget mensuel (€) *(optionnel)*",
+                min_value=0, max_value=50000,
+                value=int(profile.get("budget_mensuel") or 0),
+                step=50,
+                help="Ton budget disponible chaque mois — pour les alertes et prédictions",
+            )
 
         st.markdown("**Vie personnelle**")
         orientation = st.selectbox("Orientation sexuelle", orient_opts,
@@ -370,11 +387,14 @@ def show_profile_form(profile: dict):
                     saved_photos.append(p.name)
 
         profile.update({
-            "prenom":    prenom.strip(),
-            "ville":     ville.strip(),
-            "age":       int(age) if age else None,
-            "sexe":      sexe,
-            "profession": profession.strip(),
+            "prenom":         prenom.strip(),
+            "ville":          ville.strip(),
+            "age":            int(age) if age else None,
+            "poids":          int(poids) if poids else None,
+            "taille":         int(taille) if taille else None,
+            "budget_mensuel": int(budget_mensuel) if budget_mensuel else 0,
+            "sexe":           sexe,
+            "profession":     profession.strip(),
             "orientation_sexuelle": orientation,
             "situation_maritale":   situation,
             "famille":   {"a_enfants": a_enfants == "Oui",

@@ -16,6 +16,10 @@ def _format_profile(profile: dict) -> str:
     if profile.get("sexe"):         lines.append(f"- Genre : {profile['sexe']}")
     if profile.get("ville"):        lines.append(f"- Ville : {profile['ville']}")
     if profile.get("profession"):   lines.append(f"- Profession : {profile['profession']}")
+    if profile.get("poids"):        lines.append(f"- Poids : {profile['poids']} kg")
+    if profile.get("taille"):       lines.append(f"- Taille : {profile['taille']} cm")
+    if profile.get("budget_mensuel"):
+        lines.append(f"- Budget mensuel : {profile['budget_mensuel']} €")
 
     orientation = profile.get("orientation_sexuelle", "")
     if orientation and orientation != "Préfère ne pas préciser":

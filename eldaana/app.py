@@ -23,6 +23,7 @@ from humeur import show_humeur_widget, format_humeur_for_prompt
 from voyance import show_voyance_page
 from dashboard import show_dashboard
 from rgpd import show_rgpd_page
+from email_agent import show_email_page, format_email_summary_for_prompt
 from pathlib import Path
 
 # ── Configuration de la page ──────────────────────────────────────────────────
@@ -258,6 +259,23 @@ if st.session_state.page == "shopping":
         st.rerun()
     st.stop()
 
+# ── PAGE : EMAILS ────────────────────────────────────────────────────────────
+if st.session_state.page == "email":
+    col1, col2 = st.columns([1, 6])
+    with col1:
+        if logo_path.exists():
+            st.image(str(logo_path), width=64)
+    with col2:
+        st.markdown('<p class="eldaana-title">Eldaana</p>', unsafe_allow_html=True)
+        st.markdown('<p class="eldaana-subtitle">Mes emails</p>', unsafe_allow_html=True)
+    st.divider()
+    show_email_page(profile)
+    st.markdown("<br>", unsafe_allow_html=True)
+    if st.button("← Retour à la conversation"):
+        st.session_state.page = "chat"
+        st.rerun()
+    st.stop()
+
 # ── PAGE : BUDGET ────────────────────────────────────────────────────────────
 if st.session_state.page == "budget":
     col1, col2 = st.columns([1, 6])
@@ -389,6 +407,10 @@ with st.sidebar:
 
     if st.button("🌐 Ma vie numérique", use_container_width=True):
         st.session_state.page = "social"
+        st.rerun()
+
+    if st.button("📧 Mes emails", use_container_width=True):
+        st.session_state.page = "email"
         st.rerun()
 
     if st.button("🛒 Mes courses", use_container_width=True):
@@ -600,6 +622,9 @@ if user_input:
 
     # Budget
     system_prompt += format_budget_for_prompt(user_id)
+
+    # Emails (résumé non-lus/urgents si Gmail connecté)
+    system_prompt += format_email_summary_for_prompt(user_id)
 
     # ── Recherche web si nécessaire ───────────────────────────────────────────
     if should_search_web(user_input):

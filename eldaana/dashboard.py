@@ -178,20 +178,24 @@ def show_dashboard(profile: dict, weather: dict | None = None):
     # ── Accès rapide ──────────────────────────────────────────────────────────────
     st.markdown("<br>", unsafe_allow_html=True)
     st.markdown("**Accès rapide**")
-    c1, c2, c3, c4 = st.columns(4)
+    c1, c2, c3, c4, c5 = st.columns(5)
     with c1:
+        if st.button("📧 Emails", use_container_width=True):
+            st.session_state.page = "email"
+            st.rerun()
+    with c2:
         if st.button("🛒 Courses", use_container_width=True):
             st.session_state.page = "shopping"
             st.rerun()
-    with c2:
+    with c3:
         if st.button("💰 Budget", use_container_width=True):
             st.session_state.page = "budget"
             st.rerun()
-    with c3:
+    with c4:
         if st.button("🔮 Voyance", use_container_width=True):
             st.session_state.page = "voyance"
             st.rerun()
-    with c4:
+    with c5:
         if st.button("💬 Chat", use_container_width=True):
             st.session_state.page = "chat"
             st.rerun()

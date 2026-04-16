@@ -197,8 +197,8 @@ def show_voyance_page(profile: dict):
     """Page 'Voyance' dans Streamlit."""
     prenom = profile.get("prenom", "")
 
-    st.markdown("### 🔮 Prédictions & Voyance")
-    st.caption("Des estimations fun basées sur ton profil — pas des vérités absolues ! 😄")
+    st.markdown("### 🔮 Mes prédictions")
+    st.caption("Des estimations basées sur ton profil et des statistiques — pas des vérités absolues ! 😄")
 
     st.info(
         "✨ **Eldaana est une IA, pas une vraie voyante** — mais en croisant les données de ton profil "

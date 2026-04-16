@@ -305,7 +305,7 @@ if st.session_state.page == "voyance":
             st.image(str(logo_path), width=64)
     with col2:
         st.markdown('<p class="eldaana-title">Eldaana</p>', unsafe_allow_html=True)
-        st.markdown('<p class="eldaana-subtitle">Prédictions & Voyance</p>', unsafe_allow_html=True)
+        st.markdown('<p class="eldaana-subtitle">Mes prédictions</p>', unsafe_allow_html=True)
     st.divider()
     show_voyance_page(profile)
     st.markdown("<br>", unsafe_allow_html=True)
@@ -429,7 +429,7 @@ with st.sidebar:
         st.session_state.page = "budget"
         st.rerun()
 
-    if st.button("🔮 Voyance", use_container_width=True):
+    if st.button("🔮 Prédictions", use_container_width=True):
         st.session_state.page = "voyance"
         st.rerun()
 

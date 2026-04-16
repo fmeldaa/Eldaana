@@ -188,12 +188,19 @@ def show_onboarding() -> bool:
     else:
         prenom = prefill.get("prenom", "")
 
-    sexe  = ""
     ville = st.text_input(
         "Votre ville *",
         placeholder="Ex : Paris, Lyon, Dakar, Montréal…",
         help="Pour la météo et les suggestions du jour",
     )
+
+    sexe = st.radio(
+        "Vous êtes *",
+        ["Femme", "Homme", "Non-binaire", "Préfère ne pas préciser"],
+        horizontal=True,
+        index=0,
+    )
+
     submitted = st.button("C'est parti avec Eldaana ✨", use_container_width=True, type="primary")
 
     if submitted:

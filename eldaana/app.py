@@ -24,6 +24,10 @@ from voyance import show_voyance_page
 from dashboard import show_dashboard
 from rgpd import show_rgpd_page
 from email_agent import show_email_page, format_email_summary_for_prompt
+from transport_alerts import (
+    check_departure_alert, show_departure_alert_banner,
+    show_transport_status_sidebar,
+)
 from pathlib import Path
 
 # ── Configuration de la page ──────────────────────────────────────────────────
@@ -392,6 +396,10 @@ with st.sidebar:
             f"{weather['emoji']} **{weather['city']}** · {weather['temp_current']}°C  \n"
             f"{weather['description']} · max {weather['temp_max']}°"
         )
+
+    # Statut transport en temps réel
+    show_transport_status_sidebar(profile, weather)
+
     st.divider()
 
     if not profile.get("onboarding_lifestyle_complete"):
@@ -580,6 +588,20 @@ with col2:
     )
 st.divider()
 
+# ── BANNIÈRE TRANSPORT URGENTE (avant tout le reste) ─────────────────────────
+# Vérifier si on est proche du départ ET qu'il y a une perturbation
+# (une seule vérif par session pour ne pas spammer l'API)
+if "transport_alert_checked" not in st.session_state:
+    st.session_state.transport_alert_checked = True
+    st.session_state.departure_alert = check_departure_alert(profile, weather)
+
+if st.session_state.get("departure_alert"):
+    show_departure_alert_banner(st.session_state.departure_alert)
+    if st.button("🔄 Vérifier à nouveau", key="refresh_transport"):
+        st.session_state.transport_alert_checked = False
+        st.session_state.departure_alert = None
+        st.rerun()
+
 # ── Humeur du jour (widget compact en haut du chat) ───────────────────────────
 user_id_chat = profile.get("user_id", "")
 with st.expander("😊 Comment tu te sens aujourd'hui ?", expanded=False):
@@ -625,6 +647,18 @@ if user_input:
 
     # Emails (résumé non-lus/urgents si Gmail connecté)
     system_prompt += format_email_summary_for_prompt(user_id)
+
+    # Alertes transport (si perturbation sur les lignes de l'utilisateur)
+    dep_alert = st.session_state.get("departure_alert")
+    if dep_alert and dep_alert.get("tc_alerts"):
+        from transport_alerts import format_departure_alert_message
+        alert_txt = format_departure_alert_message(dep_alert)
+        if alert_txt:
+            system_prompt += (
+                f"\n\n[ALERTE TRANSPORT DÉPART]\n{alert_txt}\n"
+                "Mentionne cette alerte de manière proactive si l'utilisateur parle de son trajet ou de son départ.\n"
+                "[FIN ALERTE TRANSPORT]"
+            )
 
     # ── Recherche web si nécessaire ───────────────────────────────────────────
     if should_search_web(user_input):

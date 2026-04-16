@@ -14,6 +14,7 @@ from datetime import datetime
 from humeur import load_humeur, SUGGESTIONS_HUMEUR
 from budget import get_current_month_total
 from shopping import get_reminders
+from transport_alerts import get_transport_alerts, is_departure_window
 
 
 def show_dashboard(profile: dict, weather: dict | None = None):
@@ -138,6 +139,44 @@ def show_dashboard(profile: dict, weather: dict | None = None):
             st.markdown("""
             <div style="background:#f0fdf4;border:1.5px solid #86efac;border-radius:16px;padding:1rem;">
                 <p style="color:#16a34a;margin:0;text-align:center;">✅ Tout est OK !</p>
+            </div>
+            """, unsafe_allow_html=True)
+
+    # ── Ligne 3 : Transport ──────────────────────────────────────────────────────
+    lines_config = profile.get("transport_detail", {}).get("lines", [])
+    if lines_config:
+        st.markdown("**🚆 Mes transports**")
+        depart_heure = profile.get("transport_detail", {}).get("depart_heure", "")
+        in_window    = is_departure_window(profile, tz_name=weather.get("timezone") if weather else None)
+
+        # Affichage simplifié dans le dashboard (pas d'appel API systématique)
+        if in_window:
+            st.markdown(f"""
+            <div style="background:#fffbeb;border:1.5px solid #f59e0b;border-radius:12px;padding:0.8rem 1rem;">
+                <p style="margin:0;font-size:0.9rem;color:#92400e;font-weight:600;">
+                    ⏰ Départ bientôt{" à " + depart_heure if depart_heure else ""}
+                </p>
+                <p style="margin:0.3rem 0 0;font-size:0.82rem;color:#6b7280;">
+                    Lignes : {", ".join(lines_config[:3])}
+                </p>
+            </div>
+            """, unsafe_allow_html=True)
+            if st.button("🔍 Vérifier les perturbations maintenant", use_container_width=True, key="dash_transport_check"):
+                with st.spinner("Vérification en cours…"):
+                    alerts = get_transport_alerts(profile, weather)
+                if alerts["has_alerts"]:
+                    st.warning(f"⚠️ Perturbation détectée sur {', '.join({a['line'] for a in alerts['tc_alerts']})} !")
+                    st.session_state.page = "chat"  # → bannière s'affichera
+                    st.rerun()
+                else:
+                    st.success("✅ Trafic normal sur toutes tes lignes !")
+        else:
+            depart_str = f" · Départ habituel : {depart_heure}" if depart_heure else ""
+            st.markdown(f"""
+            <div style="background:#f0fdf4;border:1px solid #86efac;border-radius:12px;padding:0.6rem 0.8rem;">
+                <p style="margin:0;font-size:0.82rem;color:#16a34a;">
+                    🚆 {", ".join(lines_config[:3])}{depart_str}
+                </p>
             </div>
             """, unsafe_allow_html=True)
 

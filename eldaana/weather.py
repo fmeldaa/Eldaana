@@ -6,7 +6,11 @@ et génération du briefing du matin personnalisé.
 import requests
 from datetime import datetime
 from timezone_utils import get_local_now
-from transport_alerts import get_transport_alerts, format_transport_for_briefing
+from transport_alerts import (
+    get_transport_alerts, format_transport_for_briefing,
+    check_departure_alert, format_departure_alert_message,
+    is_departure_window,
+)
 
 GEOCODING_URL = "https://geocoding-api.open-meteo.com/v1/search"
 WEATHER_URL   = "https://api.open-meteo.com/v1/forecast"
@@ -186,13 +190,23 @@ def build_wakeup_message(weather: dict, profile: dict) -> str:
 
     accord = "prête" if sexe == "femme" else "prêt"
 
-    return (
+    base = (
         f"Bonjour {prenom} ! Il est {heure_str}. "
         f"Aujourd'hui à {weather['city']} : {weather['description']}, "
         f"{weather['temp_current']} degrés, avec un max de {weather['temp_max']}. "
         f"{positif} "
-        f"Tu es {accord} pour cette nouvelle journée ?"
     )
+
+    # Alertes transport au réveil (si départ bientôt)
+    transport_alert = ""
+    if is_departure_window(profile, tz_name=tz_name, window_min=120):
+        departure_alerts = check_departure_alert(profile, weather)
+        if departure_alerts and departure_alerts.get("tc_alerts"):
+            transport_alert = " " + format_departure_alert_message(departure_alerts)
+
+    suffix = transport_alert if transport_alert else f"Tu es {accord} pour cette nouvelle journée ?"
+
+    return base + suffix
 
 
 def build_briefing(weather: dict, profile: dict) -> str:

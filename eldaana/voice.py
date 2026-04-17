@@ -16,8 +16,12 @@ _executor = concurrent.futures.ThreadPoolExecutor(max_workers=2)
 
 # ── Nettoyage du texte ─────────────────────────────────────────────────────────
 
+OPENAI_TTS_MAX = 4000   # Limite API OpenAI TTS (max 4096)
+CHUNK_SIZE     = 3800   # Taille max par chunk pour les très longs textes
+
+
 def _clean(text: str) -> str:
-    # Supprime TOUS les emojis
+    """Nettoie le texte pour la synthèse vocale (supprime emojis et Markdown)."""
     emoji_pattern = re.compile(
         "["
         "\U0001F000-\U0001FFFF"
@@ -27,7 +31,6 @@ def _clean(text: str) -> str:
         "\u200d\u23cf\u23e9\u231a\ufe0f\u3030"
         "]+", flags=re.UNICODE)
     text = emoji_pattern.sub('', text)
-    # Supprime le Markdown
     text = re.sub(r'\*\*(.+?)\*\*', r'\1', text)
     text = re.sub(r'\*(.+?)\*',     r'\1', text)
     text = re.sub(r'#{1,6}\s+',     '',    text)
@@ -36,7 +39,34 @@ def _clean(text: str) -> str:
     text = re.sub(r'^[-•*]\s+',     '',    text, flags=re.MULTILINE)
     text = re.sub(r'\n+',           ' ',   text)
     text = re.sub(r'\s+',           ' ',   text).strip()
-    return text[:600] if len(text) > 600 else text
+    return text  # Plus de limite artificielle ici
+
+
+def _split_into_chunks(text: str, max_size: int = CHUNK_SIZE) -> list[str]:
+    """
+    Découpe le texte en morceaux à la frontière de phrases.
+    Évite de couper une phrase en plein milieu.
+    """
+    if len(text) <= max_size:
+        return [text]
+
+    chunks = []
+    remaining = text
+    while len(remaining) > max_size:
+        # Chercher la dernière phrase complète avant max_size
+        cut = remaining[:max_size]
+        # Chercher le dernier point, !, ? ou … avant la limite
+        for sep in ['. ', '! ', '? ', '… ', ', ']:
+            idx = cut.rfind(sep)
+            if idx > max_size // 2:   # au moins à mi-chemin
+                cut = remaining[:idx + len(sep)]
+                break
+        chunks.append(cut.strip())
+        remaining = remaining[len(cut):].strip()
+
+    if remaining:
+        chunks.append(remaining)
+    return chunks
 
 
 # ── OpenAI TTS ────────────────────────────────────────────────────────────────
@@ -97,28 +127,54 @@ def prepare_audio_async(text: str) -> "concurrent.futures.Future | None":
 
 
 def _speak_openai(text: str, precomputed: "concurrent.futures.Future | None" = None) -> bool:
-    """Joue la voix OpenAI TTS. Utilise le Future pré-calculé si disponible."""
+    """
+    Joue la voix OpenAI TTS.
+    - Texte court (≤ CHUNK_SIZE) : un seul appel, utilise le Future pré-calculé si dispo.
+    - Texte long : découpe en morceaux, génère en parallèle, joue tout.
+    """
     try:
         api_key = st.secrets["openai"]["api_key"]
         voice   = st.session_state.get("eldaana_voice",
                   st.secrets["openai"].get("voice", "nova"))
 
-        audio_bytes = None
+        chunks = _split_into_chunks(text)
 
-        # Cas 1 : audio déjà en cours de génération (parallèle)
-        if precomputed is not None:
-            try:
-                audio_bytes = precomputed.result(timeout=8)
-            except Exception:
-                pass
+        if len(chunks) == 1:
+            # Texte court — comportement habituel
+            audio_bytes = None
+            if precomputed is not None:
+                try:
+                    audio_bytes = precomputed.result(timeout=12)
+                except Exception:
+                    pass
+            if audio_bytes is None:
+                audio_bytes = _call_openai_tts(chunks[0], api_key, voice)
+            if audio_bytes:
+                st.audio(io.BytesIO(audio_bytes), format="audio/mp3", autoplay=True)
+                return True
 
-        # Cas 2 : pas de pré-calcul → générer maintenant sur le texte complet
-        if audio_bytes is None:
-            audio_bytes = _call_openai_tts(text, api_key, voice)
+        else:
+            # Texte long — générer tous les morceaux en parallèle
+            futures = [
+                _executor.submit(_call_openai_tts, chunk, api_key, voice)
+                for chunk in chunks
+            ]
+            # Collecter les résultats dans l'ordre
+            all_bytes = []
+            for f in futures:
+                try:
+                    b = f.result(timeout=20)
+                    if b:
+                        all_bytes.append(b)
+                except Exception:
+                    pass
 
-        if audio_bytes:
-            st.audio(io.BytesIO(audio_bytes), format="audio/mp3", autoplay=True)
-            return True
+            if all_bytes:
+                # Concaténer tous les MP3 et jouer d'un coup
+                combined = b"".join(all_bytes)
+                st.audio(io.BytesIO(combined), format="audio/mp3", autoplay=True)
+                return True
+
     except Exception:
         pass
     return False

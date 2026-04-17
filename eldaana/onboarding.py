@@ -107,15 +107,8 @@ def profile_summary(profile: dict) -> str:
 # ── Migration profil ancien format ────────────────────────────────────────────
 
 def _migrate_legacy():
-    """Migre l'ancien profile.json vers le nouveau format multi-users."""
-    legacy = DATA_DIR / "profile.json"
-    if legacy.exists() and not CURRENT_USER_FILE.exists():
-        with open(legacy, encoding="utf-8") as f:
-            profile = json.load(f)
-        if not profile.get("user_id"):
-            profile["user_id"] = profile.get("google_sub") or str(uuid.uuid4())
-        save_profile(profile)
-        legacy.rename(DATA_DIR / "profile_legacy.json")
+    """Désactivée — migration one-shot uniquement en local, jamais en production multi-users."""
+    pass
 
 
 # ── Onboarding Wizard ──────────────────────────────────────────────────────────

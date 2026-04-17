@@ -261,7 +261,7 @@ def build_briefing(weather: dict, profile: dict) -> str:
 
     lines += [
         "",
-        "Dis-moi comment tu vas — comment puis-je te rendre heureux aujourd'hui ? 💜",
+        f"Dis-moi comment tu vas — comment puis-je te rendre {'heureuse' if profile.get('sexe','').lower() == 'femme' else 'heureux'} aujourd'hui ? 💜",
     ]
 
     return "\n".join(lines)

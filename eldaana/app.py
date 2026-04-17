@@ -1,4 +1,5 @@
 import streamlit as st
+import streamlit.components.v1 as _components_uid
 from anthropic import Anthropic
 from system_prompt import get_system_prompt
 from onboarding import (
@@ -191,6 +192,45 @@ if "ANTHROPIC_API_KEY" in st.secrets:
 logo_path = Path(__file__).parent / "logo.png"
 LOGO = str(logo_path) if logo_path.exists() else "∞"
 client = Anthropic()
+
+# ── Restauration de session via localStorage ──────────────────────────────────
+# Étape 1 : uid transmis par localStorage via redirect JS → restaurer la session
+_uid_param = st.query_params.get("uid", "")
+if _uid_param and "user_id" not in st.session_state:
+    from storage import db_load as _db_load_uid
+    _p = _db_load_uid(_uid_param)
+    if _p and _p.get("onboarding_complete") and not _p.get("anonymized"):
+        st.session_state["user_id"] = _uid_param
+        # Nettoyer l'URL (retirer ?uid=)
+        st.query_params.clear()
+        if st.session_state.lang != "fr":
+            st.query_params["lang"] = st.session_state.lang
+
+# Étape 2 : injecter le JS localStorage
+if "user_id" in st.session_state:
+    # Utilisateur connecté → sauvegarder son ID dans localStorage du navigateur
+    _uid_js = st.session_state["user_id"]
+    _components_uid.html(f"""
+    <script>
+    try {{ localStorage.setItem('eldaana_uid', '{_uid_js}'); }} catch(e) {{}}
+    </script>
+    """, height=0)
+else:
+    # Pas de session → lire localStorage et rediriger si un ID est trouvé
+    _components_uid.html("""
+    <script>
+    (function() {
+        try {
+            var uid = localStorage.getItem('eldaana_uid');
+            if (uid && uid.length > 5 && window.location.search.indexOf('uid=') === -1) {
+                var url = new URL(window.location.href);
+                url.searchParams.set('uid', uid);
+                window.location.replace(url.toString());
+            }
+        } catch(e) {}
+    })();
+    </script>
+    """, height=0)
 
 # ── Routing : onboarding si pas encore fait ───────────────────────────────────
 if "page" not in st.session_state:
@@ -493,6 +533,12 @@ with st.sidebar:
 
     if st.button("🔀 Changer d'utilisateur", use_container_width=True):
         logout()
+        # Effacer le localStorage pour que la prochaine personne ne récupère pas ce compte
+        _components_uid.html("""
+        <script>
+        try { localStorage.removeItem('eldaana_uid'); } catch(e) {}
+        </script>
+        """, height=0)
         st.session_state.page = "onboarding"
         st.rerun()
 

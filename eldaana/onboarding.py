@@ -23,23 +23,24 @@ LOGO_PATH         = Path(__file__).parent / "logo.png"
 # ── Gestion des identifiants utilisateur ──────────────────────────────────────
 
 def _read_current_user_id() -> str | None:
-    """Lit l'ID de l'utilisateur actif depuis le disque."""
-    if CURRENT_USER_FILE.exists():
-        with open(CURRENT_USER_FILE, encoding="utf-8") as f:
-            return json.load(f).get("user_id")
-    return None
+    """
+    NE PAS UTILISER en production multi-utilisateurs.
+    current_user.json est partagé côté serveur — chaque utilisateur
+    doit être identifié uniquement via st.session_state.
+    Conservé uniquement pour la migration locale.
+    """
+    return None  # Désactivé — session uniquement
 
 
 def _write_current_user_id(user_id: str):
-    """Sauvegarde l'ID de l'utilisateur actif sur le disque."""
-    DATA_DIR.mkdir(parents=True, exist_ok=True)
-    with open(CURRENT_USER_FILE, "w", encoding="utf-8") as f:
-        json.dump({"user_id": user_id}, f)
+    """No-op en production. Ne pas écrire de fichier partagé côté serveur."""
+    pass  # Désactivé
 
 
 def get_active_user_id() -> str | None:
-    """Retourne l'ID de l'utilisateur actif (session > disque)."""
-    return st.session_state.get("user_id") or _read_current_user_id()
+    """Retourne l'ID de l'utilisateur actif — SESSION UNIQUEMENT.
+    Chaque onglet / appareil a sa propre session Streamlit indépendante."""
+    return st.session_state.get("user_id")
 
 
 def _profile_path(user_id: str) -> Path:
@@ -70,7 +71,6 @@ def save_profile(profile: dict):
 
     db_save(profile)
     st.session_state["user_id"] = user_id
-    _write_current_user_id(user_id)
 
 
 def is_onboarding_done() -> bool:
@@ -79,14 +79,11 @@ def is_onboarding_done() -> bool:
 
 
 def logout():
-    """Déconnecte l'utilisateur actif (nettoie session + disque)."""
-    st.session_state.pop("user_id", None)
-    st.session_state.pop("google_prefill", None)
-    st.session_state.pop("messages", None)
-    st.session_state.pop("display_messages", None)
-    st.session_state.pop("weather", None)
-    if CURRENT_USER_FILE.exists():
-        CURRENT_USER_FILE.unlink()
+    """Déconnecte l'utilisateur actif (nettoie la session uniquement)."""
+    for key in ["user_id", "google_prefill", "messages", "display_messages",
+                "weather", "transport_alert_checked", "departure_alert",
+                "email_list", "email_summary"]:
+        st.session_state.pop(key, None)
 
 
 # ── Résumé sidebar ─────────────────────────────────────────────────────────────
@@ -161,7 +158,6 @@ def show_onboarding() -> bool:
         existing = load_profile_by_google_sub(google_sub)
         if existing and existing.get("onboarding_complete"):
             st.session_state["user_id"] = google_sub
-            _write_current_user_id(google_sub)
             return True
 
         # Nouvel utilisateur Google → pré-remplissage

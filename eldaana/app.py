@@ -193,44 +193,47 @@ logo_path = Path(__file__).parent / "logo.png"
 LOGO = str(logo_path) if logo_path.exists() else "∞"
 client = Anthropic()
 
-# ── Restauration de session via localStorage ──────────────────────────────────
-# Étape 1 : uid transmis par localStorage via redirect JS → restaurer la session
+# ── Restauration de session via localStorage (window.parent pour iframe Streamlit) ──
+# Étape 1 : uid lu depuis localStorage → transmis via ?uid= dans l'URL
 _uid_param = st.query_params.get("uid", "")
 if _uid_param and "user_id" not in st.session_state:
     from storage import db_load as _db_load_uid
     _p = _db_load_uid(_uid_param)
     if _p and _p.get("onboarding_complete") and not _p.get("anonymized"):
         st.session_state["user_id"] = _uid_param
-        # Nettoyer l'URL (retirer ?uid=)
-        st.query_params.clear()
-        if st.session_state.lang != "fr":
-            st.query_params["lang"] = st.session_state.lang
 
-# Étape 2 : injecter le JS localStorage
+# Étape 2 : JS via window.parent (le composant tourne dans un iframe Streamlit)
 if "user_id" in st.session_state:
-    # Utilisateur connecté → sauvegarder son ID dans localStorage du navigateur
     _uid_js = st.session_state["user_id"]
     _components_uid.html(f"""
     <script>
-    try {{ localStorage.setItem('eldaana_uid', '{_uid_js}'); }} catch(e) {{}}
+    (function() {{
+        try {{
+            // Sauvegarder dans le localStorage de la fenêtre principale
+            var store = window.parent ? window.parent.localStorage : localStorage;
+            store.setItem('eldaana_uid', '{_uid_js}');
+        }} catch(e) {{}}
+    }})();
     </script>
-    """, height=0)
+    """, height=1)
 else:
-    # Pas de session → lire localStorage et rediriger si un ID est trouvé
+    # Pas de session → lire localStorage et rediriger la fenêtre principale
     _components_uid.html("""
     <script>
     (function() {
         try {
-            var uid = localStorage.getItem('eldaana_uid');
-            if (uid && uid.length > 5 && window.location.search.indexOf('uid=') === -1) {
-                var url = new URL(window.location.href);
+            var store = window.parent ? window.parent.localStorage : localStorage;
+            var uid = store.getItem('eldaana_uid');
+            var win  = window.parent ? window.parent : window;
+            if (uid && uid.length > 5 && win.location.search.indexOf('uid=') === -1) {
+                var url = new URL(win.location.href);
                 url.searchParams.set('uid', uid);
-                window.location.replace(url.toString());
+                win.location.replace(url.toString());
             }
         } catch(e) {}
     })();
     </script>
-    """, height=0)
+    """, height=1)
 
 # ── Routing : onboarding si pas encore fait ───────────────────────────────────
 if "page" not in st.session_state:
@@ -533,12 +536,17 @@ with st.sidebar:
 
     if st.button("🔀 Changer d'utilisateur", use_container_width=True):
         logout()
-        # Effacer le localStorage pour que la prochaine personne ne récupère pas ce compte
+        # Effacer le localStorage (window.parent car iframe Streamlit)
         _components_uid.html("""
         <script>
-        try { localStorage.removeItem('eldaana_uid'); } catch(e) {}
+        (function() {
+            try {
+                var store = window.parent ? window.parent.localStorage : localStorage;
+                store.removeItem('eldaana_uid');
+            } catch(e) {}
+        })();
         </script>
-        """, height=0)
+        """, height=1)
         st.session_state.page = "onboarding"
         st.rerun()
 

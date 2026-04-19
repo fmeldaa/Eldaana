@@ -598,6 +598,7 @@ def show_transport_status_sidebar(profile: dict, weather: dict = None):
     """
     Affiche un mini-résumé transport dans la sidebar.
     Vert si tout va bien, rouge si perturbation.
+    Couleurs adaptées au fond sombre de la sidebar (#1A0A2E).
     """
     lines = profile.get("transport_detail", {}).get("lines", [])
     if not lines:
@@ -611,25 +612,24 @@ def show_transport_status_sidebar(profile: dict, weather: dict = None):
     depart_heure = profile.get("transport_detail", {}).get("depart_heure", "")
 
     if alerts["has_alerts"]:
-        nb = len(alerts["tc_alerts"])
         label_lines = ", ".join(list({a["line"] for a in alerts["tc_alerts"]})[:2])
         st.markdown(f"""
-        <div style="background:#fef2f2;border:1px solid #ef4444;border-radius:10px;
+        <div style="background:rgba(239,68,68,0.15);border:1px solid #ef4444;border-radius:10px;
                     padding:0.5rem 0.7rem;margin:0.3rem 0;">
-            <p style="margin:0;font-size:0.82rem;color:#991b1b;font-weight:600;">
+            <p style="margin:0;font-size:0.82rem;color:#fca5a5;font-weight:600;">
                 🔴 Perturbation — {label_lines}
             </p>
-            {"<p style='margin:0;font-size:0.78rem;color:#6b7280;'>Départ : " + depart_heure + "</p>" if depart_heure else ""}
+            {"<p style='margin:0;font-size:0.75rem;color:#e9d5ff;'>Départ : " + depart_heure + "</p>" if depart_heure else ""}
         </div>
         """, unsafe_allow_html=True)
     else:
         label = f"{', '.join(lines[:2])}"
         st.markdown(f"""
-        <div style="background:#f0fdf4;border:1px solid #86efac;border-radius:10px;
+        <div style="background:rgba(34,197,94,0.12);border:1px solid #22c55e;border-radius:10px;
                     padding:0.5rem 0.7rem;margin:0.3rem 0;">
-            <p style="margin:0;font-size:0.82rem;color:#16a34a;font-weight:600;">
+            <p style="margin:0;font-size:0.82rem;color:#86efac;font-weight:600;">
                 ✅ {label} — trafic normal
             </p>
-            {"<p style='margin:0;font-size:0.78rem;color:#6b7280;'>Départ : " + depart_heure + "</p>" if depart_heure else ""}
+            {"<p style='margin:0;font-size:0.75rem;color:#e9d5ff;'>Départ : " + depart_heure + "</p>" if depart_heure else ""}
         </div>
         """, unsafe_allow_html=True)

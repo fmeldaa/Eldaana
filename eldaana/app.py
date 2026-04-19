@@ -167,6 +167,12 @@ st.markdown("""
         background: white !important;
     }
 
+    /* ── Widget transport sidebar : forcer couleurs visibles ── */
+    [data-testid="stSidebar"] .transport-alert p,
+    [data-testid="stSidebar"] .transport-ok p {
+        color: inherit !important;
+    }
+
     /* ── Checkboxes : couleur violette ── */
     [data-testid="stCheckbox"] svg {
         color: #7B2FBE !important;
@@ -193,8 +199,9 @@ logo_path = Path(__file__).parent / "logo.png"
 LOGO = str(logo_path) if logo_path.exists() else "∞"
 client = Anthropic()
 
-# ── Restauration de session via localStorage (window.parent pour iframe Streamlit) ──
-# Étape 1 : uid lu depuis localStorage → transmis via ?uid= dans l'URL
+# ── Restauration de session via ?uid= dans l'URL ─────────────────────────────
+# Mécanisme fiable : Python écrit l'uid dans st.query_params (URL du navigateur).
+# L'URL ?uid=xxx est mémorisée par le navigateur et l'APK Android (voir MainActivity).
 _uid_param = st.query_params.get("uid", "")
 if _uid_param and "user_id" not in st.session_state:
     from storage import db_load as _db_load_uid
@@ -202,38 +209,10 @@ if _uid_param and "user_id" not in st.session_state:
     if _p and _p.get("onboarding_complete") and not _p.get("anonymized"):
         st.session_state["user_id"] = _uid_param
 
-# Étape 2 : JS via window.parent (le composant tourne dans un iframe Streamlit)
+# Écrire l'uid dans l'URL dès que la session est active
 if "user_id" in st.session_state:
-    _uid_js = st.session_state["user_id"]
-    _components_uid.html(f"""
-    <script>
-    (function() {{
-        try {{
-            // Sauvegarder dans le localStorage de la fenêtre principale
-            var store = window.parent ? window.parent.localStorage : localStorage;
-            store.setItem('eldaana_uid', '{_uid_js}');
-        }} catch(e) {{}}
-    }})();
-    </script>
-    """, height=1)
-else:
-    # Pas de session → lire localStorage et rediriger la fenêtre principale
-    _components_uid.html("""
-    <script>
-    (function() {
-        try {
-            var store = window.parent ? window.parent.localStorage : localStorage;
-            var uid = store.getItem('eldaana_uid');
-            var win  = window.parent ? window.parent : window;
-            if (uid && uid.length > 5 && win.location.search.indexOf('uid=') === -1) {
-                var url = new URL(win.location.href);
-                url.searchParams.set('uid', uid);
-                win.location.replace(url.toString());
-            }
-        } catch(e) {}
-    })();
-    </script>
-    """, height=1)
+    if st.query_params.get("uid") != st.session_state["user_id"]:
+        st.query_params["uid"] = st.session_state["user_id"]
 
 # ── Routing : onboarding si pas encore fait ───────────────────────────────────
 if "page" not in st.session_state:

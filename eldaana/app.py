@@ -1,7 +1,7 @@
 import streamlit as st
 import streamlit.components.v1 as _components_uid
 from anthropic import Anthropic
-from system_prompt import get_system_prompt
+from system_prompt import get_system_prompt, get_voice_mode_suffix
 from onboarding import (
     is_onboarding_done,
     show_onboarding,
@@ -11,7 +11,8 @@ from onboarding import (
     logout,
 )
 from weather import get_weather, build_briefing, build_wakeup_message
-from voice import speak, stop, VOICE_OPTIONS, prepare_audio_async  # noqa
+from voice import speak, stop, VOICE_OPTIONS, prepare_audio_async, speak_from_prefetched, estimate_speech_duration  # noqa
+from voice_input import show_mic_button, show_speaking_indicator, inject_mic_auto_trigger
 from social_connect import show_social_connect
 from gemini_search import should_search_web, search_web, format_web_results_for_prompt
 from shopping import (
@@ -461,7 +462,32 @@ with st.sidebar:
 
     st.markdown("<br>", unsafe_allow_html=True)
 
-    # Toggle voix — sur une seule ligne
+    # ── Mode conversation vocale ──────────────────────────────────────────────
+    if "voice_mode" not in st.session_state:
+        st.session_state.voice_mode = False
+
+    col_tog2, col_lbl2 = st.columns([1, 3])
+    with col_tog2:
+        voice_mode = st.toggle("vm", value=st.session_state.voice_mode,
+                               key="voice_mode_toggle", label_visibility="collapsed")
+    with col_lbl2:
+        lbl2 = "🎙️ Mode vocal ON" if voice_mode else "🎙️ Mode vocal OFF"
+        st.markdown(
+            f'<p style="color:#C9A84C;font-size:0.85rem;font-weight:600;margin:8px 0 0 0;">{lbl2}</p>',
+            unsafe_allow_html=True
+        )
+    st.session_state.voice_mode = voice_mode
+
+    if voice_mode:
+        st.markdown(
+            '<p style="color:#F0E6FF;font-size:0.75rem;margin:2px 0 6px 8px;opacity:0.7;">'
+            'Micro actif · Réponses courtes · Modèle rapide</p>',
+            unsafe_allow_html=True
+        )
+        # En mode vocal, TTS est forcément activée
+        st.session_state.voice_on = True
+
+    # ── Toggle TTS seul ───────────────────────────────────────────────────────
     if "voice_on" not in st.session_state:
         st.session_state.voice_on = True
 
@@ -483,7 +509,7 @@ with st.sidebar:
         stop()
 
     # Sélecteur de voix — toujours visible si voix activée
-    if voice_on:
+    if voice_on or voice_mode:
         st.markdown(
             '<p style="color:#F0E6FF;font-size:0.82rem;margin:8px 0 4px 0;">'
             '🎙️ Choix de la voix</p>',
@@ -650,9 +676,50 @@ for msg in st.session_state.display_messages:
     with st.chat_message(msg["role"], avatar=LOGO if msg["role"] == "assistant" else None):
         st.markdown(msg["content"])
 
-# Zone de saisie
-user_input = st.chat_input(f"Écris ton message à Eldaana…")
+# ── Saisie : micro (mode vocal) + texte ──────────────────────────────────────
+_voice_mode = st.session_state.get("voice_mode", False)
+_voice_on   = st.session_state.get("voice_on", True)
 
+# Initialiser le compteur de tour pour le micro (recrée le composant à chaque tour)
+if "voice_turn" not in st.session_state:
+    st.session_state.voice_turn = 0
+
+user_input = None
+
+if _voice_mode:
+    # ── Zone micro proéminente ────────────────────────────────────────────
+    st.markdown("""
+    <div style="
+        background:rgba(192,132,252,0.08);
+        border:1.5px solid #c084fc;
+        border-radius:20px;
+        padding:1rem 1.2rem 0.5rem 1.2rem;
+        margin:0.5rem 0;
+    ">
+        <p style="color:#7c3aed;font-size:0.85rem;font-weight:600;margin:0 0 0.6rem 0;">
+            🎙️ Mode conversation — Appuie sur le bouton et parle
+        </p>
+    </div>
+    """, unsafe_allow_html=True)
+
+    mic_key = f"mic_{st.session_state.voice_turn}"
+    voice_transcript = show_mic_button(key=mic_key)
+
+    if voice_transcript:
+        user_input = voice_transcript
+        st.session_state.voice_turn += 1   # recrée le micro au prochain tour
+
+    # Texte toujours disponible en fallback
+    text_input = st.chat_input("… ou écris ton message")
+    if text_input:
+        user_input = text_input
+        st.session_state.voice_turn += 1
+
+else:
+    # ── Saisie texte classique ────────────────────────────────────────────
+    user_input = st.chat_input(f"Écris ton message à Eldaana…")
+
+# ── Traitement du message ─────────────────────────────────────────────────────
 if user_input:
     st.session_state.display_messages.append({"role": "user", "content": user_input})
     st.session_state.messages.append({"role": "user", "content": user_input})
@@ -671,6 +738,10 @@ if user_input:
 
     # ── Construction du prompt système enrichi ────────────────────────────────
     system_prompt = get_system_prompt(profile)
+
+    # Mode vocal : réponses courtes + sans markdown
+    if _voice_mode:
+        system_prompt += get_voice_mode_suffix()
 
     # Humeur du jour
     system_prompt += format_humeur_for_prompt(user_id)
@@ -693,8 +764,8 @@ if user_input:
                 "[FIN ALERTE TRANSPORT]"
             )
 
-    # ── Recherche web si nécessaire ───────────────────────────────────────────
-    if should_search_web(user_input):
+    # ── Recherche web si nécessaire (désactivée en mode vocal pour la rapidité) ──
+    if not _voice_mode and should_search_web(user_input):
         with st.spinner("🔍 Recherche web en cours..."):
             web_results = search_web(user_input)
         if web_results:
@@ -714,20 +785,62 @@ if user_input:
     # ── Suivi courses général ─────────────────────────────────────────────────
     system_prompt += format_shopping_for_prompt(user_id)
 
+    # ── Modèle : Haiku (rapide) en mode vocal, Opus sinon ────────────────────
+    _model      = "claude-haiku-3-5-20241022" if _voice_mode else "claude-opus-4-6"
+    _max_tokens = 350 if _voice_mode else 1024
+
+    # ── Streaming avec pré-génération TTS phrase par phrase ──────────────────
     with st.chat_message("assistant", avatar=LOGO):
+        reply_placeholder = st.empty()
+        full_reply   = ""
+        sent_buffer  = ""     # tampon pour détecter les fins de phrase
+        tts_futures  = []     # futures des TTS pré-générées
+
         with client.messages.stream(
-            model="claude-opus-4-6",
-            max_tokens=1024,
+            model=_model,
+            max_tokens=_max_tokens,
             system=system_prompt,
             messages=st.session_state.messages,
         ) as stream:
-            reply = st.write_stream(stream.text_stream)
+            for chunk in stream.text_stream:
+                full_reply  += chunk
+                sent_buffer += chunk
+                reply_placeholder.markdown(full_reply + "▌")
 
-    # Dès que le texte est complet → lancer TTS en parallèle immédiatement
-    voice_on = st.session_state.get("voice_on", True)
-    if voice_on:
-        tts_future = prepare_audio_async(reply)
-        speak(reply, precomputed=tts_future)
+                # Dès qu'une phrase est complète → lancer la TTS en background
+                if _voice_on:
+                    for sep in ['. ', '! ', '? ', '.\n', '!\n', '?\n']:
+                        idx = sent_buffer.find(sep)
+                        if idx > 15:   # au moins 15 chars = phrase significative
+                            sentence   = sent_buffer[:idx + 1].strip()
+                            sent_buffer = sent_buffer[idx + len(sep):]
+                            f = prepare_audio_async(sentence)
+                            if f:
+                                tts_futures.append(f)
+                            break
 
-    st.session_state.display_messages.append({"role": "assistant", "content": reply})
-    st.session_state.messages.append({"role": "assistant", "content": reply})
+        reply_placeholder.markdown(full_reply)
+
+        # Ajouter le reste du tampon (dernière phrase sans ponctuation finale)
+        if sent_buffer.strip() and _voice_on:
+            f = prepare_audio_async(sent_buffer.strip())
+            if f:
+                tts_futures.append(f)
+
+    # ── Lecture audio : depuis les futures pré-générés ────────────────────────
+    if _voice_on:
+        if tts_futures:
+            speak_from_prefetched(tts_futures, fallback_text=full_reply)
+        else:
+            # Texte très court → pas eu le temps de pré-générer → générer maintenant
+            tts_future = prepare_audio_async(full_reply)
+            speak(full_reply, precomputed=tts_future)
+
+        # Mode vocal : déclencher le micro automatiquement après la TTS
+        if _voice_mode:
+            show_speaking_indicator()
+            duration = estimate_speech_duration(full_reply)
+            inject_mic_auto_trigger(duration)
+
+    st.session_state.display_messages.append({"role": "assistant", "content": full_reply})
+    st.session_state.messages.append({"role": "assistant", "content": full_reply})

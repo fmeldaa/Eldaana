@@ -6,3 +6,4 @@ supabase>=2.7.0
 timezonefinder>=6.2.0
 pytz>=2024.1
 google-genai>=1.0.0
+streamlit-mic-recorder>=0.0.8

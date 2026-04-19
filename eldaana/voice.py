@@ -223,6 +223,51 @@ def speak(text: str, precomputed=None):
     _speak_browser(clean_text)
 
 
+def speak_from_prefetched(futures: list, fallback_text: str = "") -> bool:
+    """
+    Joue l'audio depuis des futures pré-générés pendant le streaming.
+    Retourne True si la lecture a réussi, False sinon.
+    Les futures sont des concurrent.futures.Future retournant des bytes MP3.
+    """
+    if not futures:
+        if fallback_text:
+            speak(fallback_text)
+        return bool(fallback_text)
+
+    try:
+        all_bytes = []
+        for f in futures:
+            if f is None:
+                continue
+            try:
+                b = f.result(timeout=15)
+                if b:
+                    all_bytes.append(b)
+            except Exception:
+                pass
+
+        if all_bytes:
+            combined = b"".join(all_bytes)
+            st.audio(io.BytesIO(combined), format="audio/mp3", autoplay=True)
+            return True
+    except Exception:
+        pass
+
+    # Fallback : génération complète
+    if fallback_text:
+        speak(fallback_text)
+    return False
+
+
+def estimate_speech_duration(text: str) -> float:
+    """
+    Estime la durée de lecture TTS en secondes.
+    Approximation : ~12 caractères/seconde pour le français.
+    """
+    clean = _clean(text)
+    return max(1.5, len(clean) / 12.0)
+
+
 def stop():
     components.html(
         "<script>window.speechSynthesis.cancel();</script>",

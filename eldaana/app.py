@@ -479,9 +479,25 @@ with st.sidebar:
     st.session_state.voice_mode = voice_mode
 
     if voice_mode:
+        import urllib.parse
+        _voice_base = st.secrets.get("VOICE_SERVER_URL", "http://localhost:8000")
+        # Construire l'URL de retour avec le uid de l'utilisateur
+        _app_url    = f"https://5yrhias7zkwzdlnkjycrbr.streamlit.app/?uid={user_id}"
+        _back_param = urllib.parse.quote(_app_url, safe="")
+        _voice_url  = f"{_voice_base}/?back={_back_param}"
         st.markdown(
-            '<p style="color:#F0E6FF;font-size:0.75rem;margin:2px 0 6px 8px;opacity:0.7;">'
-            'Micro actif · Réponses courtes · Modèle rapide</p>',
+            f'''<div style="margin:8px 0 4px 0;">
+            <a href="{_voice_url}" target="_blank" style="
+                display:inline-flex;align-items:center;gap:8px;
+                background:linear-gradient(135deg,#C084FC,#818CF8);
+                color:white;text-decoration:none;
+                border-radius:14px;padding:9px 18px;
+                font-size:0.85rem;font-weight:700;
+                box-shadow:0 0 16px rgba(192,132,252,0.4);">
+                🎙️ Ouvrir Eldaana Voice →
+            </a></div>
+            <p style="color:#F0E6FF;font-size:0.75rem;margin:4px 0 6px 8px;opacity:0.7;">
+            Conversation vocale temps réel · Premium</p>''',
             unsafe_allow_html=True
         )
         # En mode vocal, TTS est forcément activée

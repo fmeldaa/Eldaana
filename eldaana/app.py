@@ -704,8 +704,8 @@ if "voice_turn" not in st.session_state:
 user_input = None
 
 if _voice_mode:
-    # Mode vocal ON → EldaanaVoice, saisie texte uniquement ici
-    user_input = st.chat_input("… ou écris ton message")
+    # Mode vocal ON → EldaanaVoice, saisie texte toujours disponible
+    user_input = st.chat_input("💬 Écris ton message à Eldaana…")
 
 else:
     # ── Saisie texte classique ────────────────────────────────────────────
@@ -778,7 +778,7 @@ if user_input:
     system_prompt += format_shopping_for_prompt(user_id)
 
     # ── Modèle : Haiku (rapide) en mode vocal, Opus sinon ────────────────────
-    _model      = "claude-haiku-3-5-20241022" if _voice_mode else "claude-opus-4-6"
+    _model      = "claude-haiku-4-5-20251001" if _voice_mode else "claude-opus-4-6"
     _max_tokens = 350 if _voice_mode else 1024
 
     # ── Streaming avec pré-génération TTS phrase par phrase ──────────────────

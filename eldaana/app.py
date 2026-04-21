@@ -704,33 +704,8 @@ if "voice_turn" not in st.session_state:
 user_input = None
 
 if _voice_mode:
-    # ── Zone micro proéminente ────────────────────────────────────────────
-    st.markdown("""
-    <div style="
-        background:rgba(192,132,252,0.08);
-        border:1.5px solid #c084fc;
-        border-radius:20px;
-        padding:1rem 1.2rem 0.5rem 1.2rem;
-        margin:0.5rem 0;
-    ">
-        <p style="color:#7c3aed;font-size:0.85rem;font-weight:600;margin:0 0 0.6rem 0;">
-            🎙️ Mode conversation — Appuie sur le bouton et parle
-        </p>
-    </div>
-    """, unsafe_allow_html=True)
-
-    mic_key = f"mic_{st.session_state.voice_turn}"
-    voice_transcript = show_mic_button(key=mic_key)
-
-    if voice_transcript:
-        user_input = voice_transcript
-        st.session_state.voice_turn += 1   # recrée le micro au prochain tour
-
-    # Texte toujours disponible en fallback
-    text_input = st.chat_input("… ou écris ton message")
-    if text_input:
-        user_input = text_input
-        st.session_state.voice_turn += 1
+    # Mode vocal ON → EldaanaVoice, saisie texte uniquement ici
+    user_input = st.chat_input("… ou écris ton message")
 
 else:
     # ── Saisie texte classique ────────────────────────────────────────────

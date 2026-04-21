@@ -482,7 +482,8 @@ with st.sidebar:
         import urllib.parse
         _voice_base = st.secrets.get("VOICE_SERVER_URL", "http://localhost:8000")
         # Construire l'URL de retour avec le uid de l'utilisateur
-        _app_url    = f"https://5yrhias7zkwzdlnkjycrbr.streamlit.app/?uid={user_id}"
+        _uid        = st.session_state.get("user_id", "")
+        _app_url    = f"https://5yrhias7zkwzdlnkjycrbr.streamlit.app/?uid={_uid}"
         _back_param = urllib.parse.quote(_app_url, safe="")
         _voice_url  = f"{_voice_base}/?back={_back_param}"
         st.markdown(

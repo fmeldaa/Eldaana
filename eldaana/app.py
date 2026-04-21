@@ -828,11 +828,6 @@ if user_input:
             tts_future = prepare_audio_async(full_reply)
             speak(full_reply, precomputed=tts_future)
 
-        # Mode vocal : déclencher le micro automatiquement après la TTS
-        if _voice_mode:
-            show_speaking_indicator()
-            duration = estimate_speech_duration(full_reply)
-            inject_mic_auto_trigger(duration)
 
     st.session_state.display_messages.append({"role": "assistant", "content": full_reply})
     st.session_state.messages.append({"role": "assistant", "content": full_reply})

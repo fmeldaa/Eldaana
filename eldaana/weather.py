@@ -129,26 +129,85 @@ def get_weather(city: str) -> dict | None:
 
 
 def outfit_suggestion(weather: dict, sexe: str = "") -> str:
-    """Suggère une tenue selon la météo et le genre."""
+    """Suggère une tenue selon la météo et le genre (variée selon le jour)."""
+    import datetime, random
     temp   = weather["temp_max"]
     rain   = weather["rain_prob"] or 0
     wcode  = weather["weathercode"]
     femme  = sexe.lower() in ["femme"]
 
+    # Seed basé sur le jour pour varier sans être aléatoire à chaque rechargement
+    day_seed = datetime.date.today().toordinal()
+    rng = random.Random(day_seed)
+
     parts = []
 
     # Vêtements principaux selon température
     if temp >= 28:
-        parts.append("une robe légère ou un short" if femme else "un short et un t-shirt")
+        choices_f = [
+            "une robe légère ou un short",
+            "une robe fluide et des sandales",
+            "un crop top + jupe légère",
+            "une combinaison estivale",
+        ]
+        choices_h = [
+            "un short et un t-shirt",
+            "bermuda et polo",
+            "short en lin et t-shirt léger",
+            "tenue légère sport-chic",
+        ]
+        parts.append(rng.choice(choices_f if femme else choices_h))
         parts.append("couleurs claires recommandées")
     elif temp >= 22:
-        parts.append("une tenue légère — robe ou jupe" if femme else "pantalon léger et chemise")
+        choices_f = [
+            "une tenue légère — robe ou jupe",
+            "jupe midi + top",
+            "robe printanière",
+            "jean clair + blouse légère",
+        ]
+        choices_h = [
+            "pantalon léger et chemise",
+            "chino et polo",
+            "jean slim + t-shirt",
+            "pantalon en lin et chemise courte",
+        ]
+        parts.append(rng.choice(choices_f if femme else choices_h))
     elif temp >= 15:
-        parts.append("jean + haut + veste légère" if femme else "jean et veste légère")
+        choices_f = [
+            "jean + haut + veste légère",
+            "trench léger sur une robe",
+            "jean slim + pull fin + baskets",
+            "blazer décontracté sur un top",
+        ]
+        choices_h = [
+            "jean et veste légère",
+            "chino + chemise + cardigan",
+            "jean + pull col V",
+            "pantalon droit + bomber léger",
+        ]
+        parts.append(rng.choice(choices_f if femme else choices_h))
     elif temp >= 8:
-        parts.append("manteau chaud" + (" + collants" if femme else " + pull épais"))
+        choices_f = [
+            "manteau chaud + collants",
+            "doudoune courte + collants épais",
+            "manteau long + boots",
+            "pull oversize + legging chaud",
+        ]
+        choices_h = [
+            "manteau chaud + pull épais",
+            "doudoune + jean chaud",
+            "parka + pull en laine",
+            "manteau + écharpe légère",
+        ]
+        parts.append(rng.choice(choices_f if femme else choices_h))
     else:
-        parts.append("tenue bien chaude : manteau, écharpe et gants")
+        choices = [
+            "tenue bien chaude : manteau, écharpe et gants",
+            "grosse doudoune, bonnet et gants",
+            "manteau long, écharpe et sous-vêtements thermiques",
+            "tenue hivernale complète — couvre-toi bien !",
+        ]
+        parts.append(rng.choice(choices))
 
     # Pluie
     if rain >= 60 or wcode in [51, 53, 55, 61, 63, 65, 80, 81, 82]:

@@ -198,12 +198,12 @@ def show_voyance_page(profile: dict):
     prenom = profile.get("prenom", "")
 
     st.markdown("### 🔮 Mes prédictions")
-    st.caption("Des estimations basées sur ton profil et des statistiques — pas des vérités absolues ! 😄")
+    st.caption("Des estimations basées sur ton profil et des statistiques 🔮")
 
     st.info(
-        "✨ **Eldaana est une IA, pas une vraie voyante** — mais en croisant les données de ton profil "
-        "avec des statistiques réelles, elle peut te donner des projections probabilistes. "
-        "Prends ça comme un jeu !"
+        "✨ Eldaana est là pour t'accompagner et te soutenir. En croisant les données de ton profil "
+        "avec des statistiques réelles, elle peut te donner des projections probabilistes "
+        "— mais elle ne prendra pas de décisions à ta place."
     )
 
     # ── Suggestion repas ────────────────────────────────────────────────────────
@@ -265,7 +265,7 @@ def show_voyance_page(profile: dict):
     st.markdown("---")
     st.markdown("#### ❓ Pose ta propre question")
     q = st.text_input("Ta question à Eldaana :", placeholder="Ex: Vais-je être riche ? Quand trouverai-je l'amour ?")
-    if st.button("🔮 Consulter les étoiles", use_container_width=True) and q.strip():
+    if st.button("🔮 Fais moi rêver", use_container_width=True) and q.strip():
         st.session_state["question_libre"] = _fun_question(profile, q)
     if "question_libre" in st.session_state:
         st.markdown(f"""

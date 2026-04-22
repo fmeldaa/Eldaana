@@ -479,26 +479,16 @@ with st.sidebar:
     st.session_state.voice_mode = voice_mode
 
     if voice_mode:
-        import urllib.parse
         _voice_base = st.secrets.get("VOICE_SERVER_URL", "http://localhost:8000")
-        # Construire l'URL de retour avec le uid de l'utilisateur
         _uid        = st.session_state.get("user_id", "")
-        _app_url    = f"https://5yrhias7zkwzdlnkjycrbr.streamlit.app/?uid={_uid}"
-        _back_param = urllib.parse.quote(_app_url, safe="")
-        _voice_url  = f"{_voice_base}/?back={_back_param}"
+        _voice_url  = f"{_voice_base}/?uid={_uid}&embedded=true"
         st.markdown(
-            f'''<div style="margin:8px 0 4px 0;">
-            <a href="{_voice_url}" target="_blank" style="
-                display:inline-flex;align-items:center;gap:8px;
-                background:linear-gradient(135deg,#C084FC,#818CF8);
-                color:white;text-decoration:none;
-                border-radius:14px;padding:9px 18px;
-                font-size:0.85rem;font-weight:700;
-                box-shadow:0 0 16px rgba(192,132,252,0.4);">
-                🎙️ Ouvrir Eldaana Voice →
-            </a></div>
-            <p style="color:#F0E6FF;font-size:0.75rem;margin:4px 0 6px 8px;opacity:0.7;">
-            Conversation vocale temps réel · Premium</p>''',
+            f'''<iframe src="{_voice_url}"
+                style="width:100%;height:75vh;border:none;border-radius:20px;
+                       box-shadow:0 0 32px rgba(192,132,252,0.25);"
+                allow="microphone"
+                allowfullscreen>
+            </iframe>''',
             unsafe_allow_html=True
         )
         # En mode vocal, TTS est forcément activée

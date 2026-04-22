@@ -17,6 +17,7 @@ DATA_DIR          = Path(__file__).parent / "user_data"
 PROFILES_DIR      = DATA_DIR / "profiles"
 CURRENT_USER_FILE = DATA_DIR / "current_user.json"
 WARDROBE_DIR      = DATA_DIR / "wardrobe"
+PHOTOS_DIR        = DATA_DIR / "photos"
 LOGO_PATH         = Path(__file__).parent / "logo.png"
 
 
@@ -252,6 +253,30 @@ def show_profile_form(profile: dict):
 
     def _idx(lst, val, default=0):
         return lst.index(val) if val in lst else default
+
+    # ── Photo de profil (hors formulaire pour mise à jour immédiate) ─────────────
+    PHOTOS_DIR.mkdir(parents=True, exist_ok=True)
+    uid = get_active_user_id() or ""
+    photo_path = PHOTOS_DIR / f"{uid}.jpg" if uid else None
+    col_ph1, col_ph2 = st.columns([1, 3])
+    with col_ph1:
+        if photo_path and photo_path.exists():
+            st.image(str(photo_path), width=90)
+        else:
+            st.markdown(
+                '<div style="width:90px;height:90px;border-radius:50%;'
+                'background:linear-gradient(135deg,#C084FC,#818CF8);'
+                'display:flex;align-items:center;justify-content:center;'
+                'font-size:36px;">👤</div>', unsafe_allow_html=True
+            )
+    with col_ph2:
+        uploaded = st.file_uploader("📷 Photo de profil", type=["jpg","jpeg","png"],
+                                    key="profile_photo_upload")
+        if uploaded and photo_path:
+            with open(photo_path, "wb") as f:
+                f.write(uploaded.getbuffer())
+            st.success("Photo mise à jour !")
+            st.rerun()
 
     with st.form("profile_form"):
         st.markdown("**Identité**")

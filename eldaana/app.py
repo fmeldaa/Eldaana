@@ -198,6 +198,14 @@ if "ANTHROPIC_API_KEY" in st.secrets:
 # ── Constantes ─────────────────────────────────────────────────────────────────
 logo_path = Path(__file__).parent / "logo.png"
 LOGO = str(logo_path) if logo_path.exists() else "∞"
+
+def _get_user_avatar():
+    """Retourne le chemin de la photo de profil de l'utilisateur, ou None."""
+    uid = st.session_state.get("user_id", "")
+    if not uid:
+        return None
+    p = Path(__file__).parent / "user_data" / "photos" / f"{uid}.jpg"
+    return str(p) if p.exists() else None
 client = Anthropic()
 
 # ── Restauration de session via ?uid= dans l'URL ─────────────────────────────
@@ -679,8 +687,10 @@ if "messages" not in st.session_state:
     st.session_state.display_messages = [{"role": "assistant", "content": GREETING}]
 
 # Affichage de l'historique
+_user_avatar = _get_user_avatar()
 for msg in st.session_state.display_messages:
-    with st.chat_message(msg["role"], avatar=LOGO if msg["role"] == "assistant" else None):
+    _avatar = LOGO if msg["role"] == "assistant" else _user_avatar
+    with st.chat_message(msg["role"], avatar=_avatar):
         st.markdown(msg["content"])
 
 # ── Saisie : micro (mode vocal) + texte ──────────────────────────────────────
@@ -706,7 +716,7 @@ if user_input:
     st.session_state.display_messages.append({"role": "user", "content": user_input})
     st.session_state.messages.append({"role": "user", "content": user_input})
 
-    with st.chat_message("user"):
+    with st.chat_message("user", avatar=_user_avatar):
         st.markdown(user_input)
 
     # ── Détection automatique d'achats ───────────────────────────────────────

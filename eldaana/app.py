@@ -538,18 +538,38 @@ with st.sidebar:
         _voice_base = st.secrets.get("VOICE_SERVER_URL", "https://eldaana-voice.fly.dev")
         _uid        = st.session_state.get("user_id", "")
         _url_voice  = f"{_voice_base}/?uid={_uid}"
-        st.markdown(f'''
-            <a href="{_url_voice}"
-               style="display:block;background:linear-gradient(135deg,#7c3aed,#c084fc);
-                      color:#fff;font-weight:700;font-size:0.9rem;text-decoration:none;
-                      text-align:center;border-radius:14px;padding:11px 8px;margin:8px 0 2px 0;
-                      box-shadow:0 0 16px rgba(192,132,252,0.4);">
-                🎙️ Ouvrir Eldaana Voice →
-            </a>
-            <p style="color:#9ca3af;font-size:0.75rem;text-align:center;margin:4px 0 0 0;">
-                Conversation vocale temps réel · Premium
-            </p>
-        ''', unsafe_allow_html=True)
+        _app_url    = f"https://5yrhias7zkwzdlnkjycrbr.streamlit.app/?uid={_uid}"
+
+        if is_premium(_uid):
+            # ── Premium → lien vers Eldaana Voice ────────────────────────────
+            st.markdown(f'''
+                <a href="{_url_voice}"
+                   style="display:block;background:linear-gradient(135deg,#7c3aed,#c084fc);
+                          color:#fff;font-weight:700;font-size:0.9rem;text-decoration:none;
+                          text-align:center;border-radius:14px;padding:11px 8px;margin:8px 0 2px 0;
+                          box-shadow:0 0 16px rgba(192,132,252,0.4);">
+                    🎙️ Ouvrir Eldaana Voice →
+                </a>
+                <p style="color:#9ca3af;font-size:0.75rem;text-align:center;margin:4px 0 0 0;">
+                    Conversation vocale temps réel · Premium
+                </p>
+            ''', unsafe_allow_html=True)
+        else:
+            # ── Non-premium → lien vers Stripe Checkout ───────────────────────
+            _checkout = create_checkout_url(_uid, profile.get("google_email", ""), _app_url)
+            _dest     = _checkout or _app_url
+            st.markdown(f'''
+                <a href="{_dest}"
+                   style="display:block;background:linear-gradient(135deg,#f59e0b,#f97316);
+                          color:#fff;font-weight:700;font-size:0.9rem;text-decoration:none;
+                          text-align:center;border-radius:14px;padding:11px 8px;margin:8px 0 2px 0;
+                          box-shadow:0 0 16px rgba(251,146,60,0.4);">
+                    🔒 Débloquer Eldaana Voice
+                </a>
+                <p style="color:#9ca3af;font-size:0.75rem;text-align:center;margin:4px 0 0 0;">
+                    Fonctionnalité Premium · 9,99€/mois
+                </p>
+            ''', unsafe_allow_html=True)
 
     # ── Toggle TTS seul ───────────────────────────────────────────────────────
     if "voice_on" not in st.session_state:

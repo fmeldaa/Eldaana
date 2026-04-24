@@ -60,7 +60,7 @@ def show_google_button() -> dict | None:
     code  = st.query_params.get("code",  "")
     state = st.query_params.get("state", "")
 
-    if code and state and state == st.session_state.get("_google_state"):
+    if code and state:
         token = _exchange_code(code, client_id, client_secret, redirect_uri)
         if token:
             user_info = _fetch_user_info(token.get("access_token", ""))

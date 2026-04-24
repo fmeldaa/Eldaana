@@ -509,8 +509,9 @@ with st.sidebar:
                 if (!btn) return;
                 btn.addEventListener('click', function(e) {{
                     e.preventDefault();
-                    if (window.EldaanaNav) {{
-                        window.EldaanaNav.openVoice("{_url_voice}");
+                    var nav = window.EldaanaNav || (window.top && window.top.EldaanaNav);
+                    if (nav) {{
+                        nav.openVoice("{_url_voice}");
                     }} else {{
                         window.top.location.href = "{_url_voice}";
                     }}

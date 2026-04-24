@@ -492,17 +492,40 @@ with st.sidebar:
         _url_voice  = f"{_voice_base}/?uid={_uid}"
         st.markdown(f'''
             <div style="margin:8px 0 2px 0;">
-                <a href="{_url_voice}" target="_top"
-                   style="display:block;background:linear-gradient(135deg,#7c3aed,#c084fc);
-                          color:#fff;font-weight:700;font-size:0.9rem;text-decoration:none;
+                <button id="btn-eldaana-voice"
+                   style="width:100%;background:linear-gradient(135deg,#7c3aed,#c084fc);
+                          color:#fff;font-weight:700;font-size:0.9rem;border:none;cursor:pointer;
                           text-align:center;border-radius:14px;padding:11px 8px;
                           box-shadow:0 0 16px rgba(192,132,252,0.4);">
                     🎙️ Ouvrir Eldaana Voice →
-                </a>
+                </button>
                 <p style="color:#9ca3af;font-size:0.75rem;text-align:center;margin:4px 0 0 0;">
                     Conversation vocale temps réel · Premium
                 </p>
             </div>
+            <script>
+            (function() {{
+                function goVoice() {{
+                    var url = "{_url_voice}";
+                    try {{
+                        if (window.EldaanaNav) {{ window.EldaanaNav.openVoice(url); return; }}
+                    }} catch(e) {{}}
+                    try {{
+                        if (window.top.EldaanaNav) {{ window.top.EldaanaNav.openVoice(url); return; }}
+                    }} catch(e) {{}}
+                    try {{
+                        window.top.location.href = url;
+                    }} catch(e) {{
+                        window.location.href = url;
+                    }}
+                }}
+                var btn = document.getElementById('btn-eldaana-voice');
+                if (btn) {{
+                    btn.addEventListener('click', goVoice);
+                    btn.addEventListener('touchend', function(e) {{ e.preventDefault(); goVoice(); }}, {{passive:false}});
+                }}
+            }})();
+            </script>
         ''', unsafe_allow_html=True)
 
     # ── Toggle TTS seul ───────────────────────────────────────────────────────

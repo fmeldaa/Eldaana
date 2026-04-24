@@ -31,6 +31,7 @@ from transport_alerts import (
     show_transport_status_sidebar,
 )
 from conversation_storage import save_conversation, load_conversation
+from stripe_payment import is_premium, create_checkout_url, handle_stripe_return, create_portal_url
 from pathlib import Path
 
 # ── Configuration de la page ──────────────────────────────────────────────────
@@ -221,6 +222,18 @@ if _uid_param and "user_id" not in st.session_state:
 if "user_id" in st.session_state:
     if st.query_params.get("uid") != st.session_state["user_id"]:
         st.query_params["uid"] = st.session_state["user_id"]
+
+# ── Retour Stripe (success / cancel) ─────────────────────────────────────────
+_uid_now = st.session_state.get("user_id", "")
+if st.query_params.get("stripe_success") and _uid_now:
+    if handle_stripe_return(_uid_now):
+        st.query_params.clear()
+        st.query_params["uid"] = _uid_now
+        st.success("🎉 Bienvenue dans Eldaana Premium ! Toutes les fonctionnalités sont débloquées.")
+        st.balloons()
+elif st.query_params.get("stripe_cancel"):
+    st.query_params.clear()
+    st.query_params["uid"] = _uid_now
 
 # ── Routing : onboarding si pas encore fait ───────────────────────────────────
 if "page" not in st.session_state:
@@ -431,6 +444,42 @@ with st.sidebar:
     show_transport_status_sidebar(profile, weather)
 
     st.divider()
+
+    # ── Statut Premium ────────────────────────────────────────────────────────
+    _uid_sb  = st.session_state.get("user_id", "")
+    _premium = is_premium(_uid_sb)
+    if _premium:
+        st.markdown(
+            '<div style="background:linear-gradient(135deg,#7c3aed,#c084fc);'
+            'color:#fff;border-radius:10px;padding:7px 10px;text-align:center;'
+            'font-size:0.8rem;font-weight:700;margin-bottom:6px;">✨ Premium actif</div>',
+            unsafe_allow_html=True,
+        )
+        _portal_url = create_portal_url(
+            _uid_sb,
+            f"https://5yrhias7zkwzdlnkjycrbr.streamlit.app/?uid={_uid_sb}"
+        )
+        if _portal_url:
+            st.markdown(
+                f'<a href="{_portal_url}" style="display:block;text-align:center;'
+                f'color:#9ca3af;font-size:0.72rem;margin-bottom:8px;">Gérer mon abonnement</a>',
+                unsafe_allow_html=True,
+            )
+    else:
+        _app_url = f"https://5yrhias7zkwzdlnkjycrbr.streamlit.app/?uid={_uid_sb}"
+        _checkout_url = create_checkout_url(
+            _uid_sb,
+            profile.get("google_email", ""),
+            _app_url,
+        )
+        if _checkout_url:
+            st.markdown(
+                f'<a href="{_checkout_url}" style="display:block;background:linear-gradient(135deg,#f59e0b,#f97316);'
+                f'color:#fff;font-weight:700;font-size:0.82rem;text-decoration:none;'
+                f'text-align:center;border-radius:10px;padding:9px 8px;margin-bottom:8px;">'
+                f'⭐ Passer Premium — 9,99€/mois</a>',
+                unsafe_allow_html=True,
+            )
 
     if not profile.get("onboarding_lifestyle_complete"):
         st.info("💡 Plus Eldaana vous connaît, plus elle est précise !")

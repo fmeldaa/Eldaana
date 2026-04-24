@@ -487,7 +487,7 @@ with st.sidebar:
     st.session_state.voice_mode = voice_mode
 
     if voice_mode:
-        _voice_base    = st.secrets.get("VOICE_SERVER_URL", "http://localhost:8000")
+        _voice_base    = st.secrets.get("VOICE_SERVER_URL", "https://eldaana-voice.fly.dev")
         _uid           = st.session_state.get("user_id", "")
         _url_embedded  = f"{_voice_base}/?uid={_uid}&embedded=true"
         _url_full      = f"{_voice_base}/?uid={_uid}&embedded=false"

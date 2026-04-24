@@ -457,7 +457,7 @@ with st.sidebar:
         )
         _portal_url = create_portal_url(
             _uid_sb,
-            f"https://5yrhias7zkwzdlnkjycrbr.streamlit.app/?uid={_uid_sb}"
+            f"https://app.eldaana.io/?uid={_uid_sb}"
         )
         if _portal_url:
             st.markdown(
@@ -466,7 +466,7 @@ with st.sidebar:
                 unsafe_allow_html=True,
             )
     else:
-        _app_url = f"https://5yrhias7zkwzdlnkjycrbr.streamlit.app/?uid={_uid_sb}"
+        _app_url = f"https://app.eldaana.io/?uid={_uid_sb}"
         _checkout_url = create_checkout_url(
             _uid_sb,
             profile.get("google_email", ""),
@@ -538,7 +538,7 @@ with st.sidebar:
         _voice_base = st.secrets.get("VOICE_SERVER_URL", "https://eldaana-voice.fly.dev")
         _uid        = st.session_state.get("user_id", "")
         _url_voice  = f"{_voice_base}/?uid={_uid}"
-        _app_url    = f"https://5yrhias7zkwzdlnkjycrbr.streamlit.app/?uid={_uid}"
+        _app_url    = f"https://app.eldaana.io/?uid={_uid}"
 
         if is_premium(_uid):
             # ── Premium → lien vers Eldaana Voice ────────────────────────────

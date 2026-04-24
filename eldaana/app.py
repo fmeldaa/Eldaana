@@ -30,6 +30,7 @@ from transport_alerts import (
     check_departure_alert, show_departure_alert_banner,
     show_transport_status_sidebar,
 )
+from conversation_storage import save_conversation, load_conversation
 from pathlib import Path
 
 # ── Configuration de la page ──────────────────────────────────────────────────
@@ -488,43 +489,29 @@ with st.sidebar:
         _voice_base = st.secrets.get("VOICE_SERVER_URL", "https://eldaana-voice.fly.dev")
         _uid        = st.session_state.get("user_id", "")
         _url_voice  = f"{_voice_base}/?uid={_uid}"
-        st.markdown(f'''
-            <div style="margin:8px 0 2px 0;">
-                <button id="btn-eldaana-voice"
-                   style="width:100%;background:linear-gradient(135deg,#7c3aed,#c084fc);
-                          color:#fff;font-weight:700;font-size:0.9rem;border:none;cursor:pointer;
-                          text-align:center;border-radius:14px;padding:11px 8px;
-                          box-shadow:0 0 16px rgba(192,132,252,0.4);">
-                    🎙️ Ouvrir Eldaana Voice →
-                </button>
-                <p style="color:#9ca3af;font-size:0.75rem;text-align:center;margin:4px 0 0 0;">
-                    Conversation vocale temps réel · Premium
-                </p>
-            </div>
-            <script>
-            (function() {{
-                function goVoice() {{
-                    var url = "{_url_voice}";
-                    try {{
-                        if (window.EldaanaNav) {{ window.EldaanaNav.openVoice(url); return; }}
-                    }} catch(e) {{}}
-                    try {{
-                        if (window.top.EldaanaNav) {{ window.top.EldaanaNav.openVoice(url); return; }}
-                    }} catch(e) {{}}
-                    try {{
-                        window.top.location.href = url;
-                    }} catch(e) {{
-                        window.location.href = url;
-                    }}
-                }}
-                var btn = document.getElementById('btn-eldaana-voice');
-                if (btn) {{
-                    btn.addEventListener('click', goVoice);
-                    btn.addEventListener('touchend', function(e) {{ e.preventDefault(); goVoice(); }}, {{passive:false}});
-                }}
-            }})();
-            </script>
-        ''', unsafe_allow_html=True)
+        _components_uid.html(f'''
+            <button
+                onclick="
+                    var url='{_url_voice}';
+                    if(window.parent.EldaanaNav){{window.parent.EldaanaNav.openVoice(url);}}
+                    else{{window.parent.location.href=url;}}
+                "
+                ontouchend="
+                    event.preventDefault();
+                    var url='{_url_voice}';
+                    if(window.parent.EldaanaNav){{window.parent.EldaanaNav.openVoice(url);}}
+                    else{{window.parent.location.href=url;}}
+                "
+                style="width:100%;background:linear-gradient(135deg,#7c3aed,#c084fc);
+                       color:#fff;font-weight:700;font-size:0.9rem;border:none;cursor:pointer;
+                       text-align:center;border-radius:14px;padding:11px 8px;
+                       box-shadow:0 0 16px rgba(192,132,252,0.4);font-family:sans-serif;">
+                🎙️ Ouvrir Eldaana Voice →
+            </button>
+            <p style="color:#9ca3af;font-size:0.75rem;text-align:center;margin:4px 0 0 0;font-family:sans-serif;">
+                Conversation vocale temps réel · Premium
+            </p>
+        ''', height=70)
 
     # ── Toggle TTS seul ───────────────────────────────────────────────────────
     if "voice_on" not in st.session_state:
@@ -705,10 +692,16 @@ user_id_chat = profile.get("user_id", "")
 with st.expander("😊 Comment tu te sens aujourd'hui ?", expanded=False):
     show_humeur_widget(user_id_chat)
 
-# État de la conversation
+# État de la conversation — chargement depuis Supabase si première visite
 if "messages" not in st.session_state:
-    st.session_state.messages = []
-    st.session_state.display_messages = [{"role": "assistant", "content": GREETING}]
+    _uid_chat = profile.get("user_id", "")
+    _history  = load_conversation(_uid_chat) if _uid_chat else []
+    if _history:
+        st.session_state.messages         = _history
+        st.session_state.display_messages = _history
+    else:
+        st.session_state.messages         = []
+        st.session_state.display_messages = [{"role": "assistant", "content": GREETING}]
 
 # Affichage de l'historique
 _user_avatar = _get_user_avatar()
@@ -855,3 +848,6 @@ if user_input:
 
     st.session_state.display_messages.append({"role": "assistant", "content": full_reply})
     st.session_state.messages.append({"role": "assistant", "content": full_reply})
+
+    # ── Sauvegarde de l'historique dans Supabase ──────────────────────────────
+    save_conversation(profile.get("user_id", ""), st.session_state.messages)

@@ -159,15 +159,10 @@ def show_onboarding() -> bool:
             "display:flex;align-items:center;justify-content:center;gap:7px;"
             "font-size:0.8rem;color:#374151;font-weight:600;font-family:sans-serif;")
 
-    # ── Ligne 1 : Google (pleine largeur pour respecter l'OAuth natif) ─────────
-    google_info = show_google_button()
-
-    # ── Ligne 2 : Facebook · LinkedIn · X ────────────────────────────────────
-    st.markdown(
-        '<p style="text-align:center;color:#9ca3af;font-size:0.75rem;margin:6px 0 4px 0;">'
-        '— ou —</p>', unsafe_allow_html=True)
-
-    col_fb, col_li, col_x = st.columns(3)
+    # ── 4 boutons sur une ligne ───────────────────────────────────────────────
+    col_g, col_fb, col_li, col_x = st.columns(4)
+    with col_g:
+        google_info = show_google_button()
     with col_fb:
         st.markdown(f'<button onclick="alert(\'Facebook — bientôt disponible !\')" style="{_btn}">'
                     f'{_LOGO_FACEBOOK} Facebook</button>', unsafe_allow_html=True)

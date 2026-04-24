@@ -106,6 +106,29 @@ def profile_summary(profile: dict) -> str:
     return "  ".join(lines)
 
 
+# ── Sync photo depuis réseau social ──────────────────────────────────────────
+
+def _sync_social_photo(uid: str, photo_url: str):
+    """
+    Télécharge la photo de profil du réseau social et l'uploade sur Cloudinary.
+    Ne fait rien si une photo existe déjà ou si l'URL est vide.
+    """
+    if not uid or not photo_url:
+        return
+    # Ne pas écraser une photo déjà uploadée manuellement
+    existing = get_profile_photo_url(uid)
+    if existing:
+        return
+    try:
+        import requests as _req
+        resp = _req.get(photo_url, timeout=10)
+        if resp.status_code == 200:
+            upload_profile_photo(resp.content, uid)
+            invalidate_photo_cache(uid)
+    except Exception:
+        pass
+
+
 # ── Migration profil ancien format ────────────────────────────────────────────
 
 def _migrate_legacy():
@@ -180,10 +203,13 @@ def show_onboarding() -> bool:
         existing = load_profile_by_google_sub(google_sub)
         if existing and existing.get("onboarding_complete"):
             st.session_state["user_id"] = google_sub
+            _sync_social_photo(google_sub, google_info.get("picture", ""))
             return True
 
-        # Nouvel utilisateur Google → pré-remplissage
-        st.session_state["google_prefill"] = google_to_profile(google_info)
+        # Nouvel utilisateur Google → pré-remplissage + photo
+        prefill_data = google_to_profile(google_info)
+        _sync_social_photo(google_sub, google_info.get("picture", ""))
+        st.session_state["google_prefill"] = prefill_data
         st.rerun()
 
     # ── Formulaire ─────────────────────────────────────────────────────────────

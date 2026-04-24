@@ -231,7 +231,7 @@ def show_dashboard(profile: dict, weather: dict | None = None):
             st.session_state.page = "budget"
             st.rerun()
     with c4:
-        if st.button("🔮 Prédictions", use_container_width=True):
+        if st.button("🔮 Prédict.", use_container_width=True):
             st.session_state.page = "voyance"
             st.rerun()
     with c5:

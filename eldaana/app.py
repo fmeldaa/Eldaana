@@ -487,33 +487,32 @@ with st.sidebar:
     st.session_state.voice_mode = voice_mode
 
     if voice_mode:
-        _voice_base = st.secrets.get("VOICE_SERVER_URL", "http://localhost:8000")
-        _uid        = st.session_state.get("user_id", "")
-        _voice_url  = f"{_voice_base}/?uid={_uid}&embedded=true"
-        _ua         = st.context.headers.get("User-Agent", "")
-        _is_apk     = "EldaanaApp" in _ua
+        _voice_base    = st.secrets.get("VOICE_SERVER_URL", "http://localhost:8000")
+        _uid           = st.session_state.get("user_id", "")
+        _url_embedded  = f"{_voice_base}/?uid={_uid}&embedded=true"
+        _url_full      = f"{_voice_base}/?uid={_uid}&embedded=false"
 
-        if _is_apk:
-            # Sur APK : navigation directe via le bridge Android (pas d'iframe)
-            st.markdown(
-                f'''<script>
-                if(window.EldaanaNav){{
-                    window.EldaanaNav.openVoice("{_voice_url.replace("embedded=true","embedded=false")}");
-                }}
-                </script>''',
-                unsafe_allow_html=True
-            )
-        else:
-            # Sur web : iframe embarquée
-            st.markdown(
-                f'''<iframe src="{_voice_url}"
+        # Détection côté JS : si bridge Android présent → navigation native
+        # sinon → iframe (web / PC)
+        st.markdown(f'''
+            <div id="eldaana-voice-wrapper">
+                <iframe id="eldaana-voice-iframe" src="{_url_embedded}"
                     style="width:100%;height:75vh;border:none;border-radius:20px;
                            box-shadow:0 0 32px rgba(192,132,252,0.25);"
-                    allow="microphone"
-                    allowfullscreen>
-                </iframe>''',
-                unsafe_allow_html=True
-            )
+                    allow="microphone" allowfullscreen>
+                </iframe>
+            </div>
+            <script>
+            (function() {{
+                if (window.EldaanaNav) {{
+                    // APK Android : supprimer l'iframe et naviguer nativement
+                    var w = document.getElementById('eldaana-voice-wrapper');
+                    if (w) w.remove();
+                    window.EldaanaNav.openVoice("{_url_full}");
+                }}
+            }})();
+            </script>
+        ''', unsafe_allow_html=True)
         # En mode vocal, TTS est forcément activée
         st.session_state.voice_on = True
 

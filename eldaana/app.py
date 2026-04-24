@@ -492,7 +492,7 @@ with st.sidebar:
         _url_voice  = f"{_voice_base}/?uid={_uid}"
         st.markdown(f'''
             <div style="margin:8px 0 2px 0;">
-                <a id="btn-eldaana-voice" href="{_url_voice}"
+                <a href="{_url_voice}" target="_top"
                    style="display:block;background:linear-gradient(135deg,#7c3aed,#c084fc);
                           color:#fff;font-weight:700;font-size:0.9rem;text-decoration:none;
                           text-align:center;border-radius:14px;padding:11px 8px;
@@ -503,21 +503,6 @@ with st.sidebar:
                     Conversation vocale temps réel · Premium
                 </p>
             </div>
-            <script>
-            (function() {{
-                var btn = document.getElementById('btn-eldaana-voice');
-                if (!btn) return;
-                btn.addEventListener('click', function(e) {{
-                    e.preventDefault();
-                    var nav = window.EldaanaNav || (window.top && window.top.EldaanaNav);
-                    if (nav) {{
-                        nav.openVoice("{_url_voice}");
-                    }} else {{
-                        window.top.location.href = "{_url_voice}";
-                    }}
-                }});
-            }})();
-            </script>
         ''', unsafe_allow_html=True)
 
     # ── Toggle TTS seul ───────────────────────────────────────────────────────

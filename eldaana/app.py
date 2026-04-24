@@ -487,34 +487,37 @@ with st.sidebar:
     st.session_state.voice_mode = voice_mode
 
     if voice_mode:
-        _voice_base    = st.secrets.get("VOICE_SERVER_URL", "https://eldaana-voice.fly.dev")
-        _uid           = st.session_state.get("user_id", "")
-        _url_embedded  = f"{_voice_base}/?uid={_uid}&embedded=true"
-        _url_full      = f"{_voice_base}/?uid={_uid}&embedded=false"
-
-        # Détection côté JS : si bridge Android présent → navigation native
-        # sinon → iframe (web / PC)
+        _voice_base = st.secrets.get("VOICE_SERVER_URL", "https://eldaana-voice.fly.dev")
+        _uid        = st.session_state.get("user_id", "")
+        _url_voice  = f"{_voice_base}/?uid={_uid}"
         st.markdown(f'''
-            <div id="eldaana-voice-wrapper">
-                <iframe id="eldaana-voice-iframe" src="{_url_embedded}"
-                    style="width:100%;height:75vh;border:none;border-radius:20px;
-                           box-shadow:0 0 32px rgba(192,132,252,0.25);"
-                    allow="microphone" allowfullscreen>
-                </iframe>
+            <div style="margin:8px 0 2px 0;">
+                <a id="btn-eldaana-voice" href="{_url_voice}"
+                   style="display:block;background:linear-gradient(135deg,#7c3aed,#c084fc);
+                          color:#fff;font-weight:700;font-size:0.9rem;text-decoration:none;
+                          text-align:center;border-radius:14px;padding:11px 8px;
+                          box-shadow:0 0 16px rgba(192,132,252,0.4);">
+                    🎙️ Ouvrir Eldaana Voice →
+                </a>
+                <p style="color:#9ca3af;font-size:0.75rem;text-align:center;margin:4px 0 0 0;">
+                    Conversation vocale temps réel · Premium
+                </p>
             </div>
             <script>
             (function() {{
-                if (window.EldaanaNav) {{
-                    // APK Android : supprimer l'iframe et naviguer nativement
-                    var w = document.getElementById('eldaana-voice-wrapper');
-                    if (w) w.remove();
-                    window.EldaanaNav.openVoice("{_url_full}");
-                }}
+                var btn = document.getElementById('btn-eldaana-voice');
+                if (!btn) return;
+                btn.addEventListener('click', function(e) {{
+                    e.preventDefault();
+                    if (window.EldaanaNav) {{
+                        window.EldaanaNav.openVoice("{_url_voice}");
+                    }} else {{
+                        window.top.location.href = "{_url_voice}";
+                    }}
+                }});
             }})();
             </script>
         ''', unsafe_allow_html=True)
-        # En mode vocal, TTS est forcément activée
-        st.session_state.voice_on = True
 
     # ── Toggle TTS seul ───────────────────────────────────────────────────────
     if "voice_on" not in st.session_state:

@@ -12,6 +12,7 @@ import uuid
 from pathlib import Path
 from google_auth import show_google_button, google_to_profile
 from storage import db_load, db_save
+from cloudinary_storage import upload_profile_photo, get_profile_photo_url, invalidate_photo_cache
 
 DATA_DIR          = Path(__file__).parent / "user_data"
 PROFILES_DIR      = DATA_DIR / "profiles"
@@ -260,8 +261,9 @@ def show_profile_form(profile: dict):
     photo_path = PHOTOS_DIR / f"{uid}.jpg" if uid else None
     col_ph1, col_ph2 = st.columns([1, 3])
     with col_ph1:
-        if photo_path and photo_path.exists():
-            st.image(str(photo_path), width=90)
+        photo_url = get_profile_photo_url(uid) if uid else None
+        if photo_url:
+            st.image(photo_url, width=90)
         else:
             st.markdown(
                 '<div style="width:90px;height:90px;border-radius:50%;'
@@ -272,11 +274,12 @@ def show_profile_form(profile: dict):
     with col_ph2:
         uploaded = st.file_uploader("📷 Photo de profil", type=["jpg","jpeg","png"],
                                     key="profile_photo_upload")
-        if uploaded and photo_path:
-            with open(photo_path, "wb") as f:
-                f.write(uploaded.getbuffer())
-            st.success("Photo mise à jour !")
-            st.rerun()
+        if uploaded and uid:
+            url = upload_profile_photo(uploaded.getbuffer(), uid)
+            if url:
+                invalidate_photo_cache(uid)
+                st.success("Photo mise à jour !")
+                st.rerun()
 
     with st.form("profile_form"):
         st.markdown("**Identité**")

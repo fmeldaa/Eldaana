@@ -200,12 +200,10 @@ logo_path = Path(__file__).parent / "logo.png"
 LOGO = str(logo_path) if logo_path.exists() else "∞"
 
 def _get_user_avatar():
-    """Retourne le chemin de la photo de profil de l'utilisateur, ou None."""
+    """Retourne l'URL Cloudinary de la photo de profil, ou None."""
+    from cloudinary_storage import get_profile_photo_url
     uid = st.session_state.get("user_id", "")
-    if not uid:
-        return None
-    p = Path(__file__).parent / "user_data" / "photos" / f"{uid}.jpg"
-    return str(p) if p.exists() else None
+    return get_profile_photo_url(uid) if uid else None
 client = Anthropic()
 
 # ── Restauration de session via ?uid= dans l'URL ─────────────────────────────

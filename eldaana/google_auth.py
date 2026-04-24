@@ -68,30 +68,35 @@ def show_google_button() -> dict | None:
          style="width:100%;background:#fff;border:1.5px solid #e5e7eb;
                 border-radius:10px;padding:9px 6px;cursor:pointer;
                 display:flex;align-items:center;justify-content:center;gap:7px;
-                font-size:0.8rem;color:#374151;font-weight:600;font-family:sans-serif;"
-         onclick="document.getElementById('eldaana-google-native')?.querySelector('button')?.click()">
+                font-size:0.8rem;color:#374151;font-weight:600;font-family:sans-serif;">
         {_GOOGLE_SVG} Google
     </div>
     <script>
-    // Cacher le bouton natif après rendu Streamlit
-    (function hide() {{
-        var el = document.getElementById('eldaana-google-native');
-        if (el) {{ el.style.cssText='position:absolute;opacity:0;pointer-events:none;width:1px;height:1px;overflow:hidden;'; return; }}
-        setTimeout(hide, 100);
+    (function wire() {{
+        // Chercher le vrai bouton OAuth rendu par Streamlit
+        var btns = Array.from(document.querySelectorAll('button'));
+        var native = btns.find(function(b) {{ return b.innerText.trim() === 'Google'; }});
+        if (native) {{
+            // Cacher le bouton natif
+            var wrapper = native.closest('[data-testid="stButton"]') || native.parentElement;
+            if (wrapper) wrapper.style.cssText = 'display:none!important';
+            // Brancher notre bouton custom sur le vrai click OAuth
+            var custom = document.getElementById('eldaana-google-btn');
+            if (custom) custom.onclick = function() {{ native.click(); }};
+        }} else {{
+            setTimeout(wire, 150);
+        }}
     }})();
     </script>
     """, unsafe_allow_html=True)
 
-    # Bouton OAuth natif ciblé par l'id du conteneur parent
-    with st.container():
-        st.markdown('<span id="eldaana-google-native"></span>', unsafe_allow_html=True)
-        result = oauth2.authorize_button(
-            "Google",
-            redirect_uri=redirect_uri,
-            scope="openid email profile",
-            use_container_width=True,
-            pkce="S256",
-        )
+    result = oauth2.authorize_button(
+        "Google",
+        redirect_uri=redirect_uri,
+        scope="openid email profile",
+        use_container_width=True,
+        pkce="S256",
+    )
 
     if result and "token" in result:
         return _fetch_user_info(result["token"].get("access_token", ""))

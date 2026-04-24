@@ -176,7 +176,7 @@ def show_onboarding() -> bool:
                     f'{_LOGO_LINKEDIN} LinkedIn</button>', unsafe_allow_html=True)
     with col_x:
         st.markdown(f'<button onclick="alert(\'X — bientôt disponible !\')" style="{_btn}">'
-                    f'{_LOGO_X} Twitter / X</button>', unsafe_allow_html=True)
+                    f'{_LOGO_X} Twitter</button>', unsafe_allow_html=True)
 
     if google_info:
         google_sub = google_info.get("sub", "")

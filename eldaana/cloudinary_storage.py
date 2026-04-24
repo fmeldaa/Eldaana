@@ -31,10 +31,6 @@ def upload_profile_photo(file_bytes: bytes, uid: str) -> str | None:
             public_id=f"eldaana/profiles/{uid}",
             overwrite=True,
             resource_type="image",
-            transformation=[
-                {"width": 200, "height": 200, "crop": "fill", "gravity": "face"},
-                {"quality": "auto", "fetch_format": "auto"},
-            ],
         )
         return result.get("secure_url")
     except Exception as e:

@@ -223,6 +223,37 @@ if "user_id" in st.session_state:
     if st.query_params.get("uid") != st.session_state["user_id"]:
         st.query_params["uid"] = st.session_state["user_id"]
 
+# ── Retour Google OAuth depuis Chrome (APK Android) ─────────────────────────
+# Si l'utilisateur vient de se connecter avec Google dans Chrome depuis l'APK,
+# on affiche un bouton deep link pour revenir dans l'app avec le uid.
+if st.session_state.get("_android_oauth") and st.session_state.get("user_id"):
+    _uid_android = st.session_state.get("user_id", "")
+    _deep_link   = f"eldaana://?uid={_uid_android}"
+    st.markdown(f"""
+        <div style="display:flex;flex-direction:column;align-items:center;
+                    justify-content:center;min-height:80vh;text-align:center;padding:20px;">
+            <div style="font-size:3rem;margin-bottom:16px;">✅</div>
+            <p style="font-size:1.2rem;font-weight:700;color:#7c3aed;margin:0 0 8px 0;">
+                Connexion Google réussie !
+            </p>
+            <p style="color:#6b7280;font-size:0.9rem;margin:0 0 28px 0;">
+                Retourne maintenant dans l'application Eldaana
+            </p>
+            <a href="{_deep_link}"
+               style="display:inline-block;background:linear-gradient(135deg,#7c3aed,#c084fc);
+                      color:#fff;text-decoration:none;padding:16px 32px;
+                      border-radius:16px;font-weight:700;font-size:1.05rem;
+                      box-shadow:0 4px 20px rgba(124,58,237,0.4);">
+                ↩️ Retour dans l'app Eldaana
+            </a>
+            <p style="color:#9ca3af;font-size:0.75rem;margin-top:16px;">
+                Tu peux fermer cet onglet ensuite
+            </p>
+        </div>
+    """, unsafe_allow_html=True)
+    del st.session_state["_android_oauth"]
+    st.stop()
+
 # ── Retour Stripe (success / cancel) ─────────────────────────────────────────
 _uid_now = st.session_state.get("user_id", "")
 if st.query_params.get("stripe_success") and _uid_now:
@@ -544,6 +575,7 @@ with st.sidebar:
             # ── Premium → lien vers Eldaana Voice ────────────────────────────
             st.markdown(f'''
                 <a href="{_url_voice}"
+                   onclick="window.location.href='{_url_voice}'; return false;"
                    style="display:block;background:linear-gradient(135deg,#7c3aed,#c084fc);
                           color:#fff;font-weight:700;font-size:0.9rem;text-decoration:none;
                           text-align:center;border-radius:14px;padding:11px 8px;margin:8px 0 2px 0;
@@ -560,6 +592,7 @@ with st.sidebar:
             _dest     = _checkout or _app_url
             st.markdown(f'''
                 <a href="{_dest}"
+                   onclick="window.location.href='{_dest}'; return false;"
                    style="display:block;background:linear-gradient(135deg,#f59e0b,#f97316);
                           color:#fff;font-weight:700;font-size:0.9rem;text-decoration:none;
                           text-align:center;border-radius:14px;padding:11px 8px;margin:8px 0 2px 0;

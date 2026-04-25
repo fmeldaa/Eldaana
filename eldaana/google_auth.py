@@ -61,23 +61,35 @@ def show_google_button() -> dict | None:
     state = st.query_params.get("state", "")
 
     if code and state:
+        # Décoder la plateforme encodée dans le state : "<token>|<platform>"
+        state_parts = state.split("|", 1)
+        platform    = state_parts[1] if len(state_parts) > 1 else "web"
+
         token = _exchange_code(code, client_id, client_secret, redirect_uri)
         if token:
             user_info = _fetch_user_info(token.get("access_token", ""))
             st.query_params.clear()
             st.session_state.pop("_google_state", None)
+            if platform == "android":
+                st.session_state["_android_oauth"] = True
             return user_info
 
-    # ── Générer state CSRF ────────────────────────────────────────────────────
+    # ── Détecter la plateforme (Android envoie ?platform=android) ─────────────
+    _platform = st.query_params.get("platform", "web")
+
+    # ── Générer state CSRF + encoder la plateforme ────────────────────────────
     if "_google_state" not in st.session_state:
         st.session_state["_google_state"] = _secrets.token_urlsafe(16)
+
+    # State = "<token>|<platform>" pour retrouver la plateforme au retour
+    _state_with_platform = f"{st.session_state['_google_state']}|{_platform}"
 
     auth_url = GOOGLE_AUTH_URL + "?" + urllib.parse.urlencode({
         "client_id":     client_id,
         "redirect_uri":  redirect_uri,
         "response_type": "code",
         "scope":         "openid email profile",
-        "state":         st.session_state["_google_state"],
+        "state":         _state_with_platform,
         "access_type":   "online",
         "prompt":        "select_account",
     })

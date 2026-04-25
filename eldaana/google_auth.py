@@ -94,14 +94,33 @@ def show_google_button() -> dict | None:
         "prompt":        "select_account",
     })
 
-    # ── Bouton stylé (vrai <a href>) ──────────────────────────────────────────
-    # onclick force la navigation même dans les WebViews Android où React intercepte les clics
-    _safe_url = auth_url.replace("'", "%27")
-    st.markdown(
-        f'<a href="{auth_url}" onclick="window.location.href=\'{_safe_url}\'; return false;" style="{_BTN_STYLE}">'
-        f'{_GOOGLE_SVG} Google</a>',
-        unsafe_allow_html=True,
-    )
+    # ── Bouton Google via components.html ────────────────────────────────────
+    # components.html = iframe isolé → JavaScript s'exécute vraiment (pas sanitisé par React)
+    # window.EldaanaNav.openVoice() = bridge Android injecté dans TOUS les iframes du WebView
+    # window.top.location.href = fallback WebView sans bridge
+    # <a href> = fallback navigateur desktop
+    import streamlit.components.v1 as _cmp
+    _safe_url = auth_url.replace("'", "%27").replace('"', "%22")
+    _cmp.html(f"""<!DOCTYPE html>
+<html><head>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<style>
+*{{margin:0;padding:0;box-sizing:border-box;}}
+body{{background:transparent;height:44px;display:flex;align-items:center;}}
+a{{display:flex;align-items:center;justify-content:center;gap:7px;
+   width:100%;background:#fff;border:1.5px solid #e5e7eb;border-radius:10px;
+   padding:9px 6px;cursor:pointer;font-size:0.8rem;color:#374151;
+   font-weight:600;font-family:sans-serif;text-decoration:none;}}
+</style>
+</head>
+<body>
+<a href="{auth_url}" onclick="
+  var u='{_safe_url}';
+  if(window.EldaanaNav){{window.EldaanaNav.openVoice(u);return false;}}
+  try{{window.top.location.href=u;return false;}}catch(e){{}}
+  window.location.href=u;return false;
+">{_GOOGLE_SVG} Google</a>
+</body></html>""", height=44)
     return None
 
 

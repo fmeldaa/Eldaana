@@ -877,11 +877,38 @@ if _voice_mode:
     user_input = st.chat_input("💬 Écris ton message à Eldaana…")
 
 else:
-    # ── Bouton micro natif Streamlit (PC et APK) ──────────────────────────
-    _mic_transcript = show_mic_button(key=f"mic_{st.session_state.voice_turn}")
-    if _mic_transcript:
-        user_input = _mic_transcript
-        st.session_state.voice_turn += 1
+    if _is_android:
+        # ── Android : bouton HTML custom dans components.html
+        # onclick appelle directement le bridge natif EldaanaAndroid
+        # (même-origine → window.parent.EldaanaAndroid accessible)
+        _components_uid.html("""<!DOCTYPE html><html><head>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:transparent;display:flex;justify-content:center;}
+button{
+  width:100%;padding:14px 8px;
+  background:#fff;border:1.5px solid #e5e7eb;border-radius:12px;
+  font-size:1rem;color:#374151;cursor:pointer;
+  font-family:-apple-system,sans-serif;
+  display:flex;align-items:center;justify-content:center;gap:8px;
+}
+button:active{background:#f3f4f6;}
+</style></head><body>
+<button onclick="
+  var b=null;
+  try{b=window.EldaanaAndroid;}catch(e){}
+  if(!b)try{b=window.parent.EldaanaAndroid;}catch(e){}
+  if(!b)try{b=window.top.EldaanaAndroid;}catch(e){}
+  if(b){b.startNativeMic();}
+">🎤 Appuyer et parler</button>
+</body></html>""", height=56)
+    else:
+        # ── PC : WebRTC natif (fonctionne dans Chrome) ──────────────────
+        _mic_transcript = show_mic_button(key=f"mic_{st.session_state.voice_turn}")
+        if _mic_transcript:
+            user_input = _mic_transcript
+            st.session_state.voice_turn += 1
 
     # ── Saisie texte classique ────────────────────────────────────────────
     _text_input = st.chat_input("Écris ton message à Eldaana…")

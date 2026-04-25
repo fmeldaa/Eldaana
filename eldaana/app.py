@@ -572,37 +572,45 @@ with st.sidebar:
         _app_url    = f"https://app.eldaana.io/?uid={_uid}"
 
         if is_premium(_uid):
-            # ── Premium → lien vers Eldaana Voice ────────────────────────────
-            st.markdown(f'''
-                <a href="{_url_voice}"
-                   onclick="window.location.href='{_url_voice}'; return false;"
-                   style="display:block;background:linear-gradient(135deg,#7c3aed,#c084fc);
-                          color:#fff;font-weight:700;font-size:0.9rem;text-decoration:none;
-                          text-align:center;border-radius:14px;padding:11px 8px;margin:8px 0 2px 0;
-                          box-shadow:0 0 16px rgba(192,132,252,0.4);">
-                    🎙️ Ouvrir Eldaana Voice →
-                </a>
-                <p style="color:#9ca3af;font-size:0.75rem;text-align:center;margin:4px 0 0 0;">
-                    Conversation vocale temps réel · Premium
-                </p>
-            ''', unsafe_allow_html=True)
+            # ── Premium → lien vers Eldaana Voice (components.html pour Android) ──
+            _v = _url_voice.replace("'", "%27").replace('"', "%22")
+            _components_uid.html(f"""<!DOCTYPE html><html><head>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<style>*{{margin:0;padding:0;box-sizing:border-box;}}
+body{{background:transparent;}}
+a{{display:block;background:linear-gradient(135deg,#7c3aed,#c084fc);
+   color:#fff;font-weight:700;font-size:0.9rem;text-decoration:none;
+   text-align:center;border-radius:14px;padding:11px 8px;margin:8px 0 2px 0;
+   box-shadow:0 0 16px rgba(192,132,252,0.4);}}
+p{{color:#9ca3af;font-size:0.75rem;text-align:center;margin:4px 0 0 0;}}
+</style></head><body>
+<a href="{_url_voice}" onclick="var u='{_v}';
+  if(window.EldaanaNav){{window.EldaanaNav.openVoice(u);return false;}}
+  try{{window.top.location.href=u;return false;}}catch(e){{}}
+  window.location.href=u;return false;">🎙️ Ouvrir Eldaana Voice →</a>
+<p>Conversation vocale temps réel · Premium</p>
+</body></html>""", height=70)
         else:
-            # ── Non-premium → lien vers Stripe Checkout ───────────────────────
+            # ── Non-premium → Stripe Checkout (components.html pour Android) ──────
             _checkout = create_checkout_url(_uid, profile.get("google_email", ""), _app_url)
             _dest     = _checkout or _app_url
-            st.markdown(f'''
-                <a href="{_dest}"
-                   onclick="window.location.href='{_dest}'; return false;"
-                   style="display:block;background:linear-gradient(135deg,#f59e0b,#f97316);
-                          color:#fff;font-weight:700;font-size:0.9rem;text-decoration:none;
-                          text-align:center;border-radius:14px;padding:11px 8px;margin:8px 0 2px 0;
-                          box-shadow:0 0 16px rgba(251,146,60,0.4);">
-                    🔒 Débloquer Eldaana Voice
-                </a>
-                <p style="color:#9ca3af;font-size:0.75rem;text-align:center;margin:4px 0 0 0;">
-                    Fonctionnalité Premium · 9,99€/mois
-                </p>
-            ''', unsafe_allow_html=True)
+            _d = _dest.replace("'", "%27").replace('"', "%22")
+            _components_uid.html(f"""<!DOCTYPE html><html><head>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<style>*{{margin:0;padding:0;box-sizing:border-box;}}
+body{{background:transparent;}}
+a{{display:block;background:linear-gradient(135deg,#f59e0b,#f97316);
+   color:#fff;font-weight:700;font-size:0.9rem;text-decoration:none;
+   text-align:center;border-radius:14px;padding:11px 8px;margin:8px 0 2px 0;
+   box-shadow:0 0 16px rgba(251,146,60,0.4);}}
+p{{color:#9ca3af;font-size:0.75rem;text-align:center;margin:4px 0 0 0;}}
+</style></head><body>
+<a href="{_dest}" onclick="var u='{_d}';
+  if(window.EldaanaNav){{window.EldaanaNav.openVoice(u);return false;}}
+  try{{window.top.location.href=u;return false;}}catch(e){{}}
+  window.location.href=u;return false;">🔒 Débloquer Eldaana Voice</a>
+<p>Fonctionnalité Premium · 9,99€/mois</p>
+</body></html>""", height=70)
 
     # ── Toggle TTS seul ───────────────────────────────────────────────────────
     if "voice_on" not in st.session_state:

@@ -26,13 +26,12 @@ def _init():
 # ── Création / récupération du price_id Stripe ────────────────────────────────
 
 @st.cache_data(ttl=3600)
-def _get_or_create_price_id() -> str:
-    """Crée le produit+prix Eldaana Premium s'il n'existe pas encore."""
+def _get_or_create_price_id(mode: str) -> str:
+    """Crée le produit+prix Eldaana Premium s'il n'existe pas encore.
+    Le paramètre mode ('test' ou 'live') est dans la clé de cache pour
+    éviter de renvoyer un price_id live quand on est en mode test."""
     _init()
-    # Le lookup_key inclut le mode (test/live) pour éviter les conflits entre modes
-    _mode = "test" if st.secrets["stripe"]["secret_key"].startswith("sk_test") else "live"
-    _lookup_key = f"eldaana_premium_monthly_{_mode}"
-    # Chercher un prix existant avec les mêmes métadonnées
+    _lookup_key = f"eldaana_premium_monthly_{mode}"
     prices = stripe.Price.list(lookup_keys=[_lookup_key], limit=1)
     if prices.data:
         return prices.data[0].id
@@ -55,6 +54,10 @@ def _get_or_create_price_id() -> str:
     return price.id
 
 
+def _current_mode() -> str:
+    return "test" if st.secrets["stripe"]["secret_key"].startswith("sk_test") else "live"
+
+
 # ── Checkout ──────────────────────────────────────────────────────────────────
 
 def create_checkout_url(uid: str, email: str, return_url: str) -> str | None:
@@ -64,7 +67,7 @@ def create_checkout_url(uid: str, email: str, return_url: str) -> str | None:
     """
     try:
         _init()
-        price_id = _get_or_create_price_id()
+        price_id = _get_or_create_price_id(_current_mode())
 
         # Récupérer ou créer le customer Stripe
         profile = db_load(uid) or {}

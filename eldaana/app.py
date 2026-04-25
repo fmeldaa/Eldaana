@@ -193,8 +193,11 @@ if "lang" not in st.session_state:
     st.session_state.lang = st.query_params.get("lang", "fr")
 
 # ── Détection APK Android (platform=android dans l'URL) ──────────────────────
-if "is_android" not in st.session_state:
-    st.session_state.is_android = st.query_params.get("platform", "web") == "android"
+# Mise à jour à chaque rechargement si platform=android est présent dans l'URL
+if st.query_params.get("platform") == "android":
+    st.session_state.is_android = True
+elif "is_android" not in st.session_state:
+    st.session_state.is_android = False
 _is_android = st.session_state.is_android
 
 # ── Clé API Anthropic (locale ou Streamlit Cloud) ─────────────────────────────
@@ -874,12 +877,11 @@ if _voice_mode:
     user_input = st.chat_input("💬 Écris ton message à Eldaana…")
 
 else:
-    # ── Bouton micro natif Streamlit (PC uniquement — sur APK, le bouton overlay Android gère ça) ──
-    if not _is_android:
-        _mic_transcript = show_mic_button(key=f"mic_{st.session_state.voice_turn}")
-        if _mic_transcript:
-            user_input = _mic_transcript
-            st.session_state.voice_turn += 1
+    # ── Bouton micro natif Streamlit (PC et APK) ──────────────────────────
+    _mic_transcript = show_mic_button(key=f"mic_{st.session_state.voice_turn}")
+    if _mic_transcript:
+        user_input = _mic_transcript
+        st.session_state.voice_turn += 1
 
     # ── Saisie texte classique ────────────────────────────────────────────
     _text_input = st.chat_input("Écris ton message à Eldaana…")

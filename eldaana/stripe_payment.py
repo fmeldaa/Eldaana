@@ -29,8 +29,11 @@ def _init():
 def _get_or_create_price_id() -> str:
     """Crée le produit+prix Eldaana Premium s'il n'existe pas encore."""
     _init()
+    # Le lookup_key inclut le mode (test/live) pour éviter les conflits entre modes
+    _mode = "test" if st.secrets["stripe"]["secret_key"].startswith("sk_test") else "live"
+    _lookup_key = f"eldaana_premium_monthly_{_mode}"
     # Chercher un prix existant avec les mêmes métadonnées
-    prices = stripe.Price.list(lookup_keys=["eldaana_premium_monthly"], limit=1)
+    prices = stripe.Price.list(lookup_keys=[_lookup_key], limit=1)
     if prices.data:
         return prices.data[0].id
 
@@ -46,7 +49,7 @@ def _get_or_create_price_id() -> str:
         unit_amount=PRICE_EUR,
         currency=PRICE_CURRENCY,
         recurring={"interval": "month"},
-        lookup_key="eldaana_premium_monthly",
+        lookup_key=_lookup_key,
         transfer_lookup_key=True,
     )
     return price.id

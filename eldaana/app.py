@@ -869,12 +869,20 @@ if "voice_turn" not in st.session_state:
 user_input = None
 
 if _voice_mode:
-    # Mode vocal ON → EldaanaVoice, saisie texte toujours disponible
+    # Mode vocal ON → saisie texte disponible
     user_input = st.chat_input("💬 Écris ton message à Eldaana…")
 
 else:
+    # ── Bouton micro natif Streamlit (fonctionne sur PC et APK) ──────────
+    _mic_transcript = show_mic_button(key=f"mic_{st.session_state.voice_turn}")
+    if _mic_transcript:
+        user_input = _mic_transcript
+        st.session_state.voice_turn += 1
+
     # ── Saisie texte classique ────────────────────────────────────────────
-    user_input = st.chat_input(f"Écris ton message à Eldaana…")
+    _text_input = st.chat_input("Écris ton message à Eldaana…")
+    if _text_input:
+        user_input = _text_input
 
 # ── Traitement du message ─────────────────────────────────────────────────────
 if user_input:

@@ -192,6 +192,11 @@ st.markdown("""
 if "lang" not in st.session_state:
     st.session_state.lang = st.query_params.get("lang", "fr")
 
+# ── Détection APK Android (platform=android dans l'URL) ──────────────────────
+if "is_android" not in st.session_state:
+    st.session_state.is_android = st.query_params.get("platform", "web") == "android"
+_is_android = st.session_state.is_android
+
 # ── Clé API Anthropic (locale ou Streamlit Cloud) ─────────────────────────────
 import os
 if "ANTHROPIC_API_KEY" in st.secrets:
@@ -281,6 +286,11 @@ if st.session_state.page == "onboarding":
 # ── Chargement du profil ───────────────────────────────────────────────────────
 profile = load_profile() or {}
 prenom  = profile.get("prenom", "")
+
+# ── Restauration de la voix préférée (une seule fois par session) ─────────────
+if "eldaana_voice" not in st.session_state:
+    _saved_voice = profile.get("preferred_voice", "nova")
+    st.session_state.eldaana_voice = _saved_voice
 
 # ── Météo + timezone : récupérés une seule fois par session ───────────────────
 if "weather" not in st.session_state:
@@ -572,45 +582,75 @@ with st.sidebar:
         _app_url    = f"https://app.eldaana.io/?uid={_uid}"
 
         if is_premium(_uid):
-            # ── Premium → lien vers Eldaana Voice (components.html pour Android) ──
-            _v = _url_voice.replace("'", "%27").replace('"', "%22")
-            _components_uid.html(f"""<!DOCTYPE html><html><head>
+            # ── Premium → bouton Eldaana Voice ───────────────────────────────────
+            _BTN_STYLE_VOICE = (
+                "display:block;background:linear-gradient(135deg,#7c3aed,#c084fc);"
+                "color:#fff;font-weight:700;font-size:0.9rem;text-decoration:none;"
+                "text-align:center;border-radius:14px;padding:11px 8px;margin:8px 0 2px 0;"
+                "box-shadow:0 0 16px rgba(192,132,252,0.4);"
+            )
+            if _is_android:
+                # APK : components.html avec EldaanaNav (pont JS→Android)
+                _v = _url_voice.replace("'", "%27").replace('"', "%22")
+                _components_uid.html(f"""<!DOCTYPE html><html><head>
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<style>*{{margin:0;padding:0;box-sizing:border-box;}}
-body{{background:transparent;}}
+<style>*{{margin:0;padding:0;box-sizing:border-box;}}body{{background:transparent;}}
 a{{display:block;background:linear-gradient(135deg,#7c3aed,#c084fc);
-   color:#fff;font-weight:700;font-size:0.9rem;text-decoration:none;
-   text-align:center;border-radius:14px;padding:11px 8px;margin:8px 0 2px 0;
-   box-shadow:0 0 16px rgba(192,132,252,0.4);}}
-p{{color:#9ca3af;font-size:0.75rem;text-align:center;margin:4px 0 0 0;}}
+color:#fff;font-weight:700;font-size:0.9rem;text-decoration:none;
+text-align:center;border-radius:14px;padding:11px 8px;margin:8px 0 2px 0;
+box-shadow:0 0 16px rgba(192,132,252,0.4);}}
 </style></head><body>
-<a href="{_url_voice}" onclick="var u='{_v}';
-  if(window.EldaanaNav){{window.EldaanaNav.openVoice(u);return false;}}
-  try{{window.top.location.href=u;return false;}}catch(e){{}}
+<a href="{_url_voice}" onclick="
+  var u='{_v}';
+  var nav=window.EldaanaNav||(window.top&&window.top.EldaanaNav);
+  if(nav){{nav.openVoice(u);return false;}}
   window.location.href=u;return false;">🎙️ Ouvrir Eldaana Voice →</a>
-<p>Conversation vocale temps réel · Premium</p>
-</body></html>""", height=70)
+</body></html>""", height=54)
+            else:
+                # PC/navigateur : lien simple qui s'ouvre dans un nouvel onglet
+                st.markdown(
+                    f'<a href="{_url_voice}" target="_blank" style="{_BTN_STYLE_VOICE}">'
+                    f'🎙️ Ouvrir Eldaana Voice →</a>'
+                    f'<p style="color:#9ca3af;font-size:0.75rem;text-align:center;margin:4px 0 0 0;">'
+                    f'Conversation vocale temps réel · Premium</p>',
+                    unsafe_allow_html=True,
+                )
         else:
-            # ── Non-premium → Stripe Checkout (components.html pour Android) ──────
+            # ── Non-premium → Stripe Checkout ────────────────────────────────────
             _checkout = create_checkout_url(_uid, profile.get("google_email", ""), _app_url)
             _dest     = _checkout or _app_url
-            _d = _dest.replace("'", "%27").replace('"', "%22")
-            _components_uid.html(f"""<!DOCTYPE html><html><head>
+            _BTN_STYLE_STRIPE = (
+                "display:block;background:linear-gradient(135deg,#f59e0b,#f97316);"
+                "color:#fff;font-weight:700;font-size:0.9rem;text-decoration:none;"
+                "text-align:center;border-radius:14px;padding:11px 8px;margin:8px 0 2px 0;"
+                "box-shadow:0 0 16px rgba(251,146,60,0.4);"
+            )
+            if _is_android:
+                # APK : components.html avec EldaanaNav
+                _d = _dest.replace("'", "%27").replace('"', "%22")
+                _components_uid.html(f"""<!DOCTYPE html><html><head>
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<style>*{{margin:0;padding:0;box-sizing:border-box;}}
-body{{background:transparent;}}
+<style>*{{margin:0;padding:0;box-sizing:border-box;}}body{{background:transparent;}}
 a{{display:block;background:linear-gradient(135deg,#f59e0b,#f97316);
-   color:#fff;font-weight:700;font-size:0.9rem;text-decoration:none;
-   text-align:center;border-radius:14px;padding:11px 8px;margin:8px 0 2px 0;
-   box-shadow:0 0 16px rgba(251,146,60,0.4);}}
-p{{color:#9ca3af;font-size:0.75rem;text-align:center;margin:4px 0 0 0;}}
+color:#fff;font-weight:700;font-size:0.9rem;text-decoration:none;
+text-align:center;border-radius:14px;padding:11px 8px;margin:8px 0 2px 0;
+box-shadow:0 0 16px rgba(251,146,60,0.4);}}
 </style></head><body>
-<a href="{_dest}" onclick="var u='{_d}';
-  if(window.EldaanaNav){{window.EldaanaNav.openVoice(u);return false;}}
-  try{{window.top.location.href=u;return false;}}catch(e){{}}
+<a href="{_dest}" onclick="
+  var u='{_d}';
+  var nav=window.EldaanaNav||(window.top&&window.top.EldaanaNav);
+  if(nav){{nav.openVoice(u);return false;}}
   window.location.href=u;return false;">🔒 Débloquer Eldaana Voice</a>
-<p>Fonctionnalité Premium · 9,99€/mois</p>
-</body></html>""", height=70)
+</body></html>""", height=54)
+            else:
+                # PC/navigateur : lien simple nouvel onglet
+                st.markdown(
+                    f'<a href="{_dest}" target="_blank" style="{_BTN_STYLE_STRIPE}">'
+                    f'🔒 Débloquer Eldaana Voice</a>'
+                    f'<p style="color:#9ca3af;font-size:0.75rem;text-align:center;margin:4px 0 0 0;">'
+                    f'Fonctionnalité Premium · 9,99€/mois</p>',
+                    unsafe_allow_html=True,
+                )
 
     # ── Toggle TTS seul ───────────────────────────────────────────────────────
     if "voice_on" not in st.session_state:
@@ -653,7 +693,16 @@ p{{color:#9ca3af;font-size:0.75rem;text-align:center;margin:4px 0 0 0;}}
             key="voice_selector",
             label_visibility="collapsed",
         )
-        st.session_state.eldaana_voice = VOICE_OPTIONS[chosen_label]
+        _chosen_voice = VOICE_OPTIONS[chosen_label]
+        if _chosen_voice != st.session_state.get("eldaana_voice"):
+            # La voix a changé → sauvegarder dans Supabase
+            st.session_state.eldaana_voice = _chosen_voice
+            if profile.get("preferred_voice") != _chosen_voice:
+                profile["preferred_voice"] = _chosen_voice
+                from onboarding import save_profile as _save_profile
+                _save_profile(profile)
+        else:
+            st.session_state.eldaana_voice = _chosen_voice
 
     st.markdown("<br>", unsafe_allow_html=True)
 

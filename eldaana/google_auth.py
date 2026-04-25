@@ -95,8 +95,10 @@ def show_google_button() -> dict | None:
     })
 
     # ── Bouton stylé (vrai <a href>) ──────────────────────────────────────────
+    # onclick force la navigation même dans les WebViews Android où React intercepte les clics
+    _safe_url = auth_url.replace("'", "%27")
     st.markdown(
-        f'<a href="{auth_url}" style="{_BTN_STYLE}">'
+        f'<a href="{auth_url}" onclick="window.location.href=\'{_safe_url}\'; return false;" style="{_BTN_STYLE}">'
         f'{_GOOGLE_SVG} Google</a>',
         unsafe_allow_html=True,
     )

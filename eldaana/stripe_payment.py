@@ -78,6 +78,19 @@ def create_checkout_url(uid: str, email: str, return_url: str) -> str | None:
             customer_id = customer.id
             profile["stripe_customer_id"] = customer_id
             db_save(profile)
+        else:
+            # Vérifier que le customer existe dans le mode actuel (test vs live)
+            # Un customer live n'existe pas en mode test et vice-versa
+            try:
+                stripe.Customer.retrieve(customer_id)
+            except stripe.error.InvalidRequestError:
+                customer = stripe.Customer.create(
+                    email=email or None,
+                    metadata={"eldaana_uid": uid},
+                )
+                customer_id = customer.id
+                profile["stripe_customer_id"] = customer_id
+                db_save(profile)
 
         session = stripe.checkout.Session.create(
             customer=customer_id,
@@ -149,6 +162,10 @@ def is_premium(uid: str) -> bool:
                     profile["premium_status"] = "inactive"
                     db_save(profile)
                 return result
+            except stripe.error.InvalidRequestError:
+                # Customer créé dans un autre mode (test/live) — pas premium ici
+                st.session_state[cache_key] = False
+                return False
             except Exception:
                 pass
         st.session_state[cache_key] = True

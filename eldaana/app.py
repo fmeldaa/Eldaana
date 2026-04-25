@@ -576,10 +576,11 @@ with st.sidebar:
     st.session_state.voice_mode = voice_mode
 
     if voice_mode:
-        _voice_base = st.secrets.get("VOICE_SERVER_URL", "https://eldaana-voice.fly.dev")
-        _uid        = st.session_state.get("user_id", "")
-        _url_voice  = f"{_voice_base}/?uid={_uid}"
-        _app_url    = f"https://app.eldaana.io/?uid={_uid}"
+        _voice_base    = st.secrets.get("VOICE_SERVER_URL", "https://eldaana-voice.fly.dev")
+        _uid           = st.session_state.get("user_id", "")
+        _current_voice = st.session_state.get("eldaana_voice", "nova")
+        _url_voice     = f"{_voice_base}/?uid={_uid}&voice={_current_voice}"
+        _app_url       = f"https://app.eldaana.io/?uid={_uid}"
 
         if is_premium(_uid):
             # ── Premium → bouton Eldaana Voice ───────────────────────────────────
@@ -873,11 +874,12 @@ if _voice_mode:
     user_input = st.chat_input("💬 Écris ton message à Eldaana…")
 
 else:
-    # ── Bouton micro natif Streamlit (fonctionne sur PC et APK) ──────────
-    _mic_transcript = show_mic_button(key=f"mic_{st.session_state.voice_turn}")
-    if _mic_transcript:
-        user_input = _mic_transcript
-        st.session_state.voice_turn += 1
+    # ── Bouton micro natif Streamlit (PC uniquement — sur APK, le bouton overlay Android gère ça) ──
+    if not _is_android:
+        _mic_transcript = show_mic_button(key=f"mic_{st.session_state.voice_turn}")
+        if _mic_transcript:
+            user_input = _mic_transcript
+            st.session_state.voice_turn += 1
 
     # ── Saisie texte classique ────────────────────────────────────────────
     _text_input = st.chat_input("Écris ton message à Eldaana…")

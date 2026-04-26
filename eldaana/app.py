@@ -579,11 +579,14 @@ with st.sidebar:
     st.session_state.voice_mode = voice_mode
 
     if voice_mode:
+        import urllib.parse as _uparse
         _voice_base    = st.secrets.get("VOICE_SERVER_URL", "https://eldaana-voice.fly.dev")
         _uid           = st.session_state.get("user_id", "")
         _current_voice = st.session_state.get("eldaana_voice", "nova")
-        _url_voice     = f"{_voice_base}/?uid={_uid}&voice={_current_voice}"
         _app_url       = f"https://app.eldaana.io/?uid={_uid}"
+        # ?back= permet à "Revenir" sur la page Voice de revenir au bon endroit (PC)
+        _back          = _uparse.quote(_app_url, safe="")
+        _url_voice     = f"{_voice_base}/?uid={_uid}&voice={_current_voice}&back={_back}"
 
         if is_premium(_uid):
             # ── Premium → bouton Eldaana Voice ───────────────────────────────────
@@ -594,7 +597,7 @@ with st.sidebar:
                 "box-shadow:0 0 16px rgba(192,132,252,0.4);"
             )
             if _is_android:
-                # APK : components.html avec EldaanaNav (pont JS→Android)
+                # APK : EldaanaAndroid.openVoice() — bridge fiable (même-origine)
                 _v = _url_voice.replace("'", "%27").replace('"', "%22")
                 _components_uid.html(f"""<!DOCTYPE html><html><head>
 <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -606,8 +609,11 @@ box-shadow:0 0 16px rgba(192,132,252,0.4);}}
 </style></head><body>
 <a href="{_url_voice}" onclick="
   var u='{_v}';
-  var nav=window.EldaanaNav||(window.top&&window.top.EldaanaNav);
-  if(nav){{nav.openVoice(u);return false;}}
+  var b=null;
+  try{{b=window.EldaanaAndroid;}}catch(e){{}}
+  if(!b)try{{b=window.parent.EldaanaAndroid;}}catch(e){{}}
+  if(!b)try{{b=window.top.EldaanaAndroid;}}catch(e){{}}
+  if(b){{b.openVoice(u);return false;}}
   window.location.href=u;return false;">🎙️ Ouvrir Eldaana Voice →</a>
 </body></html>""", height=54)
             else:
@@ -630,7 +636,7 @@ box-shadow:0 0 16px rgba(192,132,252,0.4);}}
                 "box-shadow:0 0 16px rgba(251,146,60,0.4);"
             )
             if _is_android:
-                # APK : components.html avec EldaanaNav
+                # APK : EldaanaAndroid.openVoice()
                 _d = _dest.replace("'", "%27").replace('"', "%22")
                 _components_uid.html(f"""<!DOCTYPE html><html><head>
 <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -642,8 +648,11 @@ box-shadow:0 0 16px rgba(251,146,60,0.4);}}
 </style></head><body>
 <a href="{_dest}" onclick="
   var u='{_d}';
-  var nav=window.EldaanaNav||(window.top&&window.top.EldaanaNav);
-  if(nav){{nav.openVoice(u);return false;}}
+  var b=null;
+  try{{b=window.EldaanaAndroid;}}catch(e){{}}
+  if(!b)try{{b=window.parent.EldaanaAndroid;}}catch(e){{}}
+  if(!b)try{{b=window.top.EldaanaAndroid;}}catch(e){{}}
+  if(b){{b.openVoice(u);return false;}}
   window.location.href=u;return false;">🔒 Débloquer Eldaana Voice</a>
 </body></html>""", height=54)
             else:

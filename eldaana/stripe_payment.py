@@ -149,6 +149,11 @@ def is_premium(uid: str) -> bool:
 
     profile = db_load(uid) or {}
 
+    # Beta-testeurs : accès premium sans abonnement Stripe
+    if profile.get("beta_tester"):
+        st.session_state[cache_key] = True
+        return True
+
     # Vérification locale d'abord (plus rapide)
     if profile.get("premium_status") == "active":
         # Vérifier avec Stripe toutes les 24h max
@@ -156,19 +161,24 @@ def is_premium(uid: str) -> bool:
         if customer_id:
             try:
                 _init()
+                # Vérifier d'abord que le customer existe dans ce mode
+                stripe.Customer.retrieve(customer_id)
                 subs = stripe.Subscription.list(
                     customer=customer_id, status="active", limit=1
                 )
                 result = bool(subs.data)
                 st.session_state[cache_key] = result
                 if not result:
+                    # Le customer existe MAIS n'a plus d'abonnement actif
+                    # → on désactive vraiment (annulation, expiration…)
                     profile["premium_status"] = "inactive"
                     db_save(profile)
                 return result
             except stripe.error.InvalidRequestError:
-                # Customer créé dans un autre mode (test/live) — pas premium ici
-                st.session_state[cache_key] = False
-                return False
+                # Customer créé dans un autre mode (test ↔ live) :
+                # on NE touche PAS à Supabase — on fait confiance au statut local
+                st.session_state[cache_key] = True
+                return True
             except Exception:
                 pass
         st.session_state[cache_key] = True

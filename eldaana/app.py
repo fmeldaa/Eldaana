@@ -37,7 +37,7 @@ from pathlib import Path
 # ── Configuration de la page ──────────────────────────────────────────────────
 st.set_page_config(
     page_title="Eldaana",
-    page_icon="C:/Users/fmeld/Autres docs/Documents/These Pro/eldaana/logo.png",
+    page_icon="logo.png",
     layout="centered",
 )
 
@@ -584,8 +584,10 @@ with st.sidebar:
         _uid           = st.session_state.get("user_id", "")
         _current_voice = st.session_state.get("eldaana_voice", "nova")
         _app_url       = f"https://app.eldaana.io/?uid={_uid}"
-        # ?back= permet à "Revenir" sur la page Voice de revenir au bon endroit (PC)
-        _back          = _uparse.quote(_app_url, safe="")
+        # ?back= : "Revenir" sur la page Voice revient à la conversation
+        # Android : EldaanaNav.goBack() est utilisé en priorité (bridge WebView)
+        # PC      : window.location.href = back_url
+        _back = _uparse.quote(_app_url, safe="")
         _url_voice     = f"{_voice_base}/?uid={_uid}&voice={_current_voice}&back={_back}"
 
         if is_premium(_uid):
@@ -897,6 +899,15 @@ else:
     _text_input = st.chat_input("Écris ton message à Eldaana…")
     if _text_input:
         user_input = _text_input
+
+# ── Garde anti-doublon : évite de traiter deux fois le même message ──────────
+# (peut arriver si l'injection JS déclenche 2 événements 'input' sur Android)
+if user_input:
+    _last_msgs = st.session_state.get("messages", [])
+    if (_last_msgs
+            and _last_msgs[-1].get("role") == "user"
+            and _last_msgs[-1].get("content") == user_input):
+        user_input = None   # déjà traité dans le run précédent
 
 # ── Traitement du message ─────────────────────────────────────────────────────
 if user_input:

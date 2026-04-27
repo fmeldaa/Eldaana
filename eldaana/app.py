@@ -72,6 +72,11 @@ st.markdown("""
     }
     #MainMenu { visibility: hidden; }
     footer { visibility: hidden; }
+    header { visibility: hidden; }
+    /* Barre Streamlit Cloud (photo GitHub du développeur) */
+    [data-testid="stToolbar"] { display: none !important; }
+    [data-testid="stDecoration"] { display: none !important; }
+    .stDeployButton { display: none !important; }
 
     /* ── Champs de formulaire lisibles ── */
     [data-testid="stTextInput"] input,

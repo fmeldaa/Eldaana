@@ -342,6 +342,13 @@ def show_profile_form(profile: dict):
             ville  = st.text_input("Ville",   value=profile.get("ville",  ""))
             age    = st.number_input("Âge", min_value=11, max_value=120,
                                      value=max(11, int(profile.get("age") or 11)))
+            _ddn_str = profile.get("date_naissance", "")
+            date_naissance = st.text_input(
+                "Date de naissance *(optionnel)*",
+                value=_ddn_str,
+                placeholder="JJ/MM/AAAA",
+                help="Pour qu'Eldaana te souhaite joyeux anniversaire 🎂",
+            )
             poids  = st.number_input("Poids (kg) *(optionnel)*", min_value=0, max_value=300,
                                      value=int(profile.get("poids") or 0),
                                      help="Utilisé pour des suggestions santé/alimentation personnalisées")
@@ -467,6 +474,7 @@ def show_profile_form(profile: dict):
             "prenom":         prenom.strip(),
             "ville":          ville.strip(),
             "age":            int(age) if age else None,
+            "date_naissance": date_naissance.strip(),
             "poids":          int(poids) if poids else None,
             "taille":         int(taille) if taille else None,
             "budget_mensuel": int(budget_mensuel) if budget_mensuel else 0,

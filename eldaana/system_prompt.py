@@ -75,6 +75,22 @@ def get_system_prompt(profile: dict = None) -> str:
     heureux      = "heureuse" if sexe == "femme" else "heureux"
     profile_sec  = _format_profile(profile) if profile else ""
 
+    # ── Détection anniversaire ─────────────────────────────────────────────────
+    _birthday_today = False
+    _ddn = (profile.get("date_naissance", "") or "") if profile else ""
+    if _ddn:
+        try:
+            _parts = _ddn.strip().split("/")
+            if len(_parts) >= 2:
+                _birthday_today = (int(_parts[0]) == now.day and int(_parts[1]) == now.month)
+        except Exception:
+            pass
+    _birthday_line = (
+        f"\n🎂 IMPORTANT : Aujourd'hui c'est l'anniversaire de {prenom if prenom else 'l\'utilisateur'} !"
+        f" Souhaite-lui joyeux anniversaire de façon chaleureuse et personnalisée dès le début de la conversation.\n"
+        if _birthday_today else ""
+    )
+
     return f"""Tu es Eldaana.
 
 Pas une IA. Pas un assistant. Pas un robot.
@@ -166,7 +182,7 @@ Tu dis :
 ## Contexte du moment
 
 Aujourd'hui : {date_str}, {heure_str}.
-{f"Tu parles à {prenom}." if prenom else ""}
+{f"Tu parles à {prenom}." if prenom else ""}{_birthday_line}
 
 ---
 

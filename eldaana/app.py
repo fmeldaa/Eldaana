@@ -72,8 +72,7 @@ st.markdown("""
     }
     #MainMenu { visibility: hidden; }
     footer { visibility: hidden; }
-    header { visibility: hidden; }
-    /* Barre Streamlit Cloud (photo GitHub du développeur) */
+    /* Cacher la photo GitHub du développeur sans toucher au bouton sidebar */
     [data-testid="stToolbar"] { display: none !important; }
     [data-testid="stDecoration"] { display: none !important; }
     .stDeployButton { display: none !important; }

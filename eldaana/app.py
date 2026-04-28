@@ -28,7 +28,7 @@ from rgpd import show_rgpd_page
 from email_agent import show_email_page, format_email_summary_for_prompt
 from transport_alerts import (
     check_departure_alert, show_departure_alert_banner,
-    show_transport_status_sidebar, get_transport_summary,
+    show_transport_status_sidebar,
 )
 from conversation_storage import save_conversation, load_conversation
 from stripe_payment import is_premium, create_checkout_url, handle_stripe_return, create_portal_url
@@ -502,12 +502,13 @@ with st.sidebar:
                 from voyance_engine import compute_scores as _compute_scores
                 from humeur import get_humeur_stats as _get_humeur_stats
                 from budget import get_budget_stats as _get_budget_stats
+                from transport_alerts import get_transport_summary as _get_transport_summary
                 st.session_state[_score_cache_key] = _compute_scores(
                     profile        = profile or {},
                     weather        = weather  or {},
                     humeur_data    = _get_humeur_stats(_uid_scores),
                     budget_data    = _get_budget_stats(_uid_scores),
-                    transport_data = get_transport_summary(profile or {}, weather or {}),
+                    transport_data = _get_transport_summary(profile or {}, weather or {}),
                 )
             except Exception:
                 pass  # scores non disponibles, on skip le widget

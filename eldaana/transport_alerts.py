@@ -594,6 +594,35 @@ def show_departure_alert_banner(alerts: dict):
     """, unsafe_allow_html=True)
 
 
+def get_transport_summary(profile: dict, weather: dict = None) -> dict:
+    """
+    Retourne un résumé transport simplifié pour le moteur de scoring voyance.
+    Format compatible avec voyance_engine.build_data_block().
+    """
+    lines_configured = profile.get("transport_detail", {}).get("lines", [])
+    if not lines_configured:
+        return {}
+
+    try:
+        alerts = get_transport_alerts(profile, weather)
+        has_alerts = alerts.get("has_alerts", False)
+        blocking   = alerts.get("blocking", [])
+
+        if has_alerts:
+            disturbed_lines = list({a["line"] for a in alerts.get("tc_alerts", [])})
+            summary_txt = f"{', '.join(disturbed_lines[:3])} perturbée(s)"
+            if blocking:
+                summary_txt += " [BLOQUANT]"
+            return {
+                "has_alerts": True,
+                "summary":    summary_txt,
+                "blocking":   bool(blocking),
+            }
+        return {"has_alerts": False, "summary": "trafic normal"}
+    except Exception:
+        return {}
+
+
 def show_transport_status_sidebar(profile: dict, weather: dict = None):
     """
     Affiche un mini-résumé transport dans la sidebar.

@@ -123,6 +123,37 @@ def format_budget_for_prompt(user_id: str) -> str:
     )
 
 
+def get_budget_stats(user_id: str) -> dict:
+    """
+    Retourne les stats de budget pour le moteur de scoring voyance.
+    Format compatible avec voyance_engine.build_data_block().
+    """
+    summary = get_current_month_total(user_id)
+    if summary["budget_mensuel"] == 0 and summary["total"] == 0:
+        return {}
+
+    pct_used = summary["pourcentage"]
+    remaining_pct = max(0.0, 100.0 - pct_used)
+
+    # Tendance dépenses : basée sur la moitié du mois
+    from datetime import datetime as _dt
+    day_of_month = _dt.now().day
+    days_in_month = 30  # approximation
+    expected_pct = (day_of_month / days_in_month) * 100
+    if pct_used > expected_pct + 10:
+        trend = "en hausse (dépasse le rythme prévu)"
+    elif pct_used < expected_pct - 10:
+        trend = "en baisse (bien en dessous du budget prévu)"
+    else:
+        trend = "stable"
+
+    result = {
+        "remaining_pct": remaining_pct,
+        "trend": trend,
+    }
+    return result
+
+
 def show_budget_page(profile: dict):
     """Page de gestion du budget dans Streamlit."""
     user_id = profile.get("user_id", "")

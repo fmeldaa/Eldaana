@@ -101,6 +101,62 @@ def save_humeur(user_id: str, code: str, label: str):
         db_save(profile)
 
 
+def get_humeur_stats(user_id: str) -> dict:
+    """
+    Retourne les stats d'humeur pour le moteur de scoring voyance.
+    Format compatible avec voyance_engine.build_data_block().
+    """
+    profile = db_load(user_id)
+    if not profile:
+        return {}
+
+    today   = datetime.now().strftime("%Y-%m-%d")
+    humeur_data = profile.get("humeur_data", {})
+
+    # Humeur du jour (convertie en score 1-10)
+    score_map = {
+        "super":   9,
+        "bien":    7,
+        "fatigue": 5,
+        "stress":  4,
+        "triste":  3,
+        "colere":  3,
+        "malade":  3,
+    }
+    today_score = None
+    if humeur_data.get("date") == today:
+        today_score = score_map.get(humeur_data.get("code"), 5)
+
+    # Historique des 7 derniers jours dans humeur_history
+    history = profile.get("humeur_history", [])  # [{date, code, label}, ...]
+    recent  = [h for h in history if h.get("date", "") >= (
+        datetime.now().strftime("%Y-%m-") + "01"  # approximation : même mois
+    )][-7:]
+
+    scores_7d = [score_map.get(h.get("code"), 5) for h in recent]
+    avg_7d    = sum(scores_7d) / len(scores_7d) if scores_7d else None
+
+    # Tendance : compare le score d'aujourd'hui à la moyenne
+    trend = None
+    if today_score is not None and avg_7d is not None:
+        diff = today_score - avg_7d
+        if diff > 1:
+            trend = "hausse"
+        elif diff < -1:
+            trend = "baisse"
+        else:
+            trend = "stable"
+
+    result = {}
+    if today_score is not None:
+        result["today"] = today_score
+    if avg_7d is not None:
+        result["average_7d"] = avg_7d
+    if trend:
+        result["trend"] = trend
+    return result
+
+
 def format_humeur_for_prompt(user_id: str) -> str:
     """Retourne l'humeur pour injection dans le system prompt."""
     humeur = load_humeur(user_id)

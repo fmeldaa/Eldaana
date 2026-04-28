@@ -20,11 +20,9 @@ from shopping import (
     get_reminders, mark_reminded, format_reminders_for_prompt,
     format_shopping_for_prompt, show_shopping_page,
 )
-from budget import show_budget_page, format_budget_for_prompt, get_budget_stats
-from humeur import show_humeur_widget, format_humeur_for_prompt, get_humeur_stats
+from budget import show_budget_page, format_budget_for_prompt
+from humeur import show_humeur_widget, format_humeur_for_prompt
 from voyance import show_voyance_page
-from voyance_engine import compute_scores
-from tier_access import can_access
 from dashboard import show_dashboard
 from rgpd import show_rgpd_page
 from email_agent import show_email_page, format_email_summary_for_prompt
@@ -491,17 +489,28 @@ with st.sidebar:
 
     # ── Widget scores journaliers compact (Essentiel+) ────────────────────────
     _uid_scores = st.session_state.get("user_id", "")
-    if can_access("voyance_daily_scores", _uid_scores):
+    try:
+        from tier_access import can_access as _can_access
+        _scores_allowed = _can_access("voyance_daily_scores", _uid_scores)
+    except Exception:
+        _scores_allowed = False
+    if _scores_allowed:
         from datetime import date as _date
         _score_cache_key = f"scores_{_uid_scores}_{_date.today().isoformat()}"
         if _score_cache_key not in st.session_state:
-            st.session_state[_score_cache_key] = compute_scores(
-                profile        = profile or {},
-                weather        = weather  or {},
-                humeur_data    = get_humeur_stats(_uid_scores),
-                budget_data    = get_budget_stats(_uid_scores),
-                transport_data = get_transport_summary(profile or {}, weather or {}),
-            )
+            try:
+                from voyance_engine import compute_scores as _compute_scores
+                from humeur import get_humeur_stats as _get_humeur_stats
+                from budget import get_budget_stats as _get_budget_stats
+                st.session_state[_score_cache_key] = _compute_scores(
+                    profile        = profile or {},
+                    weather        = weather  or {},
+                    humeur_data    = _get_humeur_stats(_uid_scores),
+                    budget_data    = _get_budget_stats(_uid_scores),
+                    transport_data = get_transport_summary(profile or {}, weather or {}),
+                )
+            except Exception:
+                pass  # scores non disponibles, on skip le widget
         _sc = st.session_state[_score_cache_key]
         # Couleur d'un score (vert / jaune / rouge)
         def _sc_color(s):

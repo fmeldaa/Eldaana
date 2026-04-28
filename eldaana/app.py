@@ -20,9 +20,11 @@ from shopping import (
     get_reminders, mark_reminded, format_reminders_for_prompt,
     format_shopping_for_prompt, show_shopping_page,
 )
-from budget import show_budget_page, format_budget_for_prompt
-from humeur import show_humeur_widget, format_humeur_for_prompt
+from budget import show_budget_page, format_budget_for_prompt, get_budget_stats
+from humeur import show_humeur_widget, format_humeur_for_prompt, get_humeur_stats
 from voyance import show_voyance_page
+from voyance_engine import compute_scores
+from tier_access import can_access
 from dashboard import show_dashboard
 from rgpd import show_rgpd_page
 from email_agent import show_email_page, format_email_summary_for_prompt
@@ -486,6 +488,46 @@ with st.sidebar:
 
     # Statut transport en temps réel
     show_transport_status_sidebar(profile, weather)
+
+    # ── Widget scores journaliers compact (Essentiel+) ────────────────────────
+    _uid_scores = st.session_state.get("user_id", "")
+    if can_access("voyance_daily_scores", _uid_scores):
+        from datetime import date as _date
+        _score_cache_key = f"scores_{_uid_scores}_{_date.today().isoformat()}"
+        if _score_cache_key not in st.session_state:
+            from transport_alerts import get_transport_summary
+            st.session_state[_score_cache_key] = compute_scores(
+                profile        = profile or {},
+                weather        = weather  or {},
+                humeur_data    = get_humeur_stats(_uid_scores),
+                budget_data    = get_budget_stats(_uid_scores),
+                transport_data = get_transport_summary(profile or {}, weather or {}),
+            )
+        _sc = st.session_state[_score_cache_key]
+        # Couleur d'un score (vert / jaune / rouge)
+        def _sc_color(s):
+            if s >= 70: return "#22c55e"
+            if s >= 45: return "#f59e0b"
+            return "#ef4444"
+
+        _s_hum = _sc.get("score_humeur",  _sc.get("score_journee", 60))
+        _s_ene = _sc.get("score_energie", 60)
+        _s_str = _sc.get("score_stress",  60)
+        _s_bud = _sc.get("score_budget",  70)
+        st.markdown(f"""
+        <div style="background:rgba(124,58,237,0.07);border:1px solid rgba(192,132,252,0.3);
+                    border-radius:12px;padding:0.55rem 0.7rem;margin:0.4rem 0;">
+            <p style="margin:0 0 5px 0;font-size:0.72rem;color:#a78bfa;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;">
+                Scores du jour
+            </p>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;">
+                <span style="font-size:0.75rem;color:#e9d5ff;">😊 <b style="color:{_sc_color(_s_hum)}">{_s_hum}</b></span>
+                <span style="font-size:0.75rem;color:#e9d5ff;">⚡ <b style="color:{_sc_color(_s_ene)}">{_s_ene}</b></span>
+                <span style="font-size:0.75rem;color:#e9d5ff;">😰 <b style="color:{_sc_color(100 - _s_str)}">{_s_str}</b></span>
+                <span style="font-size:0.75rem;color:#e9d5ff;">💰 <b style="color:{_sc_color(_s_bud)}">{_s_bud}</b></span>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
 
     st.divider()
 

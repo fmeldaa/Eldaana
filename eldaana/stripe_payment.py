@@ -13,10 +13,16 @@ import streamlit as st
 import stripe
 from storage import db_load, db_save
 
-PRICE_EUR      = 999          # centimes
-PRICE_CURRENCY = "eur"
-PRODUCT_NAME   = "Eldaana Premium"
-PRODUCT_DESC   = "Mode vocal · Prédictions avancées · Agents autonomes · Budget & banque"
+PRICE_EUR_ESSENTIAL  = 999    # centimes — 9,99 €/mois
+PRICE_EUR_PREMIUM    = 2900   # centimes — 29 €/mois
+PRICE_EUR            = PRICE_EUR_ESSENTIAL  # rétrocompatibilité
+PRICE_CURRENCY       = "eur"
+PRODUCT_NAME_ESSENTIAL = "Eldaana Essentiel"
+PRODUCT_DESC_ESSENTIAL = "Mode vocal · Prédictions journalières · Budget · Transport"
+PRODUCT_NAME_PREMIUM   = "Eldaana Premium"
+PRODUCT_DESC_PREMIUM   = "Tout Essentiel + voix illimitée · Forecast 30j · Facteurs détaillés · Accès bêta"
+PRODUCT_NAME = PRODUCT_NAME_ESSENTIAL  # rétrocompatibilité
+PRODUCT_DESC = PRODUCT_DESC_ESSENTIAL  # rétrocompatibilité
 
 
 def _init():
@@ -27,25 +33,49 @@ def _init():
 
 @st.cache_data(ttl=3600)
 def _get_or_create_price_id(mode: str) -> str:
-    """Crée le produit+prix Eldaana Premium s'il n'existe pas encore.
-    Le paramètre mode ('test' ou 'live') est dans la clé de cache pour
-    éviter de renvoyer un price_id live quand on est en mode test."""
+    """Crée le produit+prix Eldaana Essentiel (9,99€) s'il n'existe pas encore.
+    Garde le lookup_key existant pour ne pas casser les abonnements en cours."""
     _init()
+    # Note: le lookup_key historique est 'eldaana_premium_monthly_{mode}'
+    # On le conserve pour la rétrocompatibilité (abonnés existants)
     _lookup_key = f"eldaana_premium_monthly_{mode}"
     prices = stripe.Price.list(lookup_keys=[_lookup_key], limit=1)
     if prices.data:
         return prices.data[0].id
 
-    # Créer le produit
     product = stripe.Product.create(
-        name=PRODUCT_NAME,
-        description=PRODUCT_DESC,
-        metadata={"app": "eldaana"},
+        name=PRODUCT_NAME_ESSENTIAL,
+        description=PRODUCT_DESC_ESSENTIAL,
+        metadata={"app": "eldaana", "tier": "essential"},
     )
-    # Créer le prix récurrent
     price = stripe.Price.create(
         product=product.id,
-        unit_amount=PRICE_EUR,
+        unit_amount=PRICE_EUR_ESSENTIAL,
+        currency=PRICE_CURRENCY,
+        recurring={"interval": "month"},
+        lookup_key=_lookup_key,
+        transfer_lookup_key=True,
+    )
+    return price.id
+
+
+@st.cache_data(ttl=3600)
+def _get_or_create_price_id_premium29(mode: str) -> str:
+    """Crée le produit+prix Eldaana Premium (29€) s'il n'existe pas encore."""
+    _init()
+    _lookup_key = f"eldaana_premium29_monthly_{mode}"
+    prices = stripe.Price.list(lookup_keys=[_lookup_key], limit=1)
+    if prices.data:
+        return prices.data[0].id
+
+    product = stripe.Product.create(
+        name=PRODUCT_NAME_PREMIUM,
+        description=PRODUCT_DESC_PREMIUM,
+        metadata={"app": "eldaana", "tier": "premium"},
+    )
+    price = stripe.Price.create(
+        product=product.id,
+        unit_amount=PRICE_EUR_PREMIUM,
         currency=PRICE_CURRENCY,
         recurring={"interval": "month"},
         lookup_key=_lookup_key,
@@ -108,6 +138,50 @@ def create_checkout_url(uid: str, email: str, return_url: str) -> str | None:
         return session.url
     except Exception as e:
         st.error(f"Erreur Stripe : {e}")
+        return None
+
+
+def create_checkout_url_premium(uid: str, email: str, return_url: str) -> str | None:
+    """Crée une session Stripe Checkout pour le plan Premium 29€/mois."""
+    try:
+        _init()
+        price_id = _get_or_create_price_id_premium29(_current_mode())
+        profile = db_load(uid) or {}
+        customer_id = profile.get("stripe_customer_id")
+
+        if not customer_id:
+            customer = stripe.Customer.create(
+                email=email or None,
+                metadata={"eldaana_uid": uid},
+            )
+            customer_id = customer.id
+            profile["stripe_customer_id"] = customer_id
+            db_save(profile)
+        else:
+            try:
+                stripe.Customer.retrieve(customer_id)
+            except stripe.error.InvalidRequestError:
+                customer = stripe.Customer.create(
+                    email=email or None,
+                    metadata={"eldaana_uid": uid},
+                )
+                customer_id = customer.id
+                profile["stripe_customer_id"] = customer_id
+                db_save(profile)
+
+        session = stripe.checkout.Session.create(
+            customer=customer_id,
+            payment_method_types=["card"],
+            line_items=[{"price": price_id, "quantity": 1}],
+            mode="subscription",
+            success_url=return_url + "&stripe_success=1&session_id={CHECKOUT_SESSION_ID}",
+            cancel_url=return_url + "&stripe_cancel=1",
+            allow_promotion_codes=True,
+            metadata={"eldaana_uid": uid, "tier": "premium"},
+        )
+        return session.url
+    except Exception as e:
+        st.error(f"Erreur Stripe Premium : {e}")
         return None
 
 
@@ -186,6 +260,67 @@ def is_premium(uid: str) -> bool:
 
     st.session_state[cache_key] = False
     return False
+
+
+def get_user_plan(uid: str) -> str:
+    """
+    Retourne le plan actif de l'utilisateur : 'free' | 'essential' | 'premium'.
+    Distingue Essentiel (9,99€) de Premium (29€) en comparant le price_id
+    de la souscription active avec les deux price_ids connus.
+    """
+    if not uid:
+        return "free"
+
+    cache_key = f"_plan_{uid}"
+    if cache_key in st.session_state:
+        return st.session_state[cache_key]
+
+    profile = db_load(uid) or {}
+
+    # Beta-testeurs → premium complet
+    if profile.get("beta_tester"):
+        st.session_state[cache_key] = "premium"
+        return "premium"
+
+    if profile.get("premium_status") != "active":
+        st.session_state[cache_key] = "free"
+        return "free"
+
+    customer_id = profile.get("stripe_customer_id")
+    if not customer_id:
+        st.session_state[cache_key] = "essential"  # statut local sans customer_id
+        return "essential"
+
+    try:
+        _init()
+        mode = _current_mode()
+        price_id_premium29 = _get_or_create_price_id_premium29(mode)
+        subs = stripe.Subscription.list(customer=customer_id, status="active", limit=5)
+        plan = "free"
+        for sub in subs.data:
+            for item in sub["items"]["data"]:
+                pid = item["price"]["id"]
+                if pid == price_id_premium29:
+                    plan = "premium"
+                    break
+                else:
+                    plan = "essential"
+            if plan == "premium":
+                break
+
+        st.session_state[cache_key] = plan
+        if plan == "free":
+            profile["premium_status"] = "inactive"
+            db_save(profile)
+        return plan
+
+    except stripe.error.InvalidRequestError:
+        # Mode test ↔ live : on fait confiance au statut local
+        st.session_state[cache_key] = "essential"
+        return "essential"
+    except Exception:
+        st.session_state[cache_key] = "essential"
+        return "essential"
 
 
 def _activate_premium(uid: str, customer_id: str):

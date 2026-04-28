@@ -8,7 +8,7 @@ Tiers :
 """
 
 import streamlit as st
-from stripe_payment import is_premium
+from stripe_payment import get_user_plan
 
 
 # ── Définition des features par tier ──────────────────────────────────────────
@@ -57,9 +57,7 @@ def get_user_tier(uid: str) -> str:
     cache_key = f"_tier_{uid}"
     if cache_key in st.session_state:
         return st.session_state[cache_key]
-    tier = "essential" if is_premium(uid) else "free"
-    # Note : distinguer essential / premium nécessite get_user_plan() dans stripe_payment.py
-    # → à affiner quand le plan 29€ sera créé dans Stripe
+    tier = get_user_plan(uid)  # 'free' | 'essential' | 'premium'
     st.session_state[cache_key] = tier
     return tier
 

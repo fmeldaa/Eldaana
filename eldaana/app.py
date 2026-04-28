@@ -30,7 +30,7 @@ from rgpd import show_rgpd_page
 from email_agent import show_email_page, format_email_summary_for_prompt
 from transport_alerts import (
     check_departure_alert, show_departure_alert_banner,
-    show_transport_status_sidebar,
+    show_transport_status_sidebar, get_transport_summary,
 )
 from conversation_storage import save_conversation, load_conversation
 from stripe_payment import is_premium, create_checkout_url, handle_stripe_return, create_portal_url
@@ -495,7 +495,6 @@ with st.sidebar:
         from datetime import date as _date
         _score_cache_key = f"scores_{_uid_scores}_{_date.today().isoformat()}"
         if _score_cache_key not in st.session_state:
-            from transport_alerts import get_transport_summary
             st.session_state[_score_cache_key] = compute_scores(
                 profile        = profile or {},
                 weather        = weather  or {},

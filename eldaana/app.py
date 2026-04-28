@@ -975,9 +975,18 @@ if user_input:
     # ── Suivi courses général ─────────────────────────────────────────────────
     system_prompt += format_shopping_for_prompt(user_id)
 
-    # ── Modèle : Haiku (rapide) en mode vocal, Opus sinon ────────────────────
-    _model      = "claude-haiku-4-5-20251001" if _voice_mode else "claude-opus-4-6"
-    _max_tokens = 350 if _voice_mode else 1024
+    # ── Modèle : routing par tier (économie ~40% sur gratuits) ──────────────
+    _uid_model  = st.session_state.get("user_id", "")
+    _is_premium = is_premium(_uid_model)
+    if _voice_mode:
+        _model      = "claude-haiku-4-5-20251001"   # Voix : toujours Haiku (rapide)
+        _max_tokens = 350
+    elif _is_premium:
+        _model      = "claude-sonnet-4-5"            # Premium texte : Sonnet
+        _max_tokens = 1024
+    else:
+        _model      = "claude-haiku-4-5-20251001"    # Gratuit texte : Haiku
+        _max_tokens = 768
 
     # ── Streaming avec pré-génération TTS phrase par phrase ──────────────────
     with st.chat_message("assistant", avatar=LOGO):
@@ -989,7 +998,8 @@ if user_input:
         with client.messages.stream(
             model=_model,
             max_tokens=_max_tokens,
-            system=system_prompt,
+            system=[{"type": "text", "text": system_prompt,
+                     "cache_control": {"type": "ephemeral"}}],
             messages=st.session_state.messages,
         ) as stream:
             for chunk in stream.text_stream:

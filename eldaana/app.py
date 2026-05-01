@@ -621,20 +621,36 @@ with st.sidebar:
                 unsafe_allow_html=True,
             )
     else:
+        # Free → deux boutons côte à côte : Essentiel + Premium
         _app_url = f"https://app.eldaana.io/?uid={_uid_sb}"
-        _checkout_url = create_checkout_url(
-            _uid_sb,
-            profile.get("google_email", ""),
-            _app_url,
-        )
-        if _checkout_url:
-            st.markdown(
-                f'<a href="{_checkout_url}" style="display:block;background:linear-gradient(135deg,#f59e0b,#f97316);'
-                f'color:#fff;font-weight:700;font-size:0.82rem;text-decoration:none;'
-                f'text-align:center;border-radius:10px;padding:9px 8px;margin-bottom:8px;">'
-                f'⭐ Passer Essentiel — 9,99€/mois</a>',
-                unsafe_allow_html=True,
-            )
+        _email_sb = profile.get("google_email", "")
+        _checkout_ess = create_checkout_url(_uid_sb, _email_sb, _app_url)
+        try:
+            from stripe_payment import create_checkout_url_premium as _checkout_prem_fn
+            _checkout_prem = _checkout_prem_fn(_uid_sb, _email_sb, _app_url)
+        except Exception:
+            _checkout_prem = None
+
+        if _checkout_ess or _checkout_prem:
+            _c1, _c2 = st.columns(2)
+            with _c1:
+                if _checkout_ess:
+                    st.markdown(
+                        f'<a href="{_checkout_ess}" style="display:block;background:linear-gradient(135deg,#f59e0b,#f97316);'
+                        f'color:#fff;font-weight:700;font-size:0.78rem;text-decoration:none;'
+                        f'text-align:center;border-radius:10px;padding:9px 6px;margin-bottom:8px;">'
+                        f'⭐ Essentiel<br>9,99€/mois</a>',
+                        unsafe_allow_html=True,
+                    )
+            with _c2:
+                if _checkout_prem:
+                    st.markdown(
+                        f'<a href="{_checkout_prem}" style="display:block;background:linear-gradient(135deg,#7c3aed,#c084fc);'
+                        f'color:#fff;font-weight:700;font-size:0.78rem;text-decoration:none;'
+                        f'text-align:center;border-radius:10px;padding:9px 6px;margin-bottom:8px;">'
+                        f'🌟 Premium<br>29,99€/mois</a>',
+                        unsafe_allow_html=True,
+                    )
 
     if not profile.get("onboarding_lifestyle_complete"):
         st.info("💡 Plus Eldaana vous connaît, plus elle est précise !")

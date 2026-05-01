@@ -56,8 +56,9 @@ DEFAULT_PERMISSIONS = {
 
 
 def load_permissions(uid: str) -> dict:
-    """Charge les permissions de l'utilisateur depuis Supabase."""
-    data = db_load(uid, "agent_permissions")
+    """Charge les permissions depuis le profil Supabase (clé agent_permissions)."""
+    profile_data = db_load(uid) or {}
+    data = profile_data.get("agent_permissions", {})
     if not data:
         return {k: AgentPermission(**{**vars(v)}) for k, v in DEFAULT_PERMISSIONS.items()}
     perms = {}
@@ -78,7 +79,8 @@ def load_permissions(uid: str) -> dict:
 
 
 def save_permissions(uid: str, perms: dict):
-    """Sauvegarde les permissions dans Supabase."""
+    """Sauvegarde les permissions dans le profil Supabase (clé agent_permissions)."""
+    profile_data = db_load(uid) or {}
     data = {}
     for cat, p in perms.items():
         data[cat] = {
@@ -88,7 +90,8 @@ def save_permissions(uid: str, perms: dict):
             "enabled":         p.enabled,
             "granted_at":      p.granted_at,
         }
-    db_save(uid, "agent_permissions", data)
+    profile_data["agent_permissions"] = data
+    db_save(profile_data)
 
 
 def has_permission(uid: str, category: str, action: str) -> bool:

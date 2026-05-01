@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Thème dédié au SplashActivity — fond beige rosé uniforme sur tout l'écran -->
+    <style name="Theme.Splash" parent="Theme.AppCompat.NoActionBar">
+        <item name="android:windowBackground">#C4A99A</item>
+        <item name="android:statusBarColor">#C4A99A</item>
+        <item name="android:navigationBarColor">#C4A99A</item>
+        <item name="android:windowFullscreen">false</item>
+        <item name="android:windowDrawsSystemBarBackgrounds">true</item>
+    </style>
+</resources>

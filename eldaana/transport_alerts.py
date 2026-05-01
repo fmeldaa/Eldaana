@@ -366,6 +366,48 @@ def get_traffic_incidents(lat: float, lon: float, radius_km: int = 10) -> list[d
         return []
 
 
+def get_traffic_flow(lat: float, lon: float, radius_km: int = 10) -> dict:
+    """
+    Récupère l'état du trafic fluide via TomTom Flow Segment API.
+    Mesure la vitesse réelle vs la vitesse libre sur les axes principaux.
+
+    Retourne un dict avec :
+    - congestion_level : "fluide" | "ralenti" | "dense" | "bloqué"
+    - current_speed_kmh, free_flow_speed_kmh, slowdown_pct, delay_estimate_min
+    """
+    api_key = _tomtom_key()
+    if not api_key:
+        return {}
+    try:
+        r = requests.get(
+            "https://api.tomtom.com/traffic/services/4/flowSegmentData/absolute/10/json",
+            params={"key": api_key, "point": f"{lat},{lon}", "unit": "KMPH"},
+            timeout=6,
+        )
+        if r.status_code != 200:
+            return {}
+        data = r.json().get("flowSegmentData", {})
+        current_speed   = data.get("currentSpeed", 0)
+        free_flow_speed = data.get("freeFlowSpeed", 0)
+        if free_flow_speed <= 0:
+            return {}
+        slowdown_pct = max(0, min(100, round((1 - current_speed / free_flow_speed) * 100)))
+        if slowdown_pct < 15:   level = "fluide"
+        elif slowdown_pct < 35: level = "ralenti"
+        elif slowdown_pct < 60: level = "dense"
+        else:                   level = "bloqué"
+        delay_estimate = round(30 * slowdown_pct / 100) if slowdown_pct > 10 else 0
+        return {
+            "congestion_level":    level,
+            "current_speed_kmh":   round(current_speed),
+            "free_flow_speed_kmh": round(free_flow_speed),
+            "slowdown_pct":        slowdown_pct,
+            "delay_estimate_min":  delay_estimate,
+        }
+    except Exception:
+        return {}
+
+
 # ── Logique principale ────────────────────────────────────────────────────────
 
 def get_transport_alerts(profile: dict, weather: dict = None) -> dict:
@@ -378,8 +420,9 @@ def get_transport_alerts(profile: dict, weather: dict = None) -> dict:
     has_car = transport_info.get("has_car", False)
     tz_name = (weather or {}).get("timezone") or profile.get("timezone")
 
-    tc_alerts = []
-    traffic   = []
+    tc_alerts    = []
+    traffic      = []
+    traffic_flow = {}
 
     for line in lines:
         disruptions = get_line_disruptions(line)
@@ -392,22 +435,26 @@ def get_transport_alerts(profile: dict, weather: dict = None) -> dict:
         lat = weather.get("lat")
         lon = weather.get("lon")
         if lat and lon:
-            traffic = get_traffic_incidents(lat, lon, radius_km=15)
+            traffic      = get_traffic_incidents(lat, lon, radius_km=15)
+            traffic_flow = get_traffic_flow(lat, lon, radius_km=10)
 
-    mins_before = _minutes_before_departure(profile, tz_name)
-    in_window   = is_departure_window(profile, tz_name)
+    mins_before  = _minutes_before_departure(profile, tz_name)
+    in_window    = is_departure_window(profile, tz_name)
     depart_label = minutes_until_departure_label(profile, tz_name)
 
     # Séparer bloquants vs. mineurs
     blocking = [a for a in tc_alerts if a.get("blocking")]
     minors   = [a for a in tc_alerts if not a.get("blocking")]
 
+    flow_congested = traffic_flow.get("congestion_level") in ("dense", "bloqué")
+
     return {
         "tc_alerts":     tc_alerts,
         "blocking":      blocking,
         "minors":        minors,
         "traffic":       traffic,
-        "has_alerts":    bool(tc_alerts or traffic),
+        "traffic_flow":  traffic_flow,
+        "has_alerts":    bool(tc_alerts or traffic or flow_congested),
         "is_urgent":     bool(blocking and in_window),
         "in_window":     in_window,
         "mins_before":   mins_before,
@@ -433,7 +480,12 @@ def check_departure_alert(profile: dict, weather: dict = None) -> dict | None:
         return None
 
     alerts = get_transport_alerts(profile, weather)
-    if not alerts["tc_alerts"]:
+    has_car = profile.get("transport_detail", {}).get("has_car", False)
+    flow_congested = (
+        has_car and
+        alerts.get("traffic_flow", {}).get("congestion_level") in ("dense", "bloqué")
+    )
+    if not alerts["tc_alerts"] and not flow_congested:
         return None
 
     return alerts
@@ -456,6 +508,15 @@ def format_transport_for_briefing(alerts: dict) -> str:
         road = f" ({t['road']})" if t.get("road") else ""
         lines.append(f"🚗 **+{t['delay_min']} min**{road} — {t['description']}")
 
+    flow = alerts.get("traffic_flow", {})
+    if flow.get("congestion_level") in ("ralenti", "dense", "bloqué"):
+        level   = flow["congestion_level"].capitalize()
+        speed   = flow.get("current_speed_kmh", "?")
+        pct     = flow.get("slowdown_pct", 0)
+        delay   = flow.get("delay_estimate_min", 0)
+        delay_s = f" — +{delay} min estimés" if delay else ""
+        lines.append(f"🚦 **Trafic {level}** — {speed} km/h ({pct}% de ralentissement){delay_s}")
+
     return "\n".join(lines)
 
 
@@ -464,30 +525,45 @@ def format_departure_alert_message(alerts: dict) -> str:
     Message vocal / texte d'alerte départ avec alternatives.
     Optimisé pour être lu par la synthèse vocale.
     """
-    if not alerts or not alerts.get("tc_alerts"):
+    if not alerts:
         return ""
 
-    lines_affected = list({a["line"] for a in alerts["tc_alerts"]})
-    depart_label   = alerts.get("depart_label", "")
+    depart_label = alerts.get("depart_label", "")
+    parts        = []
 
-    msg = f"Attention, perturbation sur {' et '.join(lines_affected)}"
-    if depart_label:
-        msg += f". Ton départ est prévu {depart_label}."
+    # ── Perturbations TC ──
+    if alerts.get("tc_alerts"):
+        lines_affected = list({a["line"] for a in alerts["tc_alerts"]})
+        msg = f"Attention, perturbation sur {' et '.join(lines_affected)}"
+        if depart_label:
+            msg += f". Ton départ est prévu {depart_label}."
 
-    # Ajouter la première alternative
-    first_alt_info = alerts["tc_alerts"][0].get("alternatives_info", {})
-    alts = first_alt_info.get("alternatives", [])
-    if alts:
-        msg += f" Alternative possible : {alts[0]['ligne']}, {alts[0]['note']}."
-        temps_extra = first_alt_info.get("temps_extra_min", 0)
-        if temps_extra:
-            msg += f" Prévoir environ {temps_extra} minutes de plus."
+        first_alt_info = alerts["tc_alerts"][0].get("alternatives_info", {})
+        alts = first_alt_info.get("alternatives", [])
+        if alts:
+            msg += f" Alternative possible : {alts[0]['ligne']}, {alts[0]['note']}."
+            temps_extra = first_alt_info.get("temps_extra_min", 0)
+            if temps_extra:
+                msg += f" Prévoir environ {temps_extra} minutes de plus."
 
-    conseil = first_alt_info.get("conseil", "")
-    if conseil:
-        msg += f" {conseil}"
+        conseil = first_alt_info.get("conseil", "")
+        if conseil:
+            msg += f" {conseil}"
+        parts.append(msg)
 
-    return msg
+    # ── Trafic voiture congestionné ──
+    flow = alerts.get("traffic_flow", {})
+    if flow.get("congestion_level") in ("dense", "bloqué"):
+        level = flow["congestion_level"]
+        delay = flow.get("delay_estimate_min", 0)
+        car_msg = f"Trafic {level} en voiture"
+        if delay:
+            car_msg += f", compte environ {delay} minutes de retard supplémentaires"
+        if depart_label and not alerts.get("tc_alerts"):
+            car_msg += f". Ton départ est prévu {depart_label}."
+        parts.append(car_msg)
+
+    return " ".join(parts)
 
 
 def format_transport_for_prompt(profile: dict) -> str:
@@ -516,7 +592,11 @@ def show_departure_alert_banner(alerts: dict):
     Affiche une bannière d'alerte proactive en haut de la page.
     À appeler AVANT l'affichage du chat quand une perturbation est détectée.
     """
-    if not alerts or not alerts.get("tc_alerts"):
+    if not alerts:
+        return
+    flow = alerts.get("traffic_flow", {})
+    flow_congested = flow.get("congestion_level") in ("dense", "bloqué")
+    if not alerts.get("tc_alerts") and not flow_congested:
         return
 
     is_urgent   = alerts.get("is_urgent", False)
@@ -583,15 +663,58 @@ def show_departure_alert_banner(alerts: dict):
             if conseil:
                 st.info(f"💡 {conseil}")
 
-    # Lien Citymapper
-    st.markdown("""
-    <div style="margin-top:0.5rem;text-align:center;">
-        <a href="https://citymapper.com/paris" target="_blank"
-           style="color:#7c3aed;font-size:0.85rem;text-decoration:none;">
-            📍 Ouvrir Citymapper pour l'itinéraire en temps réel →
-        </a>
-    </div>
-    """, unsafe_allow_html=True)
+    # ── Bloc trafic voiture (Flow API) ──
+    flow = alerts.get("traffic_flow", {})
+    if flow.get("congestion_level") in ("dense", "bloqué"):
+        level   = flow["congestion_level"].capitalize()
+        speed   = flow.get("current_speed_kmh", "?")
+        pct     = flow.get("slowdown_pct", 0)
+        delay   = flow.get("delay_estimate_min", 0)
+        delay_s = f"+{delay} min" if delay else ""
+
+        flow_color = "#ef4444" if flow["congestion_level"] == "bloqué" else "#f59e0b"
+        st.markdown(f"""
+        <div style="
+            background:#fff7ed;
+            border:1px solid {flow_color};
+            border-radius:12px;
+            padding:0.75rem 1rem;
+            margin-top:0.6rem;
+        ">
+            <p style="margin:0;font-size:0.95rem;font-weight:700;color:#92400e;">
+                🚗 Trafic {level} en voiture
+            </p>
+            <p style="margin:0.2rem 0 0;font-size:0.88rem;color:#374151;">
+                Vitesse actuelle : <b>{speed} km/h</b> — ralentissement de <b>{pct}%</b>
+                {("<span style='color:#ef4444;font-weight:700;'> " + delay_s + "</span>") if delay_s else ""}
+            </p>
+        </div>
+        """, unsafe_allow_html=True)
+
+        # Liens navigation voiture
+        st.markdown("""
+        <div style="margin-top:0.4rem;display:flex;gap:1rem;justify-content:center;">
+            <a href="https://www.google.com/maps/dir/?api=1&travelmode=driving" target="_blank"
+               style="color:#1a73e8;font-size:0.85rem;text-decoration:none;">
+                🗺️ Google Maps →
+            </a>
+            <a href="https://waze.com" target="_blank"
+               style="color:#33ccff;font-size:0.85rem;text-decoration:none;">
+                🚦 Waze →
+            </a>
+        </div>
+        """, unsafe_allow_html=True)
+
+    # Lien Citymapper (TC)
+    if alerts.get("tc_alerts"):
+        st.markdown("""
+        <div style="margin-top:0.5rem;text-align:center;">
+            <a href="https://citymapper.com/paris" target="_blank"
+               style="color:#7c3aed;font-size:0.85rem;text-decoration:none;">
+                📍 Ouvrir Citymapper pour l'itinéraire en temps réel →
+            </a>
+        </div>
+        """, unsafe_allow_html=True)
 
 
 def get_transport_summary(profile: dict, weather: dict = None) -> dict:
@@ -610,15 +733,29 @@ def get_transport_summary(profile: dict, weather: dict = None) -> dict:
 
         if has_alerts:
             disturbed_lines = list({a["line"] for a in alerts.get("tc_alerts", [])})
-            summary_txt = f"{', '.join(disturbed_lines[:3])} perturbée(s)"
-            if blocking:
-                summary_txt += " [BLOQUANT]"
+            summary_parts   = []
+            if disturbed_lines:
+                txt = f"{', '.join(disturbed_lines[:3])} perturbée(s)"
+                if blocking:
+                    txt += " [BLOQUANT]"
+                summary_parts.append(txt)
+
+            flow = alerts.get("traffic_flow", {})
+            if flow.get("congestion_level") in ("dense", "bloqué"):
+                delay = flow.get("delay_estimate_min", 0)
+                flow_txt = f"trafic {flow['congestion_level']}"
+                if delay:
+                    flow_txt += f" (+{delay} min)"
+                summary_parts.append(flow_txt)
+
+            summary_txt = " | ".join(summary_parts) if summary_parts else "perturbations détectées"
             return {
-                "has_alerts": True,
-                "summary":    summary_txt,
-                "blocking":   bool(blocking),
+                "has_alerts":   True,
+                "summary":      summary_txt,
+                "blocking":     bool(blocking),
+                "traffic_flow": flow,
             }
-        return {"has_alerts": False, "summary": "trafic normal"}
+        return {"has_alerts": False, "summary": "trafic normal", "traffic_flow": {}}
     except Exception:
         return {}
 

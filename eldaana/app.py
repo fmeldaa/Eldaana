@@ -11,7 +11,7 @@ from onboarding import (
     logout,
 )
 from weather import get_weather, build_briefing, build_wakeup_message
-from voice import speak, stop, VOICE_OPTIONS, prepare_audio_async, speak_from_prefetched, estimate_speech_duration  # noqa
+from voice import speak, stop, VOICE_OPTIONS, get_voice_options, prepare_audio_async, speak_from_prefetched, estimate_speech_duration  # noqa
 from voice_input import show_mic_button, show_speaking_indicator, inject_mic_auto_trigger
 from social_connect import show_social_connect
 from gemini_search import should_search_web, search_web, format_web_results_for_prompt
@@ -543,11 +543,21 @@ with st.sidebar:
     # ── Statut Premium ────────────────────────────────────────────────────────
     _uid_sb  = st.session_state.get("user_id", "")
     _premium = is_premium(_uid_sb)
-    if _premium:
+    # Tier complet (free / essential / premium) pour gating des features
+    try:
+        from tier_access import get_user_tier as _get_tier
+        _tier_sb = _get_tier(_uid_sb)
+    except Exception:
+        _tier_sb = "essential" if _premium else "free"
+
+    if _tier_sb == "premium":
+        _badge_label = "✨ Premium actif" if _tier_sb == "premium" else "⭐ Essentiel actif"
+        _badge_color = "linear-gradient(135deg,#7c3aed,#c084fc)" if _tier_sb == "premium" \
+                       else "linear-gradient(135deg,#f59e0b,#f97316)"
         st.markdown(
-            '<div style="background:linear-gradient(135deg,#7c3aed,#c084fc);'
-            'color:#fff;border-radius:10px;padding:7px 10px;text-align:center;'
-            'font-size:0.8rem;font-weight:700;margin-bottom:6px;">✨ Premium actif</div>',
+            f'<div style="background:{_badge_color};'
+            f'color:#fff;border-radius:10px;padding:7px 10px;text-align:center;'
+            f'font-size:0.8rem;font-weight:700;margin-bottom:6px;">{_badge_label}</div>',
             unsafe_allow_html=True,
         )
         _portal_url = create_portal_url(
@@ -558,6 +568,22 @@ with st.sidebar:
             st.markdown(
                 f'<a href="{_portal_url}" style="display:block;text-align:center;'
                 f'color:#9ca3af;font-size:0.72rem;margin-bottom:8px;">Gérer mon abonnement</a>',
+                unsafe_allow_html=True,
+            )
+    elif _tier_sb == "essential":
+        # Essentiel → propose Premium
+        _app_url = f"https://app.eldaana.io/?uid={_uid_sb}"
+        try:
+            from stripe_payment import create_checkout_url_premium as _checkout_prem
+            _prem_url = _checkout_prem(_uid_sb, profile.get("google_email", ""), _app_url)
+        except Exception:
+            _prem_url = None
+        if _prem_url:
+            st.markdown(
+                f'<a href="{_prem_url}" style="display:block;background:linear-gradient(135deg,#7c3aed,#c084fc);'
+                f'color:#fff;font-weight:700;font-size:0.82rem;text-decoration:none;'
+                f'text-align:center;border-radius:10px;padding:9px 8px;margin-bottom:8px;">'
+                f'🚀 Passer Premium — 29,99€/mois</a>',
                 unsafe_allow_html=True,
             )
     else:
@@ -572,7 +598,7 @@ with st.sidebar:
                 f'<a href="{_checkout_url}" style="display:block;background:linear-gradient(135deg,#f59e0b,#f97316);'
                 f'color:#fff;font-weight:700;font-size:0.82rem;text-decoration:none;'
                 f'text-align:center;border-radius:10px;padding:9px 8px;margin-bottom:8px;">'
-                f'⭐ Passer Premium — 9,99€/mois</a>',
+                f'⭐ Passer Essentiel — 9,99€/mois</a>',
                 unsafe_allow_html=True,
             )
 
@@ -613,21 +639,32 @@ with st.sidebar:
 
     st.markdown("<br>", unsafe_allow_html=True)
 
-    # ── Mode conversation vocale ──────────────────────────────────────────────
+    # ── Mode conversation vocale — Premium uniquement ─────────────────────────
     if "voice_mode" not in st.session_state:
         st.session_state.voice_mode = False
 
-    col_tog2, col_lbl2 = st.columns([1, 3])
-    with col_tog2:
-        voice_mode = st.toggle("vm", value=st.session_state.voice_mode,
-                               key="voice_mode_toggle", label_visibility="collapsed")
-    with col_lbl2:
-        lbl2 = "🎙️ Mode vocal ON" if voice_mode else "🎙️ Mode vocal OFF"
-        st.markdown(
-            f'<p style="color:#C9A84C;font-size:0.85rem;font-weight:600;margin:8px 0 0 0;">{lbl2}</p>',
-            unsafe_allow_html=True
-        )
-    st.session_state.voice_mode = voice_mode
+    if _tier_sb == "premium":
+        col_tog2, col_lbl2 = st.columns([1, 3])
+        with col_tog2:
+            voice_mode = st.toggle("vm", value=st.session_state.voice_mode,
+                                   key="voice_mode_toggle", label_visibility="collapsed")
+        with col_lbl2:
+            lbl2 = "🎙️ Mode vocal ON" if voice_mode else "🎙️ Mode vocal OFF"
+            st.markdown(
+                f'<p style="color:#C9A84C;font-size:0.85rem;font-weight:600;margin:8px 0 0 0;">{lbl2}</p>',
+                unsafe_allow_html=True
+            )
+        st.session_state.voice_mode = voice_mode
+    else:
+        voice_mode = False
+        st.session_state.voice_mode = False
+        if _tier_sb == "essential":
+            # Cadenas visible pour Essentiel — invite à Premium
+            st.markdown(
+                '<div style="opacity:.55;padding:6px 0 2px 0;font-size:0.83rem;color:#9ca3af;">'
+                '🔒 Mode Vocal Eldaana — Premium</div>',
+                unsafe_allow_html=True
+            )
 
     if voice_mode:
         import urllib.parse as _uparse
@@ -718,57 +755,62 @@ box-shadow:0 0 16px rgba(251,146,60,0.4);}}
                     unsafe_allow_html=True,
                 )
 
-    # ── Toggle TTS seul ───────────────────────────────────────────────────────
+    # ── Toggle TTS + sélecteur voix — Essentiel+ uniquement ─────────────────
     if "voice_on" not in st.session_state:
-        st.session_state.voice_on = True
-
-    col_tog, col_lbl = st.columns([1, 3])
-    with col_tog:
-        voice_on = st.toggle("v", value=st.session_state.voice_on,
-                             key="voice_toggle", label_visibility="collapsed")
-    with col_lbl:
-        lbl = "🔊 Voix activée" if voice_on else "🔇 Désactivée"
-        st.markdown(
-            f'<p style="color:#F0E6FF;font-size:0.85rem;margin:8px 0 0 0;">{lbl}</p>',
-            unsafe_allow_html=True
-        )
-
-    if voice_on:
-        st.session_state.voice_on = True
-    else:
         st.session_state.voice_on = False
-        stop()
 
-    # Sélecteur de voix — toujours visible si voix activée
-    if voice_on or voice_mode:
-        st.markdown(
-            '<p style="color:#F0E6FF;font-size:0.82rem;margin:8px 0 4px 0;">'
-            '🎙️ Choix de la voix</p>',
-            unsafe_allow_html=True
-        )
-        voice_labels = list(VOICE_OPTIONS.keys())
-        saved_voice  = st.session_state.get("eldaana_voice", "nova")
-        default_label = next(
-            (l for l, v in VOICE_OPTIONS.items() if v == saved_voice),
-            voice_labels[0]
-        )
-        chosen_label = st.selectbox(
-            "voix",
-            voice_labels,
-            index=voice_labels.index(default_label),
-            key="voice_selector",
-            label_visibility="collapsed",
-        )
-        _chosen_voice = VOICE_OPTIONS[chosen_label]
-        if _chosen_voice != st.session_state.get("eldaana_voice"):
-            # La voix a changé → sauvegarder dans Supabase
-            st.session_state.eldaana_voice = _chosen_voice
-            if profile.get("preferred_voice") != _chosen_voice:
-                profile["preferred_voice"] = _chosen_voice
-                from onboarding import save_profile as _save_profile
-                _save_profile(profile)
+    if _tier_sb in ("essential", "premium"):
+        col_tog, col_lbl = st.columns([1, 3])
+        with col_tog:
+            voice_on = st.toggle("v", value=st.session_state.voice_on,
+                                 key="voice_toggle", label_visibility="collapsed")
+        with col_lbl:
+            lbl = "🔊 Voix activée" if voice_on else "🔇 Désactivée"
+            st.markdown(
+                f'<p style="color:#F0E6FF;font-size:0.85rem;margin:8px 0 0 0;">{lbl}</p>',
+                unsafe_allow_html=True
+            )
+        if voice_on:
+            st.session_state.voice_on = True
         else:
-            st.session_state.eldaana_voice = _chosen_voice
+            st.session_state.voice_on = False
+            stop()
+
+        # Sélecteur de voix filtré par tier
+        if voice_on or voice_mode:
+            st.markdown(
+                '<p style="color:#F0E6FF;font-size:0.82rem;margin:8px 0 4px 0;">'
+                '🎙️ Choix de la voix</p>',
+                unsafe_allow_html=True
+            )
+            _voice_opts   = get_voice_options(_tier_sb)
+            voice_labels  = list(_voice_opts.keys())
+            saved_voice   = st.session_state.get("eldaana_voice", "nova")
+            default_label = next(
+                (l for l, v in _voice_opts.items() if v == saved_voice),
+                voice_labels[0] if voice_labels else ""
+            )
+            if voice_labels:
+                chosen_label = st.selectbox(
+                    "voix",
+                    voice_labels,
+                    index=voice_labels.index(default_label) if default_label in voice_labels else 0,
+                    key="voice_selector",
+                    label_visibility="collapsed",
+                )
+                _chosen_voice = _voice_opts[chosen_label]
+                if _chosen_voice != st.session_state.get("eldaana_voice"):
+                    st.session_state.eldaana_voice = _chosen_voice
+                    if profile.get("preferred_voice") != _chosen_voice:
+                        profile["preferred_voice"] = _chosen_voice
+                        from onboarding import save_profile as _save_profile
+                        _save_profile(profile)
+                else:
+                    st.session_state.eldaana_voice = _chosen_voice
+    else:
+        # Gratuit : voix désactivée, TTS caché
+        voice_on = False
+        st.session_state.voice_on = False
 
     st.markdown("<br>", unsafe_allow_html=True)
 
@@ -1026,18 +1068,18 @@ if user_input:
     # ── Suivi courses général ─────────────────────────────────────────────────
     system_prompt += format_shopping_for_prompt(user_id)
 
-    # ── Modèle : routing par tier (économie ~40% sur gratuits) ──────────────
-    _uid_model  = st.session_state.get("user_id", "")
-    _is_premium = is_premium(_uid_model)
+    # ── Modèle : routing par tier (free→Haiku, essential→Sonnet, premium→Opus) ─
+    _uid_model = st.session_state.get("user_id", "")
+    _tier_chat = st.session_state.get("_tier_cached", "free")
+    _model_map = {
+        "free":      ("claude-haiku-4-5-20251001", 768),
+        "essential": ("claude-sonnet-4-6",          1024),
+        "premium":   ("claude-opus-4-6",            2048),
+    }
     if _voice_mode:
-        _model      = "claude-haiku-4-5-20251001"   # Voix : toujours Haiku (rapide)
-        _max_tokens = 350
-    elif _is_premium:
-        _model      = "claude-sonnet-4-5"            # Premium texte : Sonnet
-        _max_tokens = 1024
+        _model, _max_tokens = "claude-haiku-4-5-20251001", 350  # Voix : Haiku (rapide)
     else:
-        _model      = "claude-haiku-4-5-20251001"    # Gratuit texte : Haiku
-        _max_tokens = 768
+        _model, _max_tokens = _model_map.get(_tier_chat, _model_map["free"])
 
     # ── Streaming avec pré-génération TTS phrase par phrase ──────────────────
     with st.chat_message("assistant", avatar=LOGO):
@@ -1094,8 +1136,16 @@ if user_input:
     # ── Sauvegarde de l'historique dans Supabase ──────────────────────────────
     save_conversation(profile.get("user_id", ""), st.session_state.messages)
 
-# ── Bouton micro Android — toujours en bas, après la dernière réponse ─────────
-if _is_android and not _voice_mode:
+# ── Bouton micro Android — Essentiel+ uniquement ──────────────────────────────
+_tier_main = st.session_state.get("_tier_cached", "free")
+try:
+    from tier_access import get_user_tier as _get_tier_main
+    _tier_main = _get_tier_main(st.session_state.get("user_id", ""))
+    st.session_state["_tier_cached"] = _tier_main
+except Exception:
+    pass
+
+if _is_android and not _voice_mode and _tier_main in ("essential", "premium"):
     _components_uid.html("""<!DOCTYPE html><html><head>
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <style>

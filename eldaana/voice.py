@@ -87,6 +87,22 @@ VOICE_OPTIONS = {
     "Fable — Narrative & élégante 📖":       "fable",
 }
 
+# Voix filtrées par tier
+VOICE_OPTIONS_ESSENTIAL = {
+    "Nova — Chaleureuse & naturelle 🌸":  "nova",
+    "Shimmer — Douce & apaisante ✨":     "shimmer",
+}
+VOICE_OPTIONS_FREE      = {}
+
+
+def get_voice_options(tier: str) -> dict:
+    """Retourne les voix disponibles selon le tier de l'utilisateur."""
+    if tier == "premium":
+        return VOICE_OPTIONS
+    elif tier == "essential":
+        return VOICE_OPTIONS_ESSENTIAL
+    return VOICE_OPTIONS_FREE
+
 def _call_openai_tts(text: str, api_key: str, voice: str) -> bytes | None:
     """Appel HTTP OpenAI TTS — tts-1 pour la rapidité."""
     try:

@@ -22,6 +22,9 @@ _WHISPER_ARTIFACTS = {
 
 def _transcribe_whisper(audio_bytes: bytes) -> str | None:
     """Transcrit audio WAV → texte via OpenAI Whisper API."""
+    # Audio trop court = silence probable (< ~0.3s)
+    if len(audio_bytes) < 4000:
+        return None
     try:
         import requests
         api_key = st.secrets["openai"]["api_key"]
@@ -37,6 +40,8 @@ def _transcribe_whisper(audio_bytes: bytes) -> str | None:
             if text.lower() in _WHISPER_ARTIFACTS:
                 return None
             return text
+    except KeyError:
+        st.error("⚠️ Clé OpenAI manquante dans les secrets Streamlit.", icon="🔑")
     except Exception:
         pass
     return None
@@ -66,8 +71,15 @@ def show_mic_button(key: str = "mic_eldaana") -> str | None:
     if not audio or not audio.get("bytes"):
         return None
 
+    audio_bytes = audio["bytes"]
+
+    # Trop court → ne pas appeler Whisper
+    if len(audio_bytes) < 4000:
+        st.caption("🎤 Enregistrement trop court — maintiens le bouton plus longtemps.")
+        return None
+
     with st.spinner("🎧 Transcription en cours…"):
-        transcript = _transcribe_whisper(audio["bytes"])
+        transcript = _transcribe_whisper(audio_bytes)
 
     if transcript:
         # Afficher le texte reconnu en petit
@@ -77,7 +89,7 @@ def show_mic_button(key: str = "mic_eldaana") -> str | None:
             unsafe_allow_html=True,
         )
     else:
-        st.caption("🎤 Rien capturé — réessaie.")
+        st.caption("🎤 Rien capturé — réessaie en parlant plus fort ou plus longtemps.")
 
     return transcript
 

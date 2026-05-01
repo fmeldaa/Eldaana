@@ -632,25 +632,35 @@ with st.sidebar:
             _checkout_prem = None
 
         if _checkout_ess or _checkout_prem:
-            _c1, _c2 = st.columns(2)
-            with _c1:
-                if _checkout_ess:
-                    st.markdown(
-                        f'<a href="{_checkout_ess}" style="display:block;background:linear-gradient(135deg,#f59e0b,#f97316);'
-                        f'color:#fff;font-weight:700;font-size:0.78rem;text-decoration:none;'
-                        f'text-align:center;border-radius:10px;padding:9px 6px;margin-bottom:8px;">'
-                        f'⭐ Essentiel<br>9,99€/mois</a>',
-                        unsafe_allow_html=True,
-                    )
-            with _c2:
-                if _checkout_prem:
-                    st.markdown(
-                        f'<a href="{_checkout_prem}" style="display:block;background:linear-gradient(135deg,#7c3aed,#c084fc);'
-                        f'color:#fff;font-weight:700;font-size:0.78rem;text-decoration:none;'
-                        f'text-align:center;border-radius:10px;padding:9px 6px;margin-bottom:8px;">'
-                        f'🌟 Premium<br>29,99€/mois</a>',
-                        unsafe_allow_html=True,
-                    )
+            # ── components.html : évite l'interception React de st.markdown ──
+            # target="_top" = navigue la frame Streamlit (PC)
+            # EldaanaNav.openVoice = charge dans le WebView Android
+            import streamlit.components.v1 as _cmp_stripe
+            _safe_ess  = (_checkout_ess  or "").replace("'", "%27")
+            _safe_prem = (_checkout_prem or "").replace("'", "%27")
+            _btn_ess = (
+                f'<a href="{_checkout_ess}" target="_top" '
+                f'onclick="if(window.EldaanaNav){{window.EldaanaNav.openVoice(\'{_safe_ess}\');return false;}}" '
+                f'style="display:flex;align-items:center;justify-content:center;flex:1;'
+                f'background:linear-gradient(135deg,#f59e0b,#f97316);'
+                f'color:#fff;font-weight:700;font-size:0.78rem;text-decoration:none;'
+                f'border-radius:10px;padding:9px 6px;text-align:center;line-height:1.3;">'
+                f'⭐ Essentiel<br>9,99€/mois</a>'
+            ) if _checkout_ess else '<div style="flex:1"></div>'
+            _btn_prem = (
+                f'<a href="{_checkout_prem}" target="_top" '
+                f'onclick="if(window.EldaanaNav){{window.EldaanaNav.openVoice(\'{_safe_prem}\');return false;}}" '
+                f'style="display:flex;align-items:center;justify-content:center;flex:1;'
+                f'background:linear-gradient(135deg,#7c3aed,#c084fc);'
+                f'color:#fff;font-weight:700;font-size:0.78rem;text-decoration:none;'
+                f'border-radius:10px;padding:9px 6px;text-align:center;line-height:1.3;">'
+                f'🌟 Premium<br>29,99€/mois</a>'
+            ) if _checkout_prem else '<div style="flex:1"></div>'
+            _cmp_stripe.html(
+                f'<div style="display:flex;gap:8px;background:transparent;">'
+                f'{_btn_ess}{_btn_prem}</div>',
+                height=52,
+            )
 
     if not profile.get("onboarding_lifestyle_complete"):
         st.info("💡 Plus Eldaana vous connaît, plus elle est précise !")

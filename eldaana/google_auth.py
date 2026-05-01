@@ -95,10 +95,9 @@ def show_google_button() -> dict | None:
     })
 
     # ── Bouton Google via components.html ────────────────────────────────────
-    # components.html = iframe isolé → JavaScript s'exécute vraiment (pas sanitisé par React)
-    # window.EldaanaNav.openVoice() = bridge Android injecté dans TOUS les iframes du WebView
-    # window.top.location.href = fallback WebView sans bridge
-    # <a href> = fallback navigateur desktop
+    # target="_top"  → navigue la frame principale Streamlit (PC / Chrome)
+    # EldaanaNav     → bridge Android : ouvre dans le WebView (shouldOverrideUrlLoading
+    #                  intercepte accounts.google.com et ouvre Chrome externe)
     import streamlit.components.v1 as _cmp
     _safe_url = auth_url.replace("'", "%27").replace('"', "%22")
     _cmp.html(f"""<!DOCTYPE html>
@@ -111,14 +110,13 @@ a{{display:flex;align-items:center;justify-content:center;gap:7px;
    width:100%;background:#fff;border:1.5px solid #e5e7eb;border-radius:10px;
    padding:9px 6px;cursor:pointer;font-size:0.8rem;color:#374151;
    font-weight:600;font-family:sans-serif;text-decoration:none;}}
+a:hover{{background:#f9fafb;color:#374151;}}
+a:active{{background:#f3f4f6;color:#374151;}}
 </style>
 </head>
 <body>
-<a href="{auth_url}" onclick="
-  var u='{_safe_url}';
-  if(window.EldaanaNav){{window.EldaanaNav.openVoice(u);return false;}}
-  try{{window.top.location.href=u;return false;}}catch(e){{}}
-  window.location.href=u;return false;
+<a href="{auth_url}" target="_top" onclick="
+  if(window.EldaanaNav){{window.EldaanaNav.openVoice('{_safe_url}');return false;}}
 ">{_GOOGLE_SVG} Google</a>
 </body></html>""", height=44)
     return None

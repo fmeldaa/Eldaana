@@ -31,7 +31,12 @@ from transport_alerts import (
     show_transport_status_sidebar,
 )
 from conversation_storage import save_conversation, load_conversation
-from stripe_payment import is_premium, create_checkout_url, handle_stripe_return, handle_stripe_success, create_portal_url, upgrade_to_premium
+from stripe_payment import is_premium, create_checkout_url, handle_stripe_return, create_portal_url
+try:
+    from stripe_payment import handle_stripe_success, upgrade_to_premium
+except ImportError:
+    def handle_stripe_success(session_id, uid): return False, ""   # type: ignore
+    def upgrade_to_premium(uid): return False                       # type: ignore
 from pathlib import Path
 
 # ── Configuration de la page ──────────────────────────────────────────────────

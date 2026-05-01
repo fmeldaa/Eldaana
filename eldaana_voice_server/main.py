@@ -113,6 +113,39 @@ def _supabase_save_conversation(uid: str, messages: list):
         print(f"[Supabase] save error: {e}")
 
 
+def _is_user_premium(uid: str) -> bool:
+    """
+    Vérifie si l'utilisateur a un abonnement Premium actif.
+    Consulte Supabase profiles — champ premium_status.
+    Fallback : accepte si Supabase non configuré (dev/test).
+    """
+    if not uid:
+        return False
+    if not _SUPABASE_URL or not _SUPABASE_KEY:
+        return True  # Mode dev / Supabase non configuré → pas de blocage
+    try:
+        resp = requests.get(
+            f"{_SUPABASE_URL}/rest/v1/profiles",
+            params={"uid": f"eq.{uid}", "select": "premium_status,beta_tester"},
+            headers={
+                "apikey":        _SUPABASE_KEY,
+                "Authorization": f"Bearer {_SUPABASE_KEY}",
+            },
+            timeout=4,
+        )
+        rows = resp.json()
+        if rows:
+            row = rows[0]
+            if row.get("beta_tester"):
+                return True
+            return row.get("premium_status") == "active"
+        # Profil non trouvé dans Supabase → refuser par sécurité
+        return False
+    except Exception as e:
+        print(f"[Premium check] erreur: {e}")
+        return True  # En cas d'erreur réseau → ne pas bloquer
+
+
 def _load_profile(uid: str) -> dict:
     """Charge le profil JSON d'un utilisateur depuis son uid."""
     if not uid:
@@ -325,6 +358,19 @@ async def voice_endpoint(ws: WebSocket):
       Server → Client  {"type": "done"}
       Server → Client  {"type": "error", "message": "..."}
     """
+    # ── Vérification Premium avant acceptation ────────────────────────────────
+    uid = ws.query_params.get("uid", "")
+    if not _is_user_premium(uid):
+        await ws.accept()
+        await _send(ws, {
+            "type":    "error",
+            "message": "Mode vocal réservé au plan Premium (29,99€/mois). "
+                       "Passe à Premium pour accéder à Eldaana Voice.",
+        })
+        await ws.close()
+        print(f"[WS] uid={uid!r} — accès refusé (non Premium)")
+        return
+
     await ws.accept()
 
     # Charger le profil utilisateur depuis le uid (query param ?uid=)

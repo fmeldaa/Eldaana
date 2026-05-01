@@ -435,6 +435,27 @@ if st.session_state.page == "rgpd":
         st.rerun()
     st.stop()
 
+# ── PAGE : AGENT PERMISSIONS (Premium) ───────────────────────────────────────
+if st.session_state.page == "agent_permissions":
+    col1, col2 = st.columns([1, 6])
+    with col1:
+        if logo_path.exists():
+            st.image(str(logo_path), width=64)
+    with col2:
+        st.markdown('<p class="eldaana-title">Eldaana</p>', unsafe_allow_html=True)
+        st.markdown('<p class="eldaana-subtitle">Agent — Permissions</p>', unsafe_allow_html=True)
+    st.divider()
+    try:
+        from agents.permissions import show_permissions_settings
+        show_permissions_settings(profile)
+    except Exception as _e:
+        st.error(f"Impossible de charger les paramètres agent : {_e}")
+    st.markdown("<br>", unsafe_allow_html=True)
+    if st.button("← Retour à la conversation"):
+        st.session_state.page = "chat"
+        st.rerun()
+    st.stop()
+
 # ── PAGE : VIE NUMÉRIQUE ──────────────────────────────────────────────────────
 if st.session_state.page == "social":
     col1, col2 = st.columns([1, 6])
@@ -636,6 +657,12 @@ with st.sidebar:
     if st.button("🔒 Vie privée", use_container_width=True):
         st.session_state.page = "rgpd"
         st.rerun()
+
+    # Agent — Premium uniquement
+    if _tier_sb == "premium":
+        if st.button("🤖 Agent — Permissions", use_container_width=True):
+            st.session_state.page = "agent_permissions"
+            st.rerun()
 
     st.markdown("<br>", unsafe_allow_html=True)
 
@@ -1002,6 +1029,54 @@ if user_input:
             and _last_msgs[-1].get("content") == user_input):
         user_input = None   # déjà traité dans le run précédent
 
+# ── Helper : affichage d'une réponse agent dans le chat ──────────────────────
+def render_agent_response(agent_result: dict):
+    """Affiche la réponse d'un agent avec ses boutons d'action."""
+    result_type = agent_result.get("type", "")
+    content     = agent_result.get("content", "")
+
+    if content:
+        st.markdown(content)
+
+    # Permission manquante → lien vers les paramètres
+    if result_type == "permission_required":
+        if st.button("⚙️ Configurer les permissions agent", key="btn_agent_perms"):
+            st.session_state.page = "agent_permissions"
+            st.rerun()
+        return
+
+    # Confirmation (email draft, etc.)
+    if agent_result.get("requires_confirmation"):
+        c1, c2 = st.columns(2)
+        with c1:
+            confirm_label = agent_result.get("confirm_label", "Confirmer")
+            if st.button(f"✅ {confirm_label}", use_container_width=True, type="primary",
+                         key="agent_confirm"):
+                st.session_state.pending_agent_confirm = agent_result
+                st.rerun()
+        with c2:
+            edit_label = agent_result.get("edit_label", "Modifier")
+            if st.button(f"✏️ {edit_label}", use_container_width=True, key="agent_edit"):
+                st.session_state.editing_agent = agent_result
+
+    # Deep link (shopping)
+    action_url = agent_result.get("action_url")
+    if action_url:
+        action_label = agent_result.get("action_button", "Ouvrir")
+        st.markdown(
+            f'<a href="{action_url}" target="_blank" '
+            f'style="display:inline-block;background:#7c3aed;color:#fff;'
+            f'padding:10px 20px;border-radius:10px;text-decoration:none;'
+            f'font-weight:700;margin-top:8px;">{action_label} ↗</a>',
+            unsafe_allow_html=True,
+        )
+
+    # Boutons d'actions multiples
+    for i, action_item in enumerate(agent_result.get("actions", [])):
+        if st.button(action_item["label"], key=f"agent_action_{i}_{action_item['action']}"):
+            st.session_state.pending_agent_action = action_item["action"]
+
+
 # ── Traitement du message ─────────────────────────────────────────────────────
 if user_input:
     st.session_state.display_messages.append({"role": "user", "content": user_input})
@@ -1019,122 +1094,146 @@ if user_input:
             noms = ", ".join(a["name"] for a in added)
             st.toast(f"🛒 Achat enregistré : {noms}", icon="✅")
 
-    # ── Construction du prompt système enrichi ────────────────────────────────
-    system_prompt = get_system_prompt(profile)
+    # ── Agent routing (Premium uniquement) ───────────────────────────────────
+    _tier_for_agent = st.session_state.get("_tier_cached", "free")
+    _agent_handled  = False
+    if _tier_for_agent == "premium":
+        try:
+            from agents.agent_router import detect_intent, route_to_agent
+            _intent = detect_intent(user_input)
+            if _intent.get("is_agent_request") and _intent.get("confidence", 0) >= 0.7:
+                _agent_result = route_to_agent(_intent, user_input, profile)
+                if _agent_result is not None:
+                    with st.chat_message("assistant", avatar=LOGO):
+                        render_agent_response(_agent_result)
+                    # Sauvegarder dans l'historique
+                    _agent_text = _agent_result.get("content") or _agent_result.get("message", "")
+                    if _agent_text:
+                        st.session_state.display_messages.append(
+                            {"role": "assistant", "content": _agent_text}
+                        )
+                        st.session_state.messages.append(
+                            {"role": "assistant", "content": _agent_text}
+                        )
+                        save_conversation(profile.get("user_id", ""), st.session_state.messages)
+                    _agent_handled = True
+        except Exception:
+            pass  # Fallback silencieux vers le chat Claude normal
 
-    # Mode vocal : réponses courtes + sans markdown
-    if _voice_mode:
-        system_prompt += get_voice_mode_suffix()
+    # ── Claude streaming (seulement si l'agent n'a pas traité la requête) ──────
+    if not _agent_handled:
 
-    # Humeur du jour
-    system_prompt += format_humeur_for_prompt(user_id)
+        # ── Construction du prompt système enrichi ────────────────────────────
+        system_prompt = get_system_prompt(profile)
 
-    # Budget
-    system_prompt += format_budget_for_prompt(user_id)
+        # Mode vocal : réponses courtes + sans markdown
+        if _voice_mode:
+            system_prompt += get_voice_mode_suffix()
 
-    # Emails (résumé non-lus/urgents si Gmail connecté)
-    system_prompt += format_email_summary_for_prompt(user_id)
+        # Humeur du jour
+        system_prompt += format_humeur_for_prompt(user_id)
 
-    # Alertes transport (si perturbation sur les lignes de l'utilisateur)
-    dep_alert = st.session_state.get("departure_alert")
-    if dep_alert and dep_alert.get("tc_alerts"):
-        from transport_alerts import format_departure_alert_message
-        alert_txt = format_departure_alert_message(dep_alert)
-        if alert_txt:
-            system_prompt += (
-                f"\n\n[ALERTE TRANSPORT DÉPART]\n{alert_txt}\n"
-                "Mentionne cette alerte de manière proactive si l'utilisateur parle de son trajet ou de son départ.\n"
-                "[FIN ALERTE TRANSPORT]"
-            )
+        # Budget
+        system_prompt += format_budget_for_prompt(user_id)
 
-    # ── Recherche web si nécessaire (désactivée en mode vocal pour la rapidité) ──
-    if not _voice_mode and should_search_web(user_input):
-        with st.spinner("🔍 Recherche web en cours..."):
-            web_results = search_web(user_input)
-        if web_results:
-            system_prompt += format_web_results_for_prompt(web_results, user_input)
-            st.toast("✅ Infos web récupérées", icon="🌐")
+        # Emails (résumé non-lus/urgents si Gmail connecté)
+        system_prompt += format_email_summary_for_prompt(user_id)
+
+        # Alertes transport (si perturbation sur les lignes de l'utilisateur)
+        dep_alert = st.session_state.get("departure_alert")
+        if dep_alert and dep_alert.get("tc_alerts"):
+            from transport_alerts import format_departure_alert_message
+            alert_txt = format_departure_alert_message(dep_alert)
+            if alert_txt:
+                system_prompt += (
+                    f"\n\n[ALERTE TRANSPORT DÉPART]\n{alert_txt}\n"
+                    "Mentionne cette alerte de manière proactive si l'utilisateur parle de son trajet ou de son départ.\n"
+                    "[FIN ALERTE TRANSPORT]"
+                )
+
+        # ── Recherche web si nécessaire ───────────────────────────────────────
+        if not _voice_mode and should_search_web(user_input):
+            with st.spinner("🔍 Recherche web en cours..."):
+                web_results = search_web(user_input)
+            if web_results:
+                system_prompt += format_web_results_for_prompt(web_results, user_input)
+                st.toast("✅ Infos web récupérées", icon="🌐")
+            else:
+                err = st.session_state.get("gemini_last_error", "inconnu")
+                st.toast(f"⚠️ Recherche : {err[:80]}", icon="⚠️")
+
+        # ── Rappels courses dans le contexte ──────────────────────────────────
+        reminders = get_reminders(user_id)
+        if reminders:
+            system_prompt += format_reminders_for_prompt(reminders)
+            for r in reminders:
+                mark_reminded(user_id, r["name"])
+
+        # ── Suivi courses général ─────────────────────────────────────────────
+        system_prompt += format_shopping_for_prompt(user_id)
+
+        # ── Modèle : routing par tier (free→Haiku, essential→Sonnet, premium→Opus)
+        _tier_chat = st.session_state.get("_tier_cached", "free")
+        _model_map = {
+            "free":      ("claude-haiku-4-5-20251001", 768),
+            "essential": ("claude-sonnet-4-6",          1024),
+            "premium":   ("claude-opus-4-6",            2048),
+        }
+        if _voice_mode:
+            _model, _max_tokens = "claude-haiku-4-5-20251001", 350
         else:
-            err = st.session_state.get("gemini_last_error", "inconnu")
-            st.toast(f"⚠️ Recherche : {err[:80]}", icon="⚠️")
+            _model, _max_tokens = _model_map.get(_tier_chat, _model_map["free"])
 
-    # ── Rappels courses dans le contexte ─────────────────────────────────────
-    reminders = get_reminders(user_id)
-    if reminders:
-        system_prompt += format_reminders_for_prompt(reminders)
-        for r in reminders:
-            mark_reminded(user_id, r["name"])
+        # ── Streaming avec pré-génération TTS phrase par phrase ───────────────
+        with st.chat_message("assistant", avatar=LOGO):
+            reply_placeholder = st.empty()
+            full_reply   = ""
+            sent_buffer  = ""
+            tts_futures  = []
 
-    # ── Suivi courses général ─────────────────────────────────────────────────
-    system_prompt += format_shopping_for_prompt(user_id)
+            with client.messages.stream(
+                model=_model,
+                max_tokens=_max_tokens,
+                system=[{"type": "text", "text": system_prompt,
+                         "cache_control": {"type": "ephemeral"}}],
+                messages=st.session_state.messages,
+            ) as stream:
+                for chunk in stream.text_stream:
+                    full_reply  += chunk
+                    sent_buffer += chunk
+                    reply_placeholder.markdown(full_reply + "▌")
 
-    # ── Modèle : routing par tier (free→Haiku, essential→Sonnet, premium→Opus) ─
-    _uid_model = st.session_state.get("user_id", "")
-    _tier_chat = st.session_state.get("_tier_cached", "free")
-    _model_map = {
-        "free":      ("claude-haiku-4-5-20251001", 768),
-        "essential": ("claude-sonnet-4-6",          1024),
-        "premium":   ("claude-opus-4-6",            2048),
-    }
-    if _voice_mode:
-        _model, _max_tokens = "claude-haiku-4-5-20251001", 350  # Voix : Haiku (rapide)
-    else:
-        _model, _max_tokens = _model_map.get(_tier_chat, _model_map["free"])
+                    if _voice_on:
+                        for sep in ['. ', '! ', '? ', '.\n', '!\n', '?\n']:
+                            idx = sent_buffer.find(sep)
+                            if idx > 15:
+                                sentence    = sent_buffer[:idx + 1].strip()
+                                sent_buffer = sent_buffer[idx + len(sep):]
+                                f = prepare_audio_async(sentence)
+                                if f:
+                                    tts_futures.append(f)
+                                break
 
-    # ── Streaming avec pré-génération TTS phrase par phrase ──────────────────
-    with st.chat_message("assistant", avatar=LOGO):
-        reply_placeholder = st.empty()
-        full_reply   = ""
-        sent_buffer  = ""     # tampon pour détecter les fins de phrase
-        tts_futures  = []     # futures des TTS pré-générées
+            reply_placeholder.markdown(full_reply)
 
-        with client.messages.stream(
-            model=_model,
-            max_tokens=_max_tokens,
-            system=[{"type": "text", "text": system_prompt,
-                     "cache_control": {"type": "ephemeral"}}],
-            messages=st.session_state.messages,
-        ) as stream:
-            for chunk in stream.text_stream:
-                full_reply  += chunk
-                sent_buffer += chunk
-                reply_placeholder.markdown(full_reply + "▌")
+            if sent_buffer.strip() and _voice_on:
+                f = prepare_audio_async(sent_buffer.strip())
+                if f:
+                    tts_futures.append(f)
 
-                # Dès qu'une phrase est complète → lancer la TTS en background
-                if _voice_on:
-                    for sep in ['. ', '! ', '? ', '.\n', '!\n', '?\n']:
-                        idx = sent_buffer.find(sep)
-                        if idx > 15:   # au moins 15 chars = phrase significative
-                            sentence   = sent_buffer[:idx + 1].strip()
-                            sent_buffer = sent_buffer[idx + len(sep):]
-                            f = prepare_audio_async(sentence)
-                            if f:
-                                tts_futures.append(f)
-                            break
+        # ── Lecture audio ─────────────────────────────────────────────────────
+        if _voice_on:
+            if tts_futures:
+                speak_from_prefetched(tts_futures, fallback_text=full_reply)
+            else:
+                tts_future = prepare_audio_async(full_reply)
+                speak(full_reply, precomputed=tts_future)
 
-        reply_placeholder.markdown(full_reply)
+        st.session_state.display_messages.append({"role": "assistant", "content": full_reply})
+        st.session_state.messages.append({"role": "assistant", "content": full_reply})
 
-        # Ajouter le reste du tampon (dernière phrase sans ponctuation finale)
-        if sent_buffer.strip() and _voice_on:
-            f = prepare_audio_async(sent_buffer.strip())
-            if f:
-                tts_futures.append(f)
-
-    # ── Lecture audio : depuis les futures pré-générés ────────────────────────
-    if _voice_on:
-        if tts_futures:
-            speak_from_prefetched(tts_futures, fallback_text=full_reply)
-        else:
-            # Texte très court → pas eu le temps de pré-générer → générer maintenant
-            tts_future = prepare_audio_async(full_reply)
-            speak(full_reply, precomputed=tts_future)
-
-
-    st.session_state.display_messages.append({"role": "assistant", "content": full_reply})
-    st.session_state.messages.append({"role": "assistant", "content": full_reply})
-
-    # ── Sauvegarde de l'historique dans Supabase ──────────────────────────────
-    save_conversation(profile.get("user_id", ""), st.session_state.messages)
+        # ── Sauvegarde de l'historique dans Supabase ──────────────────────────
+        save_conversation(profile.get("user_id", ""), st.session_state.messages)
 
 # ── Bouton micro Android — Essentiel+ uniquement ──────────────────────────────
 _tier_main = st.session_state.get("_tier_cached", "free")

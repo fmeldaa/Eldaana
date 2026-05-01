@@ -451,6 +451,28 @@ async def voice_endpoint(ws: WebSocket):
             await _send(ws, {"type": "transcript", "text": transcript})
             history.append({"role": "user", "content": transcript})
 
+            # ── Détection de crise (vocal) ────────────────────────────────────
+            _crisis_system = system
+            try:
+                import sys, os
+                # Chercher crisis_response.py dans le répertoire parent (eldaana/)
+                _eldaana_path = os.path.join(os.path.dirname(__file__), "..", "eldaana")
+                if _eldaana_path not in sys.path:
+                    sys.path.insert(0, _eldaana_path)
+                from crisis_response import (
+                    detect_crisis_level_fast, get_crisis_system_prompt,
+                    log_crisis_event,
+                )
+                _crisis_level = detect_crisis_level_fast(transcript)
+                if _crisis_level >= 2:
+                    log_crisis_event(uid, _crisis_level, transcript)
+                _crisis_instr = get_crisis_system_prompt(_crisis_level, profile)
+                if _crisis_instr:
+                    _crisis_system = _crisis_instr + "\n\n---\n\n" + system
+                    print(f"[Pipeline] crise niveau {_crisis_level} détectée")
+            except Exception as _e:
+                print(f"[Pipeline] crisis_response import error: {_e}")
+
             # Étape 2 : Claude ────────────────────────────────────────────────
             print("[Pipeline] → Claude")
             await _send(ws, {"type": "status", "step": "thinking"})
@@ -463,7 +485,7 @@ async def voice_endpoint(ws: WebSocket):
             async with _anthropic.messages.stream(
                 model="claude-haiku-4-5-20251001",
                 max_tokens=350,
-                system=[{"type": "text", "text": system,
+                system=[{"type": "text", "text": _crisis_system,
                          "cache_control": {"type": "ephemeral"}}],
                 messages=history,
             ) as stream:

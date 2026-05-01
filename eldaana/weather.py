@@ -61,9 +61,10 @@ def get_coordinates(city: str) -> tuple[float, float, str] | None:
     return None
 
 
-def get_weather(city: str) -> dict | None:
+def get_weather(city: str, profile: dict = None) -> dict | None:
     """
     Retourne les données météo du jour pour une ville.
+    profile (optionnel) : pour adapter les unités selon le pays (°F, mph).
     Retourne None si la ville est introuvable ou en cas d'erreur réseau.
     """
     coords = get_coordinates(city)
@@ -72,12 +73,20 @@ def get_weather(city: str) -> dict | None:
 
     lat, lon, city_name = coords
 
+    _profile    = profile or {}
+    unit_temp   = _profile.get("unit_temp", "C")
+    unit_speed  = _profile.get("unit_speed", "km/h")
+
+    # Open-Meteo supporte nativement °F et mph
+    temp_unit  = "fahrenheit" if unit_temp == "F" else "celsius"
+    speed_unit = "mph"        if unit_speed == "mph" else "kmh"
+
     try:
         r = requests.get(
             WEATHER_URL,
             params={
-                "latitude":  lat,
-                "longitude": lon,
+                "latitude":         lat,
+                "longitude":        lon,
                 "current": ",".join([
                     "temperature_2m",
                     "weathercode",
@@ -90,8 +99,10 @@ def get_weather(city: str) -> dict | None:
                     "precipitation_probability_max",
                     "weathercode",
                 ]),
-                "timezone":      "auto",
-                "forecast_days": 1,
+                "timezone":           "auto",
+                "forecast_days":      1,
+                "temperature_unit":   temp_unit,
+                "wind_speed_unit":    speed_unit,
             },
             timeout=5,
         )
@@ -125,6 +136,8 @@ def get_weather(city: str) -> dict | None:
         "timezone":     tz_name,
         "lat":          lat,
         "lon":          lon,
+        "unit_temp":    unit_temp,
+        "unit_speed":   unit_speed,
     }
 
 

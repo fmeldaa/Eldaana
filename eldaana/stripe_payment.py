@@ -332,6 +332,80 @@ def _activate_premium(uid: str, customer_id: str):
     st.session_state[f"_premium_{uid}"] = True
 
 
+def handle_stripe_success(session_id: str, uid: str) -> tuple:
+    """
+    Vérifie une session Checkout et active le plan.
+    Retourne (success: bool, plan: str) — plan = 'essentiel' | 'premium' | ''.
+    """
+    if not session_id:
+        return False, ""
+    try:
+        _init()
+        session = stripe.checkout.Session.retrieve(session_id)
+        if session.payment_status in ("paid",) or session.status == "complete":
+            _activate_premium(uid, session.customer)
+            # Détecter le plan depuis les metadata ou le price_id
+            plan = session.metadata.get("tier", "") if session.metadata else ""
+            if not plan:
+                # Fallback : comparer le price_id
+                try:
+                    mode             = _current_mode()
+                    price_id_premium = _get_or_create_price_id_premium29(mode)
+                    items = session.line_items.data if hasattr(session, "line_items") else []
+                    if items and items[0].price.id == price_id_premium:
+                        plan = "premium"
+                    else:
+                        plan = "essential"
+                except Exception:
+                    plan = "essential"
+            return True, plan
+    except Exception:
+        pass
+    return False, ""
+
+
+def upgrade_to_premium(uid: str) -> bool:
+    """
+    Upgrade direct depuis Essentiel → Premium (modification de l'abonnement existant).
+    Gère le prorata automatiquement via Stripe.
+    Retourne True si l'upgrade a réussi.
+    """
+    try:
+        _init()
+        profile     = db_load(uid) or {}
+        customer_id = profile.get("stripe_customer_id")
+        if not customer_id:
+            return False
+
+        mode             = _current_mode()
+        price_id_premium = _get_or_create_price_id_premium29(mode)
+
+        subs = stripe.Subscription.list(customer=customer_id, status="active", limit=1)
+        if not subs.data:
+            return False
+
+        sub     = subs.data[0]
+        item_id = sub["items"]["data"][0]["id"]
+
+        stripe.Subscription.modify(
+            sub.id,
+            items=[{"id": item_id, "price": price_id_premium}],
+            proration_behavior="create_prorations",
+        )
+
+        # Mettre à jour Supabase
+        profile["plan"] = "premium"
+        db_save(profile)
+        # Invalider le cache tier
+        st.session_state.pop(f"_plan_{uid}", None)
+        st.session_state.pop("_tier_cached", None)
+        return True
+
+    except Exception as e:
+        st.error(f"Erreur upgrade Premium : {e}")
+        return False
+
+
 # ── Annulation ────────────────────────────────────────────────────────────────
 
 def create_portal_url(uid: str, return_url: str) -> str | None:

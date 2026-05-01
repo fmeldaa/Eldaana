@@ -424,12 +424,17 @@ def get_transport_alerts(profile: dict, weather: dict = None) -> dict:
     traffic      = []
     traffic_flow = {}
 
-    for line in lines:
-        disruptions = get_line_disruptions(line)
-        for d in disruptions:
-            # Attacher les alternatives
-            d["alternatives_info"] = ALTERNATIVES.get(line, DEFAULT_ALTERNATIVE)
-        tc_alerts.extend(disruptions)
+    transport_provider = profile.get("transport_provider", "navitia_idf")
+
+    if transport_provider == "navitia_idf":
+        # Navitia IDFM — France uniquement
+        for line in lines:
+            disruptions = get_line_disruptions(line)
+            for d in disruptions:
+                d["alternatives_info"] = ALTERNATIVES.get(line, DEFAULT_ALTERNATIVE)
+            tc_alerts.extend(disruptions)
+    # Pour les autres pays (generic, tfl…) : pas d'API dédiée en MVP
+    # → tc_alerts reste vide, seul le trafic TomTom est utilisé
 
     if has_car and weather:
         lat = weather.get("lat")

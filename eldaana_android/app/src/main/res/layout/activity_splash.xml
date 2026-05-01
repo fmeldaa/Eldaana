@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#C4A99A">
+
+    <ImageView
+        android:id="@+id/splash_logo"
+        android:layout_width="180dp"
+        android:layout_height="180dp"
+        android:layout_centerInParent="true"
+        android:src="@mipmap/ic_app_icon"
+        android:scaleType="fitCenter"/>
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_centerHorizontal="true"
+        android:layout_below="@id/splash_logo"
+        android:layout_marginTop="24dp"
+        android:text="Eldaana"
+        android:textColor="#C9A84C"
+        android:textSize="28sp"
+        android:letterSpacing="0.15"
+        android:fontFamily="serif"/>
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_centerHorizontal="true"
+        android:layout_alignParentBottom="true"
+        android:layout_marginBottom="48dp"
+        android:text="Votre futur commence ici"
+        android:textColor="#7B5EA7"
+        android:textSize="13sp"
+        android:letterSpacing="0.1"/>
+
+</RelativeLayout>

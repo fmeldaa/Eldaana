@@ -14,6 +14,82 @@ from google_auth import show_google_button, google_to_profile
 from storage import db_load, db_save
 from cloudinary_storage import upload_profile_photo, get_profile_photo_url, invalidate_photo_cache
 
+# ── Configuration des pays supportés ─────────────────────────────────────────
+COUNTRY_CONFIG = {
+    "🇫🇷 France": {
+        "code": "FR", "locale": "fr-FR", "currency": "EUR",
+        "unit_temp": "C", "unit_speed": "km/h",
+        "transport_provider": "navitia_idf",
+        "traffic_provider": "tomtom",
+        "weather_lang": "fr",
+        "emergency_number": "15",
+        "crisis_line": "3114",
+    },
+    "🇧🇪 Belgique": {
+        "code": "BE", "locale": "fr-BE", "currency": "EUR",
+        "unit_temp": "C", "unit_speed": "km/h",
+        "transport_provider": "generic",
+        "traffic_provider": "tomtom",
+        "weather_lang": "fr",
+        "emergency_number": "112",
+        "crisis_line": "0800 32 123",
+    },
+    "🇨🇭 Suisse": {
+        "code": "CH", "locale": "fr-CH", "currency": "CHF",
+        "unit_temp": "C", "unit_speed": "km/h",
+        "transport_provider": "generic",
+        "traffic_provider": "tomtom",
+        "weather_lang": "fr",
+        "emergency_number": "144",
+        "crisis_line": "143",
+    },
+    "🇬🇧 Grande-Bretagne": {
+        "code": "GB", "locale": "en-GB", "currency": "GBP",
+        "unit_temp": "C", "unit_speed": "mph",
+        "transport_provider": "tfl",
+        "traffic_provider": "tomtom",
+        "weather_lang": "en",
+        "emergency_number": "999",
+        "crisis_line": "116 123",
+    },
+    "🇨🇦 Canada": {
+        "code": "CA", "locale": "fr-CA", "currency": "CAD",
+        "unit_temp": "C", "unit_speed": "km/h",
+        "transport_provider": "generic",
+        "traffic_provider": "tomtom",
+        "weather_lang": "fr",
+        "emergency_number": "911",
+        "crisis_line": "1-866-APPELLE",
+    },
+    "🇺🇸 USA": {
+        "code": "US", "locale": "en-US", "currency": "USD",
+        "unit_temp": "F", "unit_speed": "mph",
+        "transport_provider": "generic",
+        "traffic_provider": "tomtom",
+        "weather_lang": "en",
+        "emergency_number": "911",
+        "crisis_line": "988",
+    },
+    "🇨🇩 RDC": {
+        "code": "CD", "locale": "fr-CD", "currency": "USD",
+        "unit_temp": "C", "unit_speed": "km/h",
+        "transport_provider": "generic",
+        "traffic_provider": "tomtom",
+        "weather_lang": "fr",
+        "emergency_number": "112",
+        "crisis_line": None,
+    },
+    "🇬🇦 Gabon": {
+        "code": "GA", "locale": "fr-GA", "currency": "XAF",
+        "unit_temp": "C", "unit_speed": "km/h",
+        "transport_provider": "generic",
+        "traffic_provider": "tomtom",
+        "weather_lang": "fr",
+        "emergency_number": "1730",
+        "crisis_line": None,
+    },
+}
+
 DATA_DIR          = Path(__file__).parent / "user_data"
 PROFILES_DIR      = DATA_DIR / "profiles"
 CURRENT_USER_FILE = DATA_DIR / "current_user.json"
@@ -238,6 +314,13 @@ def show_onboarding() -> bool:
         help="Pour la météo et les suggestions du jour",
     )
 
+    country_label = st.selectbox(
+        "🌍 Dans quel pays vivez-vous ?",
+        options=list(COUNTRY_CONFIG.keys()),
+        index=0,
+        key="onboarding_country",
+    )
+
     sexe = st.radio(
         "Vous êtes *",
         ["Femme", "Homme", "Non-binaire", "Préfère ne pas préciser"],
@@ -260,6 +343,7 @@ def show_onboarding() -> bool:
             # Détermine l'ID : Google sub ou nouvel UUID
             user_id = prefill.get("google_sub") or str(uuid.uuid4())
 
+            _country_cfg = COUNTRY_CONFIG.get(country_label, COUNTRY_CONFIG["🇫🇷 France"])
             profile = {
                 "user_id":        user_id,
                 "prenom":         str(prenom).strip(),
@@ -269,6 +353,16 @@ def show_onboarding() -> bool:
                 "google_email":   prefill.get("google_email", ""),
                 "google_picture": prefill.get("google_picture", ""),
                 "google_sub":     prefill.get("google_sub", ""),
+                # Localisation
+                "country":             _country_cfg["code"],
+                "country_label":       country_label,
+                "locale":              _country_cfg["locale"],
+                "currency":            _country_cfg["currency"],
+                "unit_temp":           _country_cfg["unit_temp"],
+                "unit_speed":          _country_cfg["unit_speed"],
+                "transport_provider":  _country_cfg["transport_provider"],
+                "crisis_line":         _country_cfg["crisis_line"],
+                "emergency_number":    _country_cfg["emergency_number"],
                 # Champs enrichis — complétés plus tard
                 "age":                    None,
                 "poids":                  None,

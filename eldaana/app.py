@@ -31,7 +31,7 @@ from transport_alerts import (
     show_transport_status_sidebar,
 )
 from conversation_storage import save_conversation, load_conversation
-from stripe_payment import is_premium, create_checkout_url, handle_stripe_return, create_portal_url
+from stripe_payment import is_premium, create_checkout_url, handle_stripe_return, handle_stripe_success, create_portal_url, upgrade_to_premium
 from pathlib import Path
 
 # ── Configuration de la page ──────────────────────────────────────────────────
@@ -265,10 +265,18 @@ if st.session_state.get("_android_oauth") and st.session_state.get("user_id"):
 # ── Retour Stripe (success / cancel) ─────────────────────────────────────────
 _uid_now = st.session_state.get("user_id", "")
 if st.query_params.get("stripe_success") and _uid_now:
-    if handle_stripe_return(_uid_now):
+    _session_id_stripe = st.query_params.get("session_id", "")
+    _ok, _plan = handle_stripe_success(_session_id_stripe, _uid_now)
+    if not _ok:
+        _ok = handle_stripe_return(_uid_now)  # fallback ancien flux
+        _plan = "essential"
+    if _ok:
         st.query_params.clear()
         st.query_params["uid"] = _uid_now
-        st.success("🎉 Bienvenue dans Eldaana Premium ! Toutes les fonctionnalités sont débloquées.")
+        if _plan == "premium":
+            st.success("🌟 Bienvenue dans Eldaana Premium ! Mode vocal Eldaana Voice activé.")
+        else:
+            st.success("🎙️ Bienvenue dans Eldaana Essentiel ! La synthèse vocale est maintenant disponible.")
         st.balloons()
 elif st.query_params.get("stripe_cancel"):
     st.query_params.clear()
@@ -298,7 +306,7 @@ if "eldaana_voice" not in st.session_state:
 # ── Météo + timezone : récupérés une seule fois par session ───────────────────
 if "weather" not in st.session_state:
     ville = profile.get("ville", "")
-    st.session_state.weather = get_weather(ville) if ville else None
+    st.session_state.weather = get_weather(ville, profile) if ville else None
     # Stocker le timezone dans le profil pour l'utiliser partout
     if st.session_state.weather and st.session_state.weather.get("timezone"):
         tz = st.session_state.weather["timezone"]
@@ -1183,6 +1191,38 @@ if user_input:
             _model, _max_tokens = "claude-haiku-4-5-20251001", 350
         else:
             _model, _max_tokens = _model_map.get(_tier_chat, _model_map["free"])
+
+        # ── Détection de crise avant envoi à Claude ───────────────────────────
+        try:
+            from crisis_response import (
+                detect_crisis_level_fast, detect_crisis_level_ai,
+                get_crisis_resources, get_crisis_system_prompt,
+                format_crisis_card_ui, log_crisis_event,
+            )
+            _crisis_level = detect_crisis_level_fast(user_input)
+            # Analyse contextuelle toutes les 5 interactions si pas de mot-clé
+            if _crisis_level == 0 and len(st.session_state.messages) > 4:
+                if len(st.session_state.messages) % 5 == 0:
+                    _crisis_level = detect_crisis_level_ai(
+                        user_input, st.session_state.messages
+                    )
+            if _crisis_level >= 2:
+                log_crisis_event(user_id, _crisis_level, user_input)
+            # Injecter les instructions de crise EN TÊTE du system prompt
+            _crisis_instructions = get_crisis_system_prompt(_crisis_level, profile)
+            if _crisis_instructions:
+                system_prompt = _crisis_instructions + "\n\n---\n\n" + system_prompt
+        except Exception:
+            _crisis_level = 0
+
+        # Afficher la carte d'aide si niveau 2 ou 3
+        if _crisis_level >= 2:
+            try:
+                _crisis_resources = get_crisis_resources(profile)
+                _crisis_html = format_crisis_card_ui(_crisis_level, _crisis_resources)
+                st.markdown(_crisis_html, unsafe_allow_html=True)
+            except Exception:
+                pass
 
         # ── Streaming avec pré-génération TTS phrase par phrase ───────────────
         with st.chat_message("assistant", avatar=LOGO):

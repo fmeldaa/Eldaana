@@ -433,8 +433,10 @@ def get_transport_alerts(profile: dict, weather: dict = None) -> dict:
             for d in disruptions:
                 d["alternatives_info"] = ALTERNATIVES.get(line, DEFAULT_ALTERNATIVE)
             tc_alerts.extend(disruptions)
-    # Pour les autres pays (generic, tfl…) : pas d'API dédiée en MVP
-    # → tc_alerts reste vide, seul le trafic TomTom est utilisé
+    elif lines:
+        # Pays sans API transport dédiée (BE, CH, GB, CA, US, CD, GA…)
+        # → Perplexity Sonar effectue une recherche web temps réel
+        tc_alerts = _get_transport_via_perplexity(profile)
 
     if has_car and weather:
         lat = weather.get("lat")
@@ -804,3 +806,27 @@ def show_transport_status_sidebar(profile: dict, weather: dict = None):
             {"<p style='margin:0;font-size:0.75rem;color:#e9d5ff;'>Départ : " + depart_heure + "</p>" if depart_heure else ""}
         </div>
         """, unsafe_allow_html=True)
+
+
+# ── Fallback Perplexity (pays sans API transport dédiée) ─────────────────────
+
+def _get_transport_via_perplexity(profile: dict) -> list[dict]:
+    """
+    Recherche temps réel des perturbations TC via Perplexity Sonar.
+    Utilisé pour BE, CH, GB, CA, US, CD, GA — partout où Navitia n'est pas dispo.
+
+    Retourne une liste de disruptions dans le même format que get_line_disruptions().
+    """
+    try:
+        from perplexity_search import search_transport_disruptions
+    except ImportError:
+        return []
+
+    ville  = profile.get("ville", "")
+    locale = profile.get("locale", "fr")
+    lines  = profile.get("transport_detail", {}).get("lines", [])
+
+    if not ville or not lines:
+        return []
+
+    return search_transport_disruptions(city=ville, lines=lines, locale=locale[:2])

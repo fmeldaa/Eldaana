@@ -133,7 +133,7 @@ def create_checkout_url(uid: str, email: str, return_url: str) -> str | None:
             success_url=return_url + "&stripe_success=1&session_id={CHECKOUT_SESSION_ID}",
             cancel_url=return_url + "&stripe_cancel=1",
             allow_promotion_codes=True,
-            metadata={"eldaana_uid": uid},
+            metadata={"eldaana_uid": uid, "tier": "essential"},
         )
         return session.url
     except Exception as e:
@@ -341,21 +341,24 @@ def handle_stripe_success(session_id: str, uid: str) -> tuple:
         return False, ""
     try:
         _init()
-        session = stripe.checkout.Session.retrieve(session_id)
+        # expand=line_items pour avoir les price_id sans appel séparé
+        session = stripe.checkout.Session.retrieve(
+            session_id, expand=["line_items"]
+        )
         if session.payment_status in ("paid",) or session.status == "complete":
             _activate_premium(uid, session.customer)
-            # Détecter le plan depuis les metadata ou le price_id
-            plan = session.metadata.get("tier", "") if session.metadata else ""
+            # 1. Metadata (source la plus fiable — définie à la création)
+            plan = (session.metadata or {}).get("tier", "")
             if not plan:
-                # Fallback : comparer le price_id
+                # 2. Fallback : comparer le price_id (line_items déjà expandés)
                 try:
                     mode             = _current_mode()
                     price_id_premium = _get_or_create_price_id_premium29(mode)
-                    items = session.line_items.data if hasattr(session, "line_items") else []
-                    if items and items[0].price.id == price_id_premium:
-                        plan = "premium"
-                    else:
-                        plan = "essential"
+                    items = (session.line_items.data
+                             if hasattr(session, "line_items") and session.line_items
+                             else [])
+                    plan = "premium" if (items and items[0].price.id == price_id_premium) \
+                           else "essential"
                 except Exception:
                     plan = "essential"
             return True, plan

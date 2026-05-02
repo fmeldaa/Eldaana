@@ -280,8 +280,10 @@ if st.query_params.get("stripe_success") and _uid_now:
         st.query_params["uid"] = _uid_now
         if _plan == "premium":
             st.success("🌟 Bienvenue dans Eldaana Premium ! Mode vocal Eldaana Voice activé.")
+        elif _plan == "essential":
+            st.success("⭐ Bienvenue dans Eldaana Essentiel ! La synthèse vocale est maintenant disponible.")
         else:
-            st.success("🎙️ Bienvenue dans Eldaana Essentiel ! La synthèse vocale est maintenant disponible.")
+            st.success("✅ Abonnement activé ! Bienvenue dans Eldaana.")
         st.balloons()
 elif st.query_params.get("stripe_cancel"):
     st.query_params.clear()
@@ -613,10 +615,13 @@ with st.sidebar:
         except Exception:
             _prem_url = None
         if _prem_url:
+            _safe_prem_ess = _prem_url.replace("'", "\\'")
             st.markdown(
-                f'<a href="{_prem_url}" style="display:block;background:linear-gradient(135deg,#7c3aed,#c084fc);'
+                f'<a href="{_prem_url}" '
+                f'onclick="if(window.EldaanaNav){{window.EldaanaNav.openVoice(\'{_safe_prem_ess}\');return false;}}"'
+                f' style="display:block;background:linear-gradient(135deg,#7c3aed,#c084fc);'
                 f'color:#fff;font-weight:700;font-size:0.82rem;text-decoration:none;'
-                f'text-align:center;border-radius:10px;padding:9px 8px;margin-bottom:8px;">'
+                f'text-align:center;border-radius:14px;padding:9px 8px;margin-bottom:8px;">'
                 f'🚀 Passer Premium — 29,99€/mois</a>',
                 unsafe_allow_html=True,
             )
@@ -638,22 +643,26 @@ with st.sidebar:
             import streamlit.components.v1 as _cmp_stripe
             _safe_ess  = (_checkout_ess  or "").replace("'", "%27")
             _safe_prem = (_checkout_prem or "").replace("'", "%27")
+            # onclick : Android → EldaanaNav (charge dans WebView, shouldOverride l'envoie dans Chrome)
+            #          PC      → window.open (autorisé par sandbox allow-popups de components.html)
+            _onclick_ess  = (f"if(window.EldaanaNav){{window.EldaanaNav.openVoice('{_safe_ess}');return false;}}"
+                             f"window.open('{_safe_ess}','_blank');return false;")
+            _onclick_prem = (f"if(window.EldaanaNav){{window.EldaanaNav.openVoice('{_safe_prem}');return false;}}"
+                             f"window.open('{_safe_prem}','_blank');return false;")
             _btn_ess = (
-                f'<a href="{_checkout_ess}" target="_top" '
-                f'onclick="if(window.EldaanaNav){{window.EldaanaNav.openVoice(\'{_safe_ess}\');return false;}}" '
+                f'<a href="{_checkout_ess}" onclick="{_onclick_ess}" '
                 f'style="display:flex;align-items:center;justify-content:center;flex:1;'
                 f'background:linear-gradient(135deg,#f59e0b,#f97316);'
                 f'color:#fff;font-weight:700;font-size:0.78rem;text-decoration:none;'
-                f'border-radius:10px;padding:9px 6px;text-align:center;line-height:1.3;">'
+                f'border-radius:14px;padding:9px 6px;text-align:center;line-height:1.3;">'
                 f'⭐ Essentiel<br>9,99€/mois</a>'
             ) if _checkout_ess else '<div style="flex:1"></div>'
             _btn_prem = (
-                f'<a href="{_checkout_prem}" target="_top" '
-                f'onclick="if(window.EldaanaNav){{window.EldaanaNav.openVoice(\'{_safe_prem}\');return false;}}" '
+                f'<a href="{_checkout_prem}" onclick="{_onclick_prem}" '
                 f'style="display:flex;align-items:center;justify-content:center;flex:1;'
                 f'background:linear-gradient(135deg,#7c3aed,#c084fc);'
                 f'color:#fff;font-weight:700;font-size:0.78rem;text-decoration:none;'
-                f'border-radius:10px;padding:9px 6px;text-align:center;line-height:1.3;">'
+                f'border-radius:14px;padding:9px 6px;text-align:center;line-height:1.3;">'
                 f'🌟 Premium<br>29,99€/mois</a>'
             ) if _checkout_prem else '<div style="flex:1"></div>'
             _cmp_stripe.html(
@@ -1047,8 +1056,9 @@ if _voice_mode:
     user_input = st.chat_input("💬 Écris ton message à Eldaana…")
 
 else:
-    if not _is_android:
-        # ── PC : WebRTC natif (fonctionne dans Chrome) ──────────────────
+    _tier_for_mic = st.session_state.get("_tier_cached", "free")
+    if not _is_android and _tier_for_mic in ("essential", "premium"):
+        # ── PC Essentiel/Premium : WebRTC natif (fonctionne dans Chrome) ──
         _mic_transcript = show_mic_button(key=f"mic_{st.session_state.voice_turn}")
         if _mic_transcript:
             user_input = _mic_transcript

@@ -94,31 +94,19 @@ def show_google_button() -> dict | None:
         "prompt":        "select_account",
     })
 
-    # ── Bouton Google via components.html ────────────────────────────────────
-    # target="_top"  → navigue la frame principale Streamlit (PC / Chrome)
-    # EldaanaNav     → bridge Android : ouvre dans le WebView (shouldOverrideUrlLoading
-    #                  intercepte accounts.google.com et ouvre Chrome externe)
-    import streamlit.components.v1 as _cmp
-    _safe_url = auth_url.replace("'", "%27").replace('"', "%22")
-    _cmp.html(f"""<!DOCTYPE html>
-<html><head>
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<style>
-*{{margin:0;padding:0;box-sizing:border-box;}}
-body{{background:transparent;height:44px;display:flex;align-items:center;}}
-a{{display:flex;align-items:center;justify-content:center;gap:7px;
-   width:100%;background:#fff;border:1.5px solid #e5e7eb;border-radius:10px;
-   padding:9px 6px;cursor:pointer;font-size:0.8rem;color:#374151;
-   font-weight:600;font-family:sans-serif;text-decoration:none;}}
-a:hover{{background:#f9fafb;color:#374151;}}
-a:active{{background:#f3f4f6;color:#374151;}}
-</style>
-</head>
-<body>
-<a href="{auth_url}" target="_top" onclick="
-  if(window.EldaanaNav){{window.EldaanaNav.openVoice('{_safe_url}');return false;}}
-">{_GOOGLE_SVG} Google</a>
-</body></html>""", height=44)
+    # ── Bouton Google via st.markdown (unsafe_allow_html) ────────────────────
+    # Contrairement à components.html, st.markdown n'a pas de sandbox iframe :
+    # un <a href> est traité directement par le navigateur (pas React Router).
+    # onclick : si Android bridge → EldaanaNav.openVoice (WebView → Chrome via
+    # shouldOverrideUrlLoading) ; sinon le navigateur suit le href normalement.
+    _safe_url = auth_url.replace("'", "\\'").replace('"', "&quot;")
+    st.markdown(
+        f'<a href="{auth_url}" '
+        f'onclick="if(window.EldaanaNav){{window.EldaanaNav.openVoice(\'{_safe_url}\');return false;}}" '
+        f'style="{_BTN_STYLE}">'
+        f'{_GOOGLE_SVG} Google</a>',
+        unsafe_allow_html=True,
+    )
     return None
 
 

@@ -50,6 +50,11 @@ app.add_middleware(
 _anthropic = AsyncAnthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))
 _OPENAI_KEY = os.getenv("OPENAI_API_KEY")
 
+# Vérification au démarrage
+if not _OPENAI_KEY:
+    print("[STARTUP] ⚠️  OPENAI_API_KEY non configurée — Whisper et TTS désactivés")
+    print("[STARTUP]     Fly.io : fly secrets set OPENAI_API_KEY=sk-...")
+
 # ── Prompts ───────────────────────────────────────────────────────────────────
 
 _VOICE_SYSTEM_BASE = """Tu es Eldaana — une confidente chaleureuse, bienveillante et directe.
@@ -438,13 +443,19 @@ async def voice_endpoint(ws: WebSocket):
         # ── Pipeline complet — toute exception garde la connexion ouverte ─────
         try:
             # Étape 1 : Whisper ───────────────────────────────────────────────
+            if not _OPENAI_KEY:
+                await _send(ws, {"type": "error",
+                    "message": "Clé OpenAI non configurée sur le serveur. "
+                               "Contactez l'administrateur (fly secrets set OPENAI_API_KEY=…)"})
+                continue
+
             print("[Pipeline] → Whisper")
             await _send(ws, {"type": "status", "step": "transcribing"})
             transcript = await whisper_async(audio_bytes, audio_fmt)
 
             if not transcript:
                 await _send(ws, {"type": "error",
-                    "message": "Pas de transcription — parle plus fort ou vérifie la clé OpenAI"})
+                    "message": "Rien capturé — parle plus fort ou plus longtemps"})
                 continue
 
             print(f"[Pipeline] transcript: {transcript!r}")

@@ -5,11 +5,11 @@
     android:layout_height="match_parent"
     android:background="#C4A99A">
 
-    <!-- Logo centré — PNG avec fond transparent, 280dp -->
+    <!-- Logo centré — PNG avec fond transparent, 340dp -->
     <ImageView
         android:id="@+id/splashLogo"
-        android:layout_width="280dp"
-        android:layout_height="280dp"
+        android:layout_width="340dp"
+        android:layout_height="340dp"
         android:layout_gravity="center"
         android:src="@drawable/logo"
         android:scaleType="fitCenter"

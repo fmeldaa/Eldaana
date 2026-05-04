@@ -111,6 +111,9 @@ class MainActivity : AppCompatActivity() {
         webView = WebView(this)
         // Fond beige rosé visible AVANT que Streamlit se rende (évite le blanc/lavande)
         webView.setBackgroundColor(0xFFC4A99A.toInt())
+        // Masquer le WebView jusqu'à ce que la page soit chargée
+        // → évite le double texte "ELDAANA" (splash + WebView visible en même temps)
+        webView.visibility = android.view.View.INVISIBLE
         root.addView(webView, FrameLayout.LayoutParams(
             ViewGroup.LayoutParams.MATCH_PARENT,
             ViewGroup.LayoutParams.MATCH_PARENT
@@ -171,6 +174,9 @@ class MainActivity : AppCompatActivity() {
 
             override fun onPageFinished(view: WebView, url: String) {
                 super.onPageFinished(view, url)
+                // ── Rendre le WebView visible dès que la première page est chargée ──
+                // (il était INVISIBLE pour éviter le double texte "ELDAANA" pendant le splash)
+                view.visibility = android.view.View.VISIBLE
                 // ── Mémoriser le uid dès qu'il apparaît dans l'URL ──────────────
                 val uri = Uri.parse(url)
                 val uid = uri.getQueryParameter("uid")

@@ -1,39 +1,85 @@
 <?xml version="1.0" encoding="utf-8"?>
-<RelativeLayout
+<FrameLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="#C4A99A">
 
+    <!-- Logo centré — PNG avec fond transparent, 280dp -->
     <ImageView
-        android:id="@+id/splash_logo"
-        android:layout_width="180dp"
-        android:layout_height="180dp"
-        android:layout_centerInParent="true"
-        android:src="@mipmap/ic_app_icon"
-        android:scaleType="fitCenter"/>
+        android:id="@+id/splashLogo"
+        android:layout_width="280dp"
+        android:layout_height="280dp"
+        android:layout_gravity="center"
+        android:src="@drawable/logo"
+        android:scaleType="fitCenter"
+        android:adjustViewBounds="true"
+        android:background="@android:color/transparent" />
 
-    <TextView
-        android:layout_width="wrap_content"
+    <!-- Fondu HAUT : beige opaque → transparent (cache le haut du PNG) -->
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="200dp"
+        android:layout_gravity="top"
+        android:background="@drawable/fade_top" />
+
+    <!-- Fondu BAS : transparent → beige opaque (cache le bas du PNG) -->
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="200dp"
+        android:layout_gravity="bottom"
+        android:background="@drawable/fade_bottom" />
+
+    <!-- Fondu GAUCHE -->
+    <View
+        android:layout_width="120dp"
+        android:layout_height="320dp"
+        android:layout_gravity="center_vertical|start"
+        android:background="@drawable/fade_left" />
+
+    <!-- Fondu DROITE -->
+    <View
+        android:layout_width="120dp"
+        android:layout_height="320dp"
+        android:layout_gravity="center_vertical|end"
+        android:background="@drawable/fade_right" />
+
+    <!-- Texte ELDAANA + ligne dégradée + slogan -->
+    <LinearLayout
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_centerHorizontal="true"
-        android:layout_below="@id/splash_logo"
-        android:layout_marginTop="24dp"
-        android:text="Eldaana"
-        android:textColor="#C9A84C"
-        android:textSize="28sp"
-        android:letterSpacing="0.15"
-        android:fontFamily="serif"/>
+        android:layout_gravity="bottom|center_horizontal"
+        android:orientation="vertical"
+        android:gravity="center"
+        android:paddingBottom="72dp">
 
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_centerHorizontal="true"
-        android:layout_alignParentBottom="true"
-        android:layout_marginBottom="48dp"
-        android:text="Votre futur commence ici"
-        android:textColor="#7B5EA7"
-        android:textSize="13sp"
-        android:letterSpacing="0.1"/>
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="ELDAANA"
+            android:textSize="38sp"
+            android:letterSpacing="0.25"
+            android:textColor="#A89ACB"
+            android:fontFamily="sans-serif-light"
+            android:textStyle="normal" />
 
-</RelativeLayout>
+        <!-- Ligne dégradé #B58EDC → #7BC7E8 -->
+        <View
+            android:layout_width="72dp"
+            android:layout_height="2dp"
+            android:background="@drawable/gradient_line"
+            android:layout_marginTop="6dp"
+            android:layout_marginBottom="8dp" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="VOTRE FUTUR COMMENCE ICI"
+            android:textSize="10sp"
+            android:letterSpacing="0.18"
+            android:textColor="#C4B4CF"
+            android:alpha="0.85" />
+
+    </LinearLayout>
+
+</FrameLayout>

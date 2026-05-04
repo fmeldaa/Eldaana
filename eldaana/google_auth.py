@@ -100,27 +100,27 @@ def show_google_button() -> dict | None:
     # onclick : si Android bridge → EldaanaNav.openVoice (WebView → Chrome via
     # shouldOverrideUrlLoading) ; sinon le navigateur suit le href normalement.
     _safe_url = auth_url.replace("'", "\\'")
-    # window.location.href = url est le SEUL mécanisme garanti pour déclencher
-    # shouldOverrideUrlLoading dans Android WebView depuis JavaScript.
-    # EldaanaNav.openVoice est ajouté en premier (tente Chrome direct), puis
-    # window.location.href en fallback (intercepté par shouldOverrideUrlLoading).
-    # return false empêche la double navigation via le href.
-    # Sur PC : window.location.href navigue directement vers Google OAuth.
+    # ── IMPORTANT : <button> et non <a href> ────────────────────────────────
+    # Sur Android WebView, React/Streamlit intercepte les clics sur <a href>
+    # via son router interne → shouldOverrideUrlLoading n'est jamais appelé.
+    # Un <button> n'a pas de comportement de navigation par défaut : React
+    # ne l'intercepte pas. L'onclick JS s'exécute, déclenche window.location.href
+    # qui passe TOUJOURS par shouldOverrideUrlLoading → Chrome s'ouvre.
+    # Sur PC : window.location.href navigue directement dans l'onglet courant.
+    _onclick = (
+        f"var u='{_safe_url}';"
+        # Essayer le bridge Android sur window, parent, top
+        f"var nav=window.EldaanaNav"
+        f"||(window.parent&&window.parent.EldaanaNav)"
+        f"||(window.top&&window.top.EldaanaNav);"
+        # Si bridge dispo → Chrome direct (plus rapide)
+        f"if(nav){{nav.openVoice(u);return;}}"
+        # Sinon → navigation top frame → shouldOverrideUrlLoading ou navigateur PC
+        f"try{{window.top.location.href=u;}}catch(e){{window.location.href=u;}}"
+    )
     st.markdown(
-        f'<a href="{auth_url}" '
-        f'onclick="'
-        f'var u=\'{_safe_url}\';'
-        # 1. Chercher EldaanaNav sur window, parent, top (couvre iframe + main frame)
-        f'var nav=(window.EldaanaNav)'
-        f'||(window.parent&&window.parent.EldaanaNav)'
-        f'||(window.top&&window.top.EldaanaNav);'
-        # 2. Si bridge Android trouvé → ouvre Chrome directement
-        f'if(nav){{nav.openVoice(u);return false;}}'
-        # 3. Sinon → naviguer depuis le top frame pour déclencher shouldOverrideUrlLoading
-        f'try{{window.top.location.href=u;}}catch(e){{window.location.href=u;}}'
-        f'return false;" '
-        f'style="{_BTN_STYLE}">'
-        f'{_GOOGLE_SVG} Google</a>',
+        f'<button onclick="{_onclick}" style="{_BTN_STYLE}">'
+        f'{_GOOGLE_SVG} Google</button>',
         unsafe_allow_html=True,
     )
     return None

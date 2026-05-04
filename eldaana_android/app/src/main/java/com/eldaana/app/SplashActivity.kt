@@ -6,6 +6,7 @@ import android.os.Bundle
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.view.WindowCompat
 
 @SuppressLint("CustomSplashScreen")
 class SplashActivity : AppCompatActivity() {
@@ -20,9 +21,13 @@ class SplashActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
+        // ── Mode edge-to-edge : supprime les insets système ──────────────────
+        // Sans ça, Android laisse un micro-espace (ligne de séparation lavande)
+        // entre la status bar et le WebView, et entre le WebView et la nav bar.
+        // setDecorFitsSystemWindows(false) = le contenu s'étend derrière les barres.
+        WindowCompat.setDecorFitsSystemWindows(window, false)
+
         // ── Forcer les barres système en beige rosé AVANT tout setContentView ──
-        // Sans ceci, la status bar (haut) et la nav bar (bas) restent dans la
-        // couleur par défaut du système (lavande), même si le thème XML est correct.
         val beige = 0xFFC4A99A.toInt()
         window.statusBarColor     = beige
         window.navigationBarColor = beige

@@ -2,14 +2,22 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
 <style>
 * { margin:0; padding:0; box-sizing:border-box; }
+
+html {
+  background: #C4A99A;
+  height: 100%;
+}
 
 body {
   background: #C4A99A;
   width: 100vw;
-  height: 100vh;
+  /* Couvre tout l'écran y compris les zones safe-area (mode edge-to-edge) */
+  min-height: 100vh;
+  min-height: -webkit-fill-available;
+  min-height: 100dvh;
   overflow: hidden;
   position: relative;
 }

@@ -99,14 +99,26 @@ def show_google_button() -> dict | None:
     # un <a href> est traité directement par le navigateur (pas React Router).
     # onclick : si Android bridge → EldaanaNav.openVoice (WebView → Chrome via
     # shouldOverrideUrlLoading) ; sinon le navigateur suit le href normalement.
-    _safe_url = auth_url.replace("'", "\\'").replace('"', "&quot;")
-    # onclick : sur Android, EldaanaNav.openVoice ouvre Chrome (Google bloque OAuth
-    # dans les WebViews depuis 2019). On ne fait PAS return false : shouldOverrideUrlLoading
-    # dans MainActivity intercepte aussi les URLs google.com → double sécurité.
-    # Sur PC, le href navigue directement dans le navigateur.
+    _safe_url = auth_url.replace("'", "\\'")
+    # window.location.href = url est le SEUL mécanisme garanti pour déclencher
+    # shouldOverrideUrlLoading dans Android WebView depuis JavaScript.
+    # EldaanaNav.openVoice est ajouté en premier (tente Chrome direct), puis
+    # window.location.href en fallback (intercepté par shouldOverrideUrlLoading).
+    # return false empêche la double navigation via le href.
+    # Sur PC : window.location.href navigue directement vers Google OAuth.
     st.markdown(
         f'<a href="{auth_url}" '
-        f'onclick="if(window.EldaanaNav){{window.EldaanaNav.openVoice(\'{_safe_url}\');}}" '
+        f'onclick="'
+        f'var u=\'{_safe_url}\';'
+        # 1. Chercher EldaanaNav sur window, parent, top (couvre iframe + main frame)
+        f'var nav=(window.EldaanaNav)'
+        f'||(window.parent&&window.parent.EldaanaNav)'
+        f'||(window.top&&window.top.EldaanaNav);'
+        # 2. Si bridge Android trouvé → ouvre Chrome directement
+        f'if(nav){{nav.openVoice(u);return false;}}'
+        # 3. Sinon → naviguer depuis le top frame pour déclencher shouldOverrideUrlLoading
+        f'try{{window.top.location.href=u;}}catch(e){{window.location.href=u;}}'
+        f'return false;" '
         f'style="{_BTN_STYLE}">'
         f'{_GOOGLE_SVG} Google</a>',
         unsafe_allow_html=True,
@@ -124,8 +136,21 @@ def _exchange_code(code: str, client_id: str, client_secret: str,
             "redirect_uri":  redirect_uri,
             "grant_type":    "authorization_code",
         }, timeout=10)
-        return resp.json() if resp.status_code == 200 else None
-    except Exception:
+        if resp.status_code == 200:
+            return resp.json()
+        # ── Afficher l'erreur Google pour aider au diagnostic ──────────────────
+        try:
+            err = resp.json()
+            desc = err.get("error_description", "")
+            code_err = err.get("error", f"HTTP {resp.status_code}")
+            st.error(f"❌ Google OAuth — {code_err}: {desc}")
+            if code_err == "redirect_uri_mismatch":
+                st.caption(f"🔧 redirect_uri utilisé : `{redirect_uri}` — vérifier qu'il est identique dans Google Cloud Console.")
+        except Exception:
+            st.error(f"❌ Google OAuth — HTTP {resp.status_code}: {resp.text[:200]}")
+        return None
+    except Exception as e:
+        st.error(f"❌ Google OAuth — Exception: {e}")
         return None
 
 

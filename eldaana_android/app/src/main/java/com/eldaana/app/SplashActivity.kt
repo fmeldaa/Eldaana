@@ -20,6 +20,14 @@ class SplashActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
+        // ── Forcer les barres système en beige rosé AVANT tout setContentView ──
+        // Sans ceci, la status bar (haut) et la nav bar (bas) restent dans la
+        // couleur par défaut du système (lavande), même si le thème XML est correct.
+        val beige = 0xFFC4A99A.toInt()
+        window.statusBarColor     = beige
+        window.navigationBarColor = beige
+        window.decorView.setBackgroundColor(beige)
+
         val webView = WebView(this)
         setContentView(webView)
 

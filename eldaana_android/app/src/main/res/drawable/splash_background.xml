@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Fond uniforme beige rosé Eldaana — utilisé par Theme.Splash comme windowBackground -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+    <solid android:color="#C4A99A" />
+</shape>

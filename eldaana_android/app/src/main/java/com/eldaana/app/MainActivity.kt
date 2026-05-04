@@ -64,6 +64,13 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
+        // ── Forcer les barres système en beige rosé avant le chargement Streamlit ──
+        // Évite la bande lavande visible pendant que le WebView charge app.eldaana.io.
+        val beige = 0xFFC4A99A.toInt()
+        window.statusBarColor     = beige
+        window.navigationBarColor = beige
+        window.decorView.setBackgroundColor(beige)
+
         // ── Canal notification réveil ──
         createWakeupChannel()
 
@@ -102,6 +109,8 @@ class MainActivity : AppCompatActivity() {
 
         // ── WebView ──
         webView = WebView(this)
+        // Fond beige rosé visible AVANT que Streamlit se rende (évite le blanc/lavande)
+        webView.setBackgroundColor(0xFFC4A99A.toInt())
         root.addView(webView, FrameLayout.LayoutParams(
             ViewGroup.LayoutParams.MATCH_PARENT,
             ViewGroup.LayoutParams.MATCH_PARENT

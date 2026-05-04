@@ -100,9 +100,13 @@ def show_google_button() -> dict | None:
     # onclick : si Android bridge → EldaanaNav.openVoice (WebView → Chrome via
     # shouldOverrideUrlLoading) ; sinon le navigateur suit le href normalement.
     _safe_url = auth_url.replace("'", "\\'").replace('"', "&quot;")
+    # onclick : sur Android, EldaanaNav.openVoice ouvre Chrome (Google bloque OAuth
+    # dans les WebViews depuis 2019). On ne fait PAS return false : shouldOverrideUrlLoading
+    # dans MainActivity intercepte aussi les URLs google.com → double sécurité.
+    # Sur PC, le href navigue directement dans le navigateur.
     st.markdown(
         f'<a href="{auth_url}" '
-        f'onclick="if(window.EldaanaNav){{window.EldaanaNav.openVoice(\'{_safe_url}\');return false;}}" '
+        f'onclick="if(window.EldaanaNav){{window.EldaanaNav.openVoice(\'{_safe_url}\');}}" '
         f'style="{_BTN_STYLE}">'
         f'{_GOOGLE_SVG} Google</a>',
         unsafe_allow_html=True,

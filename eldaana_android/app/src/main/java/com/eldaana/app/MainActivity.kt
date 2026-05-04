@@ -382,14 +382,34 @@ class MainActivity : AppCompatActivity() {
         setIntent(intent)
         val data = intent.data ?: return
         if (data.scheme == "eldaana") {
-            val uid = data.getQueryParameter("uid") ?: ""
+            val uid   = data.getQueryParameter("uid")   ?: ""
+            val code  = data.getQueryParameter("code")  ?: ""
+            val state = data.getQueryParameter("state") ?: ""
+
             if (uid.isNotBlank()) {
                 getSharedPreferences("eldaana_prefs", MODE_PRIVATE)
                     .edit().putString("user_uid", uid).apply()
             }
+
             val prefs    = getSharedPreferences(SplashActivity.PREFS, MODE_PRIVATE)
             val lang     = prefs.getString(SplashActivity.KEY_LANG, "fr") ?: "fr"
-            val uidParam = if (uid.isNotBlank()) "&uid=$uid" else ""
+            val savedUid = getSharedPreferences("eldaana_prefs", MODE_PRIVATE)
+                .getString("user_uid", "") ?: ""
+            val uidParam = if (savedUid.isNotBlank()) "&uid=$savedUid" else ""
+
+            // ── Callback OAuth Google : code + state dans le deep link ──────────
+            // Quand redirect_uri = "eldaana://callback", Chrome redirige ici après
+            // l'authentification Google. On recharge l'app avec le code en param
+            // pour que Streamlit puisse l'échanger contre un token.
+            if (code.isNotBlank()) {
+                val codeEnc  = Uri.encode(code)
+                val stateEnc = Uri.encode(state)
+                webView.loadUrl(
+                    "${APP_URL}?lang=$lang$uidParam&platform=android" +
+                    "&code=$codeEnc&state=$stateEnc"
+                )
+                return
+            }
 
             webView.loadUrl("${APP_URL}?lang=$lang$uidParam&platform=android")
         }

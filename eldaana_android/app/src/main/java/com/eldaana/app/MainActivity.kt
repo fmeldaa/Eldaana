@@ -15,9 +15,7 @@ import android.provider.MediaStore
 import android.provider.Settings
 import android.webkit.*
 import android.view.Gravity
-import android.view.LayoutInflater
 import android.view.ViewGroup
-import android.view.animation.AlphaAnimation
 import android.widget.FrameLayout
 import android.widget.ImageButton
 import android.widget.Toast
@@ -39,9 +37,6 @@ class MainActivity : AppCompatActivity() {
     private lateinit var webView: WebView
     private val APP_URL = "https://app.eldaana.io/"
 
-    // Overlay splash par-dessus le WebView — disparaît en fondu quand la page est prête
-    private var splashOverlay: android.view.View? = null
-    private var splashDismissed = false
 
     // Upload fichiers
     private var fileUploadCallback: ValueCallback<Array<Uri>>? = null
@@ -177,8 +172,6 @@ class MainActivity : AppCompatActivity() {
 
             override fun onPageFinished(view: WebView, url: String) {
                 super.onPageFinished(view, url)
-                // ── Dissoudre l'overlay splash quand la page est chargée ──────────
-                dismissSplashOverlay()
                 // ── Mémoriser le uid dès qu'il apparaît dans l'URL ──────────────
                 val uri = Uri.parse(url)
                 val uid = uri.getQueryParameter("uid")
@@ -366,43 +359,8 @@ class MainActivity : AppCompatActivity() {
         }
         root.addView(alarmButton, alarmLp)
 
-        // ── Overlay splash PAR-DESSUS le WebView ─────────────────────────────────
-        // Même layout que SplashActivity → couvre le WebView pendant le chargement.
-        // Disparaît en fondu (800ms) quand onPageFinished est déclenché.
-        // Élimine définitivement le double texte ELDAANA : une seule activité,
-        // zéro transition entre deux activités, zéro superposition possible.
-        val overlay = LayoutInflater.from(this)
-            .inflate(R.layout.activity_splash, root, false)
-        overlay.elevation = 100f   // toujours au-dessus de tout
-        root.addView(overlay, FrameLayout.LayoutParams(
-            ViewGroup.LayoutParams.MATCH_PARENT,
-            ViewGroup.LayoutParams.MATCH_PARENT
-        ))
-        splashOverlay = overlay
     }
 
-    // ── Dissolution de l'overlay splash ──────────────────────────────────────────
-
-    private fun dismissSplashOverlay() {
-        val overlay = splashOverlay ?: return
-        if (splashDismissed) return
-        splashDismissed = true
-        runOnUiThread {
-            val fade = AlphaAnimation(1f, 0f).apply {
-                duration  = 800
-                fillAfter = false
-            }
-            fade.setAnimationListener(object : android.view.animation.Animation.AnimationListener {
-                override fun onAnimationStart(a: android.view.animation.Animation?) {}
-                override fun onAnimationRepeat(a: android.view.animation.Animation?) {}
-                override fun onAnimationEnd(a: android.view.animation.Animation?) {
-                    overlay.visibility = android.view.View.GONE
-                    splashOverlay = null
-                }
-            })
-            overlay.startAnimation(fade)
-        }
-    }
 
     // ─── Chargement URL app ───────────────────────────────────────────────────
 

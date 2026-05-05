@@ -58,8 +58,9 @@ class SplashActivity : AppCompatActivity() {
 
     private fun launchMain() {
         startActivity(Intent(this, MainActivity::class.java))
-        @Suppress("DEPRECATION")
-        overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out)
+        // Aucune animation de transition → zéro superposition entre les deux activités
+        // → impossible d'avoir le double texte ELDAANA pendant le changement d'écran
+        overridePendingTransition(0, 0)
         finish()
     }
 }

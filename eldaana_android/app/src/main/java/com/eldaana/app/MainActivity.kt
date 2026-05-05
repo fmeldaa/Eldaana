@@ -15,7 +15,9 @@ import android.provider.MediaStore
 import android.provider.Settings
 import android.webkit.*
 import android.view.Gravity
+import android.view.LayoutInflater
 import android.view.ViewGroup
+import android.view.animation.AlphaAnimation
 import android.widget.FrameLayout
 import android.widget.ImageButton
 import android.widget.Toast
@@ -36,6 +38,10 @@ class MainActivity : AppCompatActivity() {
 
     private lateinit var webView: WebView
     private val APP_URL = "https://app.eldaana.io/"
+
+    // Overlay splash par-dessus le WebView — disparaît en fondu quand la page est prête
+    private var splashOverlay: android.view.View? = null
+    private var splashDismissed = false
 
     // Upload fichiers
     private var fileUploadCallback: ValueCallback<Array<Uri>>? = null
@@ -111,9 +117,6 @@ class MainActivity : AppCompatActivity() {
         webView = WebView(this)
         // Fond beige rosé visible AVANT que Streamlit se rende (évite le blanc/lavande)
         webView.setBackgroundColor(0xFFC4A99A.toInt())
-        // Masquer le WebView jusqu'à ce que la page soit chargée
-        // → évite le double texte "ELDAANA" (splash + WebView visible en même temps)
-        webView.visibility = android.view.View.INVISIBLE
         root.addView(webView, FrameLayout.LayoutParams(
             ViewGroup.LayoutParams.MATCH_PARENT,
             ViewGroup.LayoutParams.MATCH_PARENT
@@ -174,14 +177,8 @@ class MainActivity : AppCompatActivity() {
 
             override fun onPageFinished(view: WebView, url: String) {
                 super.onPageFinished(view, url)
-                // ── Rendre le WebView visible APRÈS un délai minimum ──────────────
-                // onPageFinished peut se déclencher très vite (cache) pendant que
-                // SplashActivity est encore en train de faire son fade_out (~300ms).
-                // Sans délai, les deux activités se superposent → double "ELDAANA".
-                // 700ms >> durée de la transition (300ms) → overlap impossible.
-                view.postDelayed({
-                    view.visibility = android.view.View.VISIBLE
-                }, 700)
+                // ── Dissoudre l'overlay splash quand la page est chargée ──────────
+                dismissSplashOverlay()
                 // ── Mémoriser le uid dès qu'il apparaît dans l'URL ──────────────
                 val uri = Uri.parse(url)
                 val uid = uri.getQueryParameter("uid")
@@ -368,6 +365,43 @@ class MainActivity : AppCompatActivity() {
             leftMargin   = (12 * dp).toInt()
         }
         root.addView(alarmButton, alarmLp)
+
+        // ── Overlay splash PAR-DESSUS le WebView ─────────────────────────────────
+        // Même layout que SplashActivity → couvre le WebView pendant le chargement.
+        // Disparaît en fondu (800ms) quand onPageFinished est déclenché.
+        // Élimine définitivement le double texte ELDAANA : une seule activité,
+        // zéro transition entre deux activités, zéro superposition possible.
+        val overlay = LayoutInflater.from(this)
+            .inflate(R.layout.activity_splash, root, false)
+        overlay.elevation = 100f   // toujours au-dessus de tout
+        root.addView(overlay, FrameLayout.LayoutParams(
+            ViewGroup.LayoutParams.MATCH_PARENT,
+            ViewGroup.LayoutParams.MATCH_PARENT
+        ))
+        splashOverlay = overlay
+    }
+
+    // ── Dissolution de l'overlay splash ──────────────────────────────────────────
+
+    private fun dismissSplashOverlay() {
+        val overlay = splashOverlay ?: return
+        if (splashDismissed) return
+        splashDismissed = true
+        runOnUiThread {
+            val fade = AlphaAnimation(1f, 0f).apply {
+                duration  = 800
+                fillAfter = false
+            }
+            fade.setAnimationListener(object : android.view.animation.Animation.AnimationListener {
+                override fun onAnimationStart(a: android.view.animation.Animation?) {}
+                override fun onAnimationRepeat(a: android.view.animation.Animation?) {}
+                override fun onAnimationEnd(a: android.view.animation.Animation?) {
+                    overlay.visibility = android.view.View.GONE
+                    splashOverlay = null
+                }
+            })
+            overlay.startAnimation(fade)
+        }
     }
 
     // ─── Chargement URL app ───────────────────────────────────────────────────

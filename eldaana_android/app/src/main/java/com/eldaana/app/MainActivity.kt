@@ -515,6 +515,21 @@ class MainActivity : AppCompatActivity() {
 
     inner class EldaanaAndroidBridge {
 
+        /** Ouvre n'importe quelle URL dans Chrome (utilisé pour Google OAuth) */
+        @android.webkit.JavascriptInterface
+        fun openUrl(url: String) {
+            runOnUiThread {
+                try {
+                    startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)).apply {
+                        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                    })
+                } catch (e: Exception) {
+                    Toast.makeText(applicationContext,
+                        "Impossible d'ouvrir : ${e.message}", Toast.LENGTH_SHORT).show()
+                }
+            }
+        }
+
         /** Appelé depuis le JS injecté quand l'utilisateur tape "Appuyer et parler" */
         @android.webkit.JavascriptInterface
         fun startNativeMic() {

@@ -100,22 +100,23 @@ def show_google_button() -> dict | None:
     # onclick : si Android bridge → EldaanaNav.openVoice (WebView → Chrome via
     # shouldOverrideUrlLoading) ; sinon le navigateur suit le href normalement.
     _safe_url = auth_url.replace("'", "\\'")
-    # ── IMPORTANT : <button> et non <a href> ────────────────────────────────
-    # Sur Android WebView, React/Streamlit intercepte les clics sur <a href>
-    # via son router interne → shouldOverrideUrlLoading n'est jamais appelé.
-    # Un <button> n'a pas de comportement de navigation par défaut : React
-    # ne l'intercepte pas. L'onclick JS s'exécute, déclenche window.location.href
-    # qui passe TOUJOURS par shouldOverrideUrlLoading → Chrome s'ouvre.
-    # Sur PC : window.location.href navigue directement dans l'onglet courant.
+    # ── Stratégie Android : EldaanaAndroid.openUrl() (bridge confirmé fonctionnel) ──
+    # EldaanaAndroid est le bridge utilisé pour le micro → confirmé accessible.
+    # Il ouvre directement Chrome via Intent.ACTION_VIEW côté Kotlin.
+    # Fallback EldaanaNav.openVoice(), puis window.top.location.href pour PC.
     _onclick = (
         f"var u='{_safe_url}';"
-        # Essayer le bridge Android sur window, parent, top
-        f"var nav=window.EldaanaNav"
+        # 1. EldaanaAndroid.openUrl() — bridge confirmé fonctionnel (même que le micro)
+        f"var a=window.EldaanaAndroid"
+        f"||(window.parent&&window.parent.EldaanaAndroid)"
+        f"||(window.top&&window.top.EldaanaAndroid);"
+        f"if(a&&a.openUrl){{a.openUrl(u);return;}}"
+        # 2. EldaanaNav.openVoice() — fallback Android
+        f"var n=window.EldaanaNav"
         f"||(window.parent&&window.parent.EldaanaNav)"
         f"||(window.top&&window.top.EldaanaNav);"
-        # Si bridge dispo → Chrome direct (plus rapide)
-        f"if(nav){{nav.openVoice(u);return;}}"
-        # Sinon → navigation top frame → shouldOverrideUrlLoading ou navigateur PC
+        f"if(n&&n.openVoice){{n.openVoice(u);return;}}"
+        # 3. Navigation directe — PC / autres navigateurs
         f"try{{window.top.location.href=u;}}catch(e){{window.location.href=u;}}"
     )
     st.markdown(

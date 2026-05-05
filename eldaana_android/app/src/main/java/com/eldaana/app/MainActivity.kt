@@ -174,9 +174,14 @@ class MainActivity : AppCompatActivity() {
 
             override fun onPageFinished(view: WebView, url: String) {
                 super.onPageFinished(view, url)
-                // ── Rendre le WebView visible dès que la première page est chargée ──
-                // (il était INVISIBLE pour éviter le double texte "ELDAANA" pendant le splash)
-                view.visibility = android.view.View.VISIBLE
+                // ── Rendre le WebView visible APRÈS un délai minimum ──────────────
+                // onPageFinished peut se déclencher très vite (cache) pendant que
+                // SplashActivity est encore en train de faire son fade_out (~300ms).
+                // Sans délai, les deux activités se superposent → double "ELDAANA".
+                // 700ms >> durée de la transition (300ms) → overlap impossible.
+                view.postDelayed({
+                    view.visibility = android.view.View.VISIBLE
+                }, 700)
                 // ── Mémoriser le uid dès qu'il apparaît dans l'URL ──────────────
                 val uri = Uri.parse(url)
                 val uid = uri.getQueryParameter("uid")

@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- Symbole infini — couleur dorée/rose comme le logo Eldaana -->
+    <path
+        android:fillColor="#00000000"
+        android:strokeColor="#E8B4D0"
+        android:strokeWidth="6"
+        android:pathData="M54,54 C54,54 44,38 32,38 C20,38 12,46 12,54 C12,62 20,70 32,70 C44,70 54,54 54,54 C54,54 64,38 76,38 C88,38 96,46 96,54 C96,62 88,70 76,70 C64,70 54,54 54,54 Z"/>
+    <path
+        android:fillColor="#00000000"
+        android:strokeColor="#C9A0DC"
+        android:strokeWidth="3"
+        android:strokeAlpha="0.6"
+        android:pathData="M54,54 C54,54 44,42 32,42 C22,42 16,47 16,54 C16,61 22,66 32,66 C44,66 54,54 54,54 C54,54 64,42 76,42 C86,42 92,47 92,54 C92,61 86,66 76,66 C64,66 54,54 54,54 Z"/>
+</vector>

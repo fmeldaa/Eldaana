@@ -6,6 +6,7 @@ OAuth2 manuel (authorization code flow) — bouton stylé comme les autres rése
 import secrets as _secrets
 import urllib.parse
 import streamlit as st
+import streamlit.components.v1 as _components
 import requests as _http
 
 
@@ -99,14 +100,47 @@ def show_google_button() -> dict | None:
     # un <a href> est traité directement par le navigateur (pas React Router).
     # onclick : si Android bridge → EldaanaNav.openVoice (WebView → Chrome via
     # shouldOverrideUrlLoading) ; sinon le navigateur suit le href normalement.
-    # ── <a href> simple — DOMPurify (Streamlit) supprime tous les onclick ────────
-    # Un <a href> standard fonctionne sur PC (navigation normale) ET sur Android
-    # (shouldOverrideUrlLoading intercepte comptes.google.com → Chrome s'ouvre).
-    st.markdown(
-        f'<a href="{auth_url}" style="{_BTN_STYLE}">'
-        f'{_GOOGLE_SVG} Google</a>',
-        unsafe_allow_html=True,
-    )
+    # ── components.html : iframe réel, onclick non supprimé par DOMPurify ────────
+    # st.markdown supprime les onclick via DOMPurify → rien ne marche.
+    # components.html crée un vrai <iframe sandbox="allow-scripts allow-same-origin">
+    # → onclick s'exécute normalement.
+    #
+    # Stratégie :
+    #   1. Android  : window.EldaanaAndroid.openUrl(url) — bridge Kotlin confirmé
+    #                 (addJavascriptInterface s'applique à TOUS les frames du WebView)
+    #   2. PC       : window.parent.location.href = url  — iframe same-origin,
+    #                 navigue l'onglet principal vers Google
+    #   3. Fallback : window.open(url, '_blank')          — nouvel onglet
+    _safe_url = auth_url.replace("'", "\\'").replace('"', "&quot;")
+    _html = f"""<!DOCTYPE html>
+<html><head><meta charset="utf-8">
+<style>
+* {{ box-sizing:border-box; margin:0; padding:0; }}
+body {{ background:transparent; }}
+button {{
+  display:flex; align-items:center; justify-content:center; gap:7px;
+  width:100%; background:#fff; border:1.5px solid #e5e7eb;
+  border-radius:10px; padding:9px 6px; cursor:pointer;
+  font-size:0.85rem; color:#374151; font-weight:600;
+  font-family:sans-serif;
+}}
+button:hover {{ background:#f9fafb; }}
+</style>
+</head>
+<body>
+<button onclick="
+  var u='{_safe_url}';
+  if(window.EldaanaAndroid && window.EldaanaAndroid.openUrl){{
+    window.EldaanaAndroid.openUrl(u);
+  }} else {{
+    try{{ window.parent.location.href=u; }}
+    catch(e){{ window.open(u,'_blank'); }}
+  }}
+">
+  {_GOOGLE_SVG} Google
+</button>
+</body></html>"""
+    _components.html(_html, height=52)
     return None
 
 

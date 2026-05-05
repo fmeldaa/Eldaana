@@ -99,26 +99,12 @@ def show_google_button() -> dict | None:
     # un <a href> est traité directement par le navigateur (pas React Router).
     # onclick : si Android bridge → EldaanaNav.openVoice (WebView → Chrome via
     # shouldOverrideUrlLoading) ; sinon le navigateur suit le href normalement.
-    _safe_url = auth_url.replace("'", "\\'")
-    # ── onclick : chaque accès cross-origin dans un try/catch séparé ─────────────
-    # window.parent / window.top depuis un iframe Streamlit = SecurityError si
-    # cross-origin → un seul accès non protégé tue tout le handler.
-    # Ordre : bridge Android (fenêtre courante uniquement) → navigation directe.
-    _onclick = (
-        f"var u='{_safe_url}';"
-        # 1. EldaanaAndroid.openUrl() — bridge sur la fenêtre courante seulement
-        f"try{{if(window.EldaanaAndroid&&window.EldaanaAndroid.openUrl)"
-        f"{{window.EldaanaAndroid.openUrl(u);return;}}}}catch(e){{}}"
-        # 2. EldaanaNav.openVoice() — bridge sur la fenêtre courante seulement
-        f"try{{if(window.EldaanaNav&&window.EldaanaNav.openVoice)"
-        f"{{window.EldaanaNav.openVoice(u);return;}}}}catch(e){{}}"
-        # 3. Navigation directe — fonctionne sur PC ET déclenche
-        #    shouldOverrideUrlLoading sur Android (Google → Chrome)
-        f"window.location.href=u;"
-    )
+    # ── <a href> simple — DOMPurify (Streamlit) supprime tous les onclick ────────
+    # Un <a href> standard fonctionne sur PC (navigation normale) ET sur Android
+    # (shouldOverrideUrlLoading intercepte comptes.google.com → Chrome s'ouvre).
     st.markdown(
-        f'<button onclick="{_onclick}" style="{_BTN_STYLE}">'
-        f'{_GOOGLE_SVG} Google</button>',
+        f'<a href="{auth_url}" style="{_BTN_STYLE}">'
+        f'{_GOOGLE_SVG} Google</a>',
         unsafe_allow_html=True,
     )
     return None

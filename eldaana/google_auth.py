@@ -100,24 +100,21 @@ def show_google_button() -> dict | None:
     # onclick : si Android bridge → EldaanaNav.openVoice (WebView → Chrome via
     # shouldOverrideUrlLoading) ; sinon le navigateur suit le href normalement.
     _safe_url = auth_url.replace("'", "\\'")
-    # ── Stratégie Android : EldaanaAndroid.openUrl() (bridge confirmé fonctionnel) ──
-    # EldaanaAndroid est le bridge utilisé pour le micro → confirmé accessible.
-    # Il ouvre directement Chrome via Intent.ACTION_VIEW côté Kotlin.
-    # Fallback EldaanaNav.openVoice(), puis window.top.location.href pour PC.
+    # ── onclick : chaque accès cross-origin dans un try/catch séparé ─────────────
+    # window.parent / window.top depuis un iframe Streamlit = SecurityError si
+    # cross-origin → un seul accès non protégé tue tout le handler.
+    # Ordre : bridge Android (fenêtre courante uniquement) → navigation directe.
     _onclick = (
         f"var u='{_safe_url}';"
-        # 1. EldaanaAndroid.openUrl() — bridge confirmé fonctionnel (même que le micro)
-        f"var a=window.EldaanaAndroid"
-        f"||(window.parent&&window.parent.EldaanaAndroid)"
-        f"||(window.top&&window.top.EldaanaAndroid);"
-        f"if(a&&a.openUrl){{a.openUrl(u);return;}}"
-        # 2. EldaanaNav.openVoice() — fallback Android
-        f"var n=window.EldaanaNav"
-        f"||(window.parent&&window.parent.EldaanaNav)"
-        f"||(window.top&&window.top.EldaanaNav);"
-        f"if(n&&n.openVoice){{n.openVoice(u);return;}}"
-        # 3. Navigation directe — PC / autres navigateurs
-        f"try{{window.top.location.href=u;}}catch(e){{window.location.href=u;}}"
+        # 1. EldaanaAndroid.openUrl() — bridge sur la fenêtre courante seulement
+        f"try{{if(window.EldaanaAndroid&&window.EldaanaAndroid.openUrl)"
+        f"{{window.EldaanaAndroid.openUrl(u);return;}}}}catch(e){{}}"
+        # 2. EldaanaNav.openVoice() — bridge sur la fenêtre courante seulement
+        f"try{{if(window.EldaanaNav&&window.EldaanaNav.openVoice)"
+        f"{{window.EldaanaNav.openVoice(u);return;}}}}catch(e){{}}"
+        # 3. Navigation directe — fonctionne sur PC ET déclenche
+        #    shouldOverrideUrlLoading sur Android (Google → Chrome)
+        f"window.location.href=u;"
     )
     st.markdown(
         f'<button onclick="{_onclick}" style="{_BTN_STYLE}">'

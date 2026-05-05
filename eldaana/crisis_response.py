@@ -22,6 +22,92 @@ from datetime import datetime
 client = Anthropic()
 
 
+# ── HARD LIMITS — détection pédocriminelle et blocage session ─────────────────
+
+# Mots-clés pédocriminels (avec contexte sexuel → block_session)
+_PEDO_SEXUAL_KEYWORDS = [
+    r"\bpédophil", r"\bpédocriminel",
+    r"\babus\w* (sexuel|mineur|enfant)",
+    r"\benfant\w* (nu|nue|sexuel|porn|érot)",
+    r"\bmineur\w* (sexuel|porn|érot|nu|nue)",
+    r"\bporn\w* (enfant|mineur|ado)",
+    r"\binceste\w* (enfant|mineur)",
+    r"\bsexe? avec (un |une )?(enfant|mineur|gamin|fillette|garçon)",
+    r"\battouche\w* (enfant|mineur)",
+    r"\bvioler? (un |une )?(enfant|mineur)",
+    r"\bfantasme\w* (enfant|mineur|ado)",
+    r"\bimage\w* (enfant|mineur)\w* (nud?|sexuel|porn)",
+    r"\bcsam\b", r"\bshota\b", r"\bloli\b.{0,20}sexuel",
+    # EN
+    r"\bchild (porn|sex|abuse|nude|naked|sexu)",
+    r"\bminor\w* (sex|porn|nude|sexu|abuse)",
+    r"\bpedophil", r"\bpedo (sex|porn|abuse)",
+    r"\bchild (molestat|groomin)",
+    r"\bsex\w* with (a )?(child|minor|kid)",
+]
+
+# Autres catégories → soft_refuse (Claude répond avec HARD_LIMITS dans le prompt)
+_SOFT_REFUSE_PATTERNS = [
+    # Drogues
+    r"\bsynth[eé]s[ei]\w* (de |d[''u])?(héro[ïi]ne|méthamphét|fentanyl|crack|meth\b)",
+    r"\bfabriquer? (de |du |l[ae] )?(drogue|stupéfi|héro[ïi]ne|cocaïne|crack|meth)",
+    r"\brecette\w* (drogue|héro[ïi]ne|méthamphét|lsd|mdma)",
+    r"\bcomment (faire|produire|synthétiser) (de |du )?(drogue|meth|crack|fentanyl)",
+    # Instructions pour blesser/tuer
+    r"\bcomment (tuer|assassiner|empoisonner) (quelqu[''u]|une personne|mon |ma )",
+    r"\binstruction\w* pour (tuer|blesser|attaquer|poignarder|étrangler)",
+    r"\bbombe\w* (artisan|fabriqu|instruc)",
+    r"\bexplosif\w* (fabriqu|instruc|comment)",
+    # Porn explicite
+    r"\b(écri[st]|génèr|produi[st]|fais|rédige)\w*.{0,40}(porn|sexe explicit|scène sexuelle explicit)",
+]
+
+
+def detect_hard_limit(message: str) -> str:
+    """
+    Analyse un message pour détecter les violations des HARD_LIMITS.
+
+    Retourne :
+      "block_session" — contenu pédocriminel avec contexte sexuel
+                        → log Supabase table 'hard_limit_events' + ne pas envoyer à Claude
+      "soft_refuse"   — drogues, violence, porn explicite
+                        → envoyer à Claude avec HARD_LIMITS activé dans le prompt
+      "ok"            — aucun problème détecté
+    """
+    msg = message.lower().strip()
+
+    for pattern in _PEDO_SEXUAL_KEYWORDS:
+        if re.search(pattern, msg):
+            return "block_session"
+
+    for pattern in _SOFT_REFUSE_PATTERNS:
+        if re.search(pattern, msg):
+            return "soft_refuse"
+
+    return "ok"
+
+
+def log_hard_limit_event(uid: str, result: str, message_snippet: str):
+    """Log dans Supabase table 'hard_limit_events' (RGPD : 60 chars max)."""
+    try:
+        from supabase_client import supabase
+        supabase.table("hard_limit_events").insert({
+            "uid_hash":   hash(uid) % 9999999,
+            "result":     result,
+            "snippet":    message_snippet[:60] + "…",
+            "created_at": datetime.utcnow().isoformat(),
+        }).execute()
+    except Exception:
+        pass
+
+
+# Message affiché quand block_session (jamais envoyé à Claude)
+BLOCK_SESSION_MESSAGE = (
+    "Je ne peux pas continuer sur ce sujet. "
+    "Si tu traverses quelque chose de difficile, je suis là pour t'écouter autrement."
+)
+
+
 # ── MOTS-CLÉS PAR NIVEAU ──────────────────────────────────────────────────────
 # Détection locale AVANT tout appel API — rapidité + économie de tokens
 

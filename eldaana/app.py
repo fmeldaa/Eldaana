@@ -1233,13 +1233,33 @@ if user_input:
         else:
             _model, _max_tokens = _model_map.get(_tier_chat, _model_map["free"])
 
-        # ── Détection de crise avant envoi à Claude ───────────────────────────
+        # ── HARD LIMITS — vérification avant tout envoi à Claude ────────────────
         try:
             from crisis_response import (
+                detect_hard_limit, log_hard_limit_event, BLOCK_SESSION_MESSAGE,
                 detect_crisis_level_fast, detect_crisis_level_ai,
                 get_crisis_resources, get_crisis_system_prompt,
                 format_crisis_card_ui, log_crisis_event,
             )
+            _hard_limit = detect_hard_limit(user_input)
+        except Exception:
+            _hard_limit = "ok"
+
+        if _hard_limit == "block_session":
+            # Contenu pédocriminel → refus immédiat, pas d'envoi à Claude
+            try:
+                log_hard_limit_event(user_id, "block_session", user_input)
+            except Exception:
+                pass
+            with st.chat_message("assistant", avatar=LOGO):
+                st.markdown(BLOCK_SESSION_MESSAGE)
+            st.session_state.messages.append({
+                "role": "assistant", "content": BLOCK_SESSION_MESSAGE
+            })
+            st.stop()
+
+        # ── Détection de crise avant envoi à Claude ───────────────────────────
+        try:
             _crisis_level = detect_crisis_level_fast(user_input)
             # Analyse contextuelle toutes les 5 interactions si pas de mot-clé
             if _crisis_level == 0 and len(st.session_state.messages) > 4:
@@ -1253,6 +1273,13 @@ if user_input:
             _crisis_instructions = get_crisis_system_prompt(_crisis_level, profile)
             if _crisis_instructions:
                 system_prompt = _crisis_instructions + "\n\n---\n\n" + system_prompt
+
+            # soft_refuse : log + HARD_LIMITS déjà en tête du prompt (system_prompt.py)
+            if _hard_limit == "soft_refuse":
+                try:
+                    log_hard_limit_event(user_id, "soft_refuse", user_input)
+                except Exception:
+                    pass
         except Exception:
             _crisis_level = 0
 

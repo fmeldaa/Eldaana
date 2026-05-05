@@ -5,81 +5,12 @@
     android:layout_height="match_parent"
     android:background="#C4A99A">
 
-    <!-- Logo centré — PNG avec fond transparent, 400dp -->
+    <!-- Image splash plein écran (fond + logo déjà intégrés) -->
     <ImageView
-        android:id="@+id/splashLogo"
-        android:layout_width="400dp"
-        android:layout_height="400dp"
-        android:layout_gravity="center"
-        android:src="@drawable/logo"
-        android:scaleType="fitCenter"
-        android:adjustViewBounds="true"
-        android:background="@android:color/transparent" />
-
-    <!-- Fondu HAUT : beige opaque → transparent -->
-    <View
         android:layout_width="match_parent"
-        android:layout_height="180dp"
-        android:layout_gravity="top"
-        android:background="@drawable/fade_top" />
-
-    <!-- Fondu BAS : transparent → beige opaque -->
-    <View
-        android:layout_width="match_parent"
-        android:layout_height="180dp"
-        android:layout_gravity="bottom"
-        android:background="@drawable/fade_bottom" />
-
-    <!-- Fondu GAUCHE -->
-    <View
-        android:layout_width="100dp"
         android:layout_height="match_parent"
-        android:layout_gravity="center_vertical|start"
-        android:background="@drawable/fade_left" />
-
-    <!-- Fondu DROITE -->
-    <View
-        android:layout_width="100dp"
-        android:layout_height="match_parent"
-        android:layout_gravity="center_vertical|end"
-        android:background="@drawable/fade_right" />
-
-    <!-- Texte ELDAANA + ligne dégradée + slogan -->
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_gravity="bottom|center_horizontal"
-        android:orientation="vertical"
-        android:gravity="center"
-        android:paddingBottom="72dp">
-
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="ELDAANA"
-            android:textSize="44sp"
-            android:letterSpacing="0.3"
-            android:textColor="#A89ACB"
-            android:textStyle="bold"
-            android:fontFamily="sans-serif" />
-
-        <!-- Ligne dégradé #B58EDC → #7BC7E8 -->
-        <View
-            android:layout_width="72dp"
-            android:layout_height="2dp"
-            android:background="@drawable/gradient_line"
-            android:layout_marginTop="6dp"
-            android:layout_marginBottom="8dp" />
-
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="VOTRE FUTUR COMMENCE ICI"
-            android:textSize="13sp"
-            android:letterSpacing="0.15"
-            android:textColor="#C4B4CF"
-            android:alpha="1.0" />
-
-    </LinearLayout>
+        android:src="@drawable/splash_bg"
+        android:scaleType="centerCrop"
+        android:contentDescription="@null" />
 
 </FrameLayout>

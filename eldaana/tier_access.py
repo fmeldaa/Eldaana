@@ -76,13 +76,11 @@ def can_access(feature: str, uid: str) -> bool:
 def show_upgrade_prompt(feature_label: str, required_tier: str = "essential"):
     """Affiche un bloc d'upgrade quand une feature est verrouillée."""
     if required_tier == "essential":
-        tier_lbl = _t("tier_essential_label")
-        price    = _t("tier_price_essential")
+        feature_line = _t("tier_feature_essential")
+        upgrade_line = _t("tier_upgrade_essential")
     else:
-        tier_lbl = _t("tier_premium_label")
-        price    = _t("tier_price_premium")
-    feature_line = _t("tier_feature_line", tier=tier_lbl, price=price)
-    upgrade_line = _t("tier_upgrade_line", tier=tier_lbl)
+        feature_line = _t("tier_feature_premium")
+        upgrade_line = _t("tier_upgrade_premium")
     st.markdown(f"""
     <div style="background:linear-gradient(135deg,#fdf4ff,#ede9fe);
                 border:1.5px solid #c084fc;border-radius:16px;

@@ -373,14 +373,16 @@ _STRINGS: dict[str, dict[str, str]] = {
         "email_oauth_error":       "Erreur OAuth : {e}",
 
         # ── Tier / upgrade prompts ────────────────────────────────────────
-        "tier_essential_label":    "Essentiel",
-        "tier_premium_label":      "Premium",
-        "tier_price_essential":    "9,99€/mois",
-        "tier_price_premium":      "29,99€/mois",
-        "tier_feature_line":       "Fonctionnalité {tier} — {price}",
-        "tier_upgrade_line":       "Passe à {tier} pour débloquer cette fonctionnalité et bien plus.",
-        "voy_scores_feature":      "Scores prédictifs quotidiens (humeur, énergie, stress, budget)",
-        "voy_factors_feature":     "Facteurs détaillés & forecast 7 jours",
+        "tier_essential_label":      "Essentiel",
+        "tier_premium_label":        "Premium",
+        "tier_price_essential":      "9,99€/mois",
+        "tier_price_premium":        "29,99€/mois",
+        "tier_feature_essential":    "Fonctionnalité Essentiel — 9,99€/mois et Premium — 29,99€/mois",
+        "tier_upgrade_essential":    "Passe à Essentiel ou Premium pour débloquer cette fonctionnalité et bien plus.",
+        "tier_feature_premium":      "Fonctionnalité Premium — 29,99€/mois",
+        "tier_upgrade_premium":      "Passe à Premium pour débloquer cette fonctionnalité et bien plus.",
+        "voy_scores_feature":        "Scores prédictifs quotidiens (humeur, énergie, stress, budget)",
+        "voy_factors_feature":       "Facteurs détaillés & forecast 7 jours",
 
         # ── Profile form extras ──────────────────────────────────────────
         "pf_children_no":          "Non",
@@ -771,14 +773,16 @@ _STRINGS: dict[str, dict[str, str]] = {
         "email_oauth_error":       "OAuth error: {e}",
 
         # ── Tier / upgrade prompts ────────────────────────────────────────
-        "tier_essential_label":    "Essential",
-        "tier_premium_label":      "Premium",
-        "tier_price_essential":    "€9.99/month",
-        "tier_price_premium":      "€29.99/month",
-        "tier_feature_line":       "{tier} feature — {price}",
-        "tier_upgrade_line":       "Upgrade to {tier} to unlock this feature and much more.",
-        "voy_scores_feature":      "Daily predictive scores (mood, energy, stress, budget)",
-        "voy_factors_feature":     "Detailed factors & 7-day forecast",
+        "tier_essential_label":      "Essential",
+        "tier_premium_label":        "Premium",
+        "tier_price_essential":      "€9.99/month",
+        "tier_price_premium":        "€29.99/month",
+        "tier_feature_essential":    "Essential — €9.99/month and Premium — €29.99/month",
+        "tier_upgrade_essential":    "Upgrade to Essential or Premium to unlock this feature and much more.",
+        "tier_feature_premium":      "Premium feature — €29.99/month",
+        "tier_upgrade_premium":      "Upgrade to Premium to unlock this feature and much more.",
+        "voy_scores_feature":        "Daily predictive scores (mood, energy, stress, budget)",
+        "voy_factors_feature":       "Detailed factors & 7-day forecast",
 
         # ── Profile form extras ──────────────────────────────────────────
         "pf_children_no":          "No",

@@ -8,6 +8,7 @@ Fallback : Web Speech API navigateur (sans API key).
 import io
 import streamlit as st
 import streamlit.components.v1 as components
+from translations import t as _t_vi
 
 
 # ── Artefacts courants de Whisper sur silence / bruit ────────────────────────
@@ -61,8 +62,8 @@ def show_mic_button(key: str = "mic_eldaana") -> str | None:
         return None
 
     audio = mic_recorder(
-        start_prompt="🎤  Appuyer et parler",
-        stop_prompt="⏹  Envoyer",
+        start_prompt=_t_vi("mic_start_btn"),
+        stop_prompt=_t_vi("mic_stop_btn"),
         just_once=True,
         use_container_width=True,
         key=key,
@@ -130,11 +131,13 @@ def show_speaking_indicator():
 
 # ── Auto-activation micro après TTS (JS timer) ────────────────────────────────
 
-def inject_mic_auto_trigger(estimated_duration_s: float, mic_btn_label: str = "Appuyer et parler"):
+def inject_mic_auto_trigger(estimated_duration_s: float, mic_btn_label: str | None = None):
     """
     Injecte un script JS qui clique automatiquement sur le bouton micro
     après la fin estimée du TTS (basé sur la durée audio).
     """
+    if mic_btn_label is None:
+        mic_btn_label = _t_vi("mic_start_btn")
     delay_ms = int(estimated_duration_s * 1000) + 800  # +0.8s de marge
     js = f"""
     <script>

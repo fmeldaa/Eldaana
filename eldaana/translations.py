@@ -391,6 +391,25 @@ _STRINGS: dict[str, dict[str, str]] = {
         "voice_unlock_btn":          "🔒 Débloquer Eldaana Voice",
         "voice_unlock_caption":      "Fonctionnalité Premium · 29,99€/mois",
 
+        # ── Micro / saisie vocale ────────────────────────────────────────
+        "mic_start_btn":             "🎤  Appuyer et parler",
+        "mic_stop_btn":              "⏹  Envoyer",
+
+        # ── Chat input ──────────────────────────────────────────────────
+        "chat_input_ph":             "💬 Écris ton message à Eldaana…",
+
+        # ── Boutons abonnement sidebar ───────────────────────────────────
+        "stripe_ess_btn_html":       "⭐ Essentiel<br>9,99€/mois",
+        "stripe_prem_btn_html":      "🌟 Premium<br>29,99€/mois",
+        "stripe_upgrade_prem_btn":   "🚀 Passer Premium — 29,99€/mois",
+
+        # ── Noms des voix ────────────────────────────────────────────────
+        "voice_nova":     "Nova — Chaleureuse & naturelle 🌸",
+        "voice_shimmer":  "Shimmer — Douce & apaisante ✨",
+        "voice_coral":    "Coral — Enjouée & dynamique 🌺",
+        "voice_sage":     "Sage — Posée & mature 🍃",
+        "voice_fable":    "Fable — Narrative & élégante 📖",
+
         # ── Profile form extras ──────────────────────────────────────────
         "pf_children_no":          "Non",
         "pf_children_yes":         "Oui",
@@ -797,6 +816,25 @@ _STRINGS: dict[str, dict[str, str]] = {
         "voice_open_caption":        "Real-time voice conversation · Premium",
         "voice_unlock_btn":          "🔒 Unlock Eldaana Voice",
         "voice_unlock_caption":      "Premium feature · €29.99/month",
+
+        # ── Micro / voice input ──────────────────────────────────────────
+        "mic_start_btn":             "🎤  Press and speak",
+        "mic_stop_btn":              "⏹  Send",
+
+        # ── Chat input ──────────────────────────────────────────────────
+        "chat_input_ph":             "💬 Write a message to Eldaana…",
+
+        # ── Subscription buttons sidebar ─────────────────────────────────
+        "stripe_ess_btn_html":       "⭐ Essential<br>€9.99/month",
+        "stripe_prem_btn_html":      "🌟 Premium<br>€29.99/month",
+        "stripe_upgrade_prem_btn":   "🚀 Upgrade to Premium — €29.99/month",
+
+        # ── Voice names ──────────────────────────────────────────────────
+        "voice_nova":     "Nova — Warm & natural 🌸",
+        "voice_shimmer":  "Shimmer — Soft & soothing ✨",
+        "voice_coral":    "Coral — Playful & dynamic 🌺",
+        "voice_sage":     "Sage — Calm & mature 🍃",
+        "voice_fable":    "Fable — Storytelling & elegant 📖",
 
         # ── Profile form extras ──────────────────────────────────────────
         "pf_children_no":          "No",

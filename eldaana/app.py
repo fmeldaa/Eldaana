@@ -641,7 +641,7 @@ with st.sidebar:
                 f' style="display:block;background:linear-gradient(135deg,#7c3aed,#c084fc);'
                 f'color:#fff;font-weight:700;font-size:0.82rem;text-decoration:none;'
                 f'text-align:center;border-radius:14px;padding:9px 8px;margin-bottom:8px;">'
-                f'🚀 Passer Premium — 29,99€/mois</a>',
+                f'{_t("stripe_upgrade_prem_btn")}</a>',
                 unsafe_allow_html=True,
             )
     else:
@@ -674,7 +674,7 @@ with st.sidebar:
                 f'background:linear-gradient(135deg,#f59e0b,#f97316);'
                 f'color:#fff;font-weight:700;font-size:0.78rem;text-decoration:none;'
                 f'border-radius:14px;padding:9px 6px;text-align:center;line-height:1.3;">'
-                f'⭐ Essentiel<br>9,99€/mois</a>'
+                f'{_t("stripe_ess_btn_html")}</a>'
             ) if _checkout_ess else '<div style="flex:1"></div>'
             _btn_prem = (
                 f'<a href="{_checkout_prem}" onclick="{_onclick_prem}" '
@@ -682,7 +682,7 @@ with st.sidebar:
                 f'background:linear-gradient(135deg,#7c3aed,#c084fc);'
                 f'color:#fff;font-weight:700;font-size:0.78rem;text-decoration:none;'
                 f'border-radius:14px;padding:9px 6px;text-align:center;line-height:1.3;">'
-                f'🌟 Premium<br>29,99€/mois</a>'
+                f'{_t("stripe_prem_btn_html")}</a>'
             ) if _checkout_prem else '<div style="flex:1"></div>'
             _cmp_stripe.html(
                 f'<html><head><meta charset="utf-8">'
@@ -881,7 +881,7 @@ box-shadow:0 0 16px rgba(251,146,60,0.4);}}
                 f'{_t("voice_label")}</p>',
                 unsafe_allow_html=True
             )
-            _voice_opts   = get_voice_options(_tier_sb)
+            _voice_opts   = get_voice_options(_tier_sb, st.session_state.get("lang", "fr"))
             voice_labels  = list(_voice_opts.keys())
             saved_voice   = st.session_state.get("eldaana_voice", "nova")
             default_label = next(
@@ -1081,7 +1081,7 @@ user_input = None
 
 if _voice_mode:
     # Mode vocal ON → saisie texte disponible
-    user_input = st.chat_input("💬 Écris ton message à Eldaana…")
+    user_input = st.chat_input(_t("chat_input_ph"))
 
 else:
     _tier_for_mic = st.session_state.get("_tier_cached", "free")
@@ -1093,7 +1093,7 @@ else:
             st.session_state.voice_turn += 1
 
     # ── Saisie texte classique ────────────────────────────────────────────
-    _text_input = st.chat_input("Écris ton message à Eldaana…")
+    _text_input = st.chat_input(_t("chat_input_ph"))
     if _text_input:
         user_input = _text_input
 

@@ -79,6 +79,11 @@ def _openai_configured() -> bool:
         return False
 
 
+# IDs internes (langue-indépendants)
+_VOICE_IDS_PREMIUM   = ["nova", "shimmer", "coral", "sage", "fable"]
+_VOICE_IDS_ESSENTIAL = ["nova", "shimmer"]
+
+# Garder VOICE_OPTIONS pour compatibilité rétrograde
 VOICE_OPTIONS = {
     "Nova — Chaleureuse & naturelle 🌸":     "nova",
     "Shimmer — Douce & apaisante ✨":        "shimmer",
@@ -86,22 +91,41 @@ VOICE_OPTIONS = {
     "Sage — Posée & mature 🍃":              "sage",
     "Fable — Narrative & élégante 📖":       "fable",
 }
-
-# Voix filtrées par tier
 VOICE_OPTIONS_ESSENTIAL = {
     "Nova — Chaleureuse & naturelle 🌸":  "nova",
     "Shimmer — Douce & apaisante ✨":     "shimmer",
 }
-VOICE_OPTIONS_FREE      = {}
+VOICE_OPTIONS_FREE = {}
 
 
-def get_voice_options(tier: str) -> dict:
-    """Retourne les voix disponibles selon le tier de l'utilisateur."""
+_VOICE_LABELS = {
+    "fr": {
+        "nova":    "Nova — Chaleureuse & naturelle 🌸",
+        "shimmer": "Shimmer — Douce & apaisante ✨",
+        "coral":   "Coral — Enjouée & dynamique 🌺",
+        "sage":    "Sage — Posée & mature 🍃",
+        "fable":   "Fable — Narrative & élégante 📖",
+    },
+    "en": {
+        "nova":    "Nova — Warm & natural 🌸",
+        "shimmer": "Shimmer — Soft & soothing ✨",
+        "coral":   "Coral — Playful & dynamic 🌺",
+        "sage":    "Sage — Calm & mature 🍃",
+        "fable":   "Fable — Storytelling & elegant 📖",
+    },
+}
+
+
+def get_voice_options(tier: str, lang: str = "fr") -> dict:
+    """Retourne les voix disponibles (label traduit → voice_id) selon le tier et la langue."""
+    labels = _VOICE_LABELS.get(lang, _VOICE_LABELS["fr"])
     if tier == "premium":
-        return VOICE_OPTIONS
+        ids = _VOICE_IDS_PREMIUM
     elif tier == "essential":
-        return VOICE_OPTIONS_ESSENTIAL
-    return VOICE_OPTIONS_FREE
+        ids = _VOICE_IDS_ESSENTIAL
+    else:
+        return {}
+    return {labels[vid]: vid for vid in ids if vid in labels}
 
 def _call_openai_tts(text: str, api_key: str, voice: str) -> bytes | None:
     """Appel HTTP OpenAI TTS — tts-1 pour la rapidité."""

@@ -197,62 +197,8 @@ st.markdown("""
 if "lang" not in st.session_state:
     st.session_state.lang = st.query_params.get("lang", "fr")
 
-# ── Traductions FR / EN ───────────────────────────────────────────────────────
-_TRANSLATIONS: dict[str, dict[str, str]] = {
-    "fr": {
-        "greeting_m":      "heureux",
-        "greeting_f":      "heureuse",
-        "greeting_msg":    "Bonjour {prenom} — Comment puis-je te rendre {accord} aujourd'hui ?",
-        "scores_title":    "Scores du jour",
-        "btn_dashboard":   "🏠 Tableau de bord",
-        "btn_profile":     "✏️ Enrichir mon profil",
-        "btn_social":      "🌐 Ma vie numérique",
-        "btn_emails":      "📧 Mes emails",
-        "btn_shopping":    "🛒 Mes courses",
-        "btn_budget":      "💰 Mon budget",
-        "btn_predictions": "🔮 Prédictions",
-        "btn_privacy":     "🔒 Vie privée",
-        "btn_agent":       "🤖 Agent — Permissions",
-        "btn_new_conv":    "🔄 Nouvelle conversation",
-        "btn_switch_user": "🔀 Changer d'utilisateur",
-        "btn_lang":        "🇬🇧 English",
-        "voice_on":        "🔊 Voix activée",
-        "voice_off":       "🔇 Désactivée",
-        "voice_label":     "🎙️ Choix de la voix",
-        "voice_on_label":  "🎙️ Mode vocal ON",
-        "voice_off_label": "🎙️ Mode vocal OFF",
-    },
-    "en": {
-        "greeting_m":      "happy",
-        "greeting_f":      "happy",
-        "greeting_msg":    "Hello {prenom} — How can I make you {accord} today?",
-        "scores_title":    "Today's scores",
-        "btn_dashboard":   "🏠 Dashboard",
-        "btn_profile":     "✏️ Enrich my profile",
-        "btn_social":      "🌐 My digital life",
-        "btn_emails":      "📧 My emails",
-        "btn_shopping":    "🛒 My shopping",
-        "btn_budget":      "💰 My budget",
-        "btn_predictions": "🔮 Predictions",
-        "btn_privacy":     "🔒 Privacy",
-        "btn_agent":       "🤖 Agent — Permissions",
-        "btn_new_conv":    "🔄 New conversation",
-        "btn_switch_user": "🔀 Switch user",
-        "btn_lang":        "🇫🇷 Français",
-        "voice_on":        "🔊 Voice enabled",
-        "voice_off":       "🔇 Disabled",
-        "voice_label":     "🎙️ Choose voice",
-        "voice_on_label":  "🎙️ Voice mode ON",
-        "voice_off_label": "🎙️ Voice mode OFF",
-    },
-}
-
-def _t(key: str) -> str:
-    """Retourne la traduction d'une clé selon la langue active."""
-    lang = st.session_state.get("lang", "fr")
-    return _TRANSLATIONS.get(lang, _TRANSLATIONS["fr"]).get(
-        key, _TRANSLATIONS["fr"].get(key, key)
-    )
+# ── Système de traduction centralisé ─────────────────────────────────────────
+from translations import t as _t
 
 # ── Détection APK Android (platform=android dans l'URL) ──────────────────────
 # Mise à jour à chaque rechargement si platform=android est présent dans l'URL
@@ -413,11 +359,11 @@ if st.session_state.page == "shopping":
             st.image(str(logo_path), width=64)
     with col2:
         st.markdown('<p class="eldaana-title">Eldaana</p>', unsafe_allow_html=True)
-        st.markdown('<p class="eldaana-subtitle">Mes courses</p>', unsafe_allow_html=True)
+        st.markdown(f'<p class="eldaana-subtitle">'+_t('page_shopping')+'</p>', unsafe_allow_html=True)
     st.divider()
     show_shopping_page(profile)
     st.markdown("<br>", unsafe_allow_html=True)
-    if st.button("← Retour à la conversation"):
+    if st.button(_t("back_to_chat")):
         st.session_state.page = "chat"
         st.rerun()
     st.stop()
@@ -430,11 +376,11 @@ if st.session_state.page == "email":
             st.image(str(logo_path), width=64)
     with col2:
         st.markdown('<p class="eldaana-title">Eldaana</p>', unsafe_allow_html=True)
-        st.markdown('<p class="eldaana-subtitle">Mes emails</p>', unsafe_allow_html=True)
+        st.markdown(f'<p class="eldaana-subtitle">'+_t('page_email')+'</p>', unsafe_allow_html=True)
     st.divider()
     show_email_page(profile)
     st.markdown("<br>", unsafe_allow_html=True)
-    if st.button("← Retour à la conversation"):
+    if st.button(_t("back_to_chat")):
         st.session_state.page = "chat"
         st.rerun()
     st.stop()
@@ -447,11 +393,11 @@ if st.session_state.page == "budget":
             st.image(str(logo_path), width=64)
     with col2:
         st.markdown('<p class="eldaana-title">Eldaana</p>', unsafe_allow_html=True)
-        st.markdown('<p class="eldaana-subtitle">Mon budget</p>', unsafe_allow_html=True)
+        st.markdown(f'<p class="eldaana-subtitle">'+_t('page_budget')+'</p>', unsafe_allow_html=True)
     st.divider()
     show_budget_page(profile)
     st.markdown("<br>", unsafe_allow_html=True)
-    if st.button("← Retour à la conversation"):
+    if st.button(_t("back_to_chat")):
         st.session_state.page = "chat"
         st.rerun()
     st.stop()
@@ -464,11 +410,11 @@ if st.session_state.page == "voyance":
             st.image(str(logo_path), width=64)
     with col2:
         st.markdown('<p class="eldaana-title">Eldaana</p>', unsafe_allow_html=True)
-        st.markdown('<p class="eldaana-subtitle">Mes prédictions</p>', unsafe_allow_html=True)
+        st.markdown(f'<p class="eldaana-subtitle">'+_t('page_voyance')+'</p>', unsafe_allow_html=True)
     st.divider()
     show_voyance_page(profile)
     st.markdown("<br>", unsafe_allow_html=True)
-    if st.button("← Retour à la conversation"):
+    if st.button(_t("back_to_chat")):
         st.session_state.page = "chat"
         st.rerun()
     st.stop()
@@ -481,11 +427,11 @@ if st.session_state.page == "dashboard":
             st.image(str(logo_path), width=64)
     with col2:
         st.markdown('<p class="eldaana-title">Eldaana</p>', unsafe_allow_html=True)
-        st.markdown('<p class="eldaana-subtitle">Mon tableau de bord</p>', unsafe_allow_html=True)
+        st.markdown(f'<p class="eldaana-subtitle">{_t("page_dashboard")}</p>', unsafe_allow_html=True)
     st.divider()
     show_dashboard(profile, weather)
     st.markdown("<br>", unsafe_allow_html=True)
-    if st.button("← Retour à la conversation"):
+    if st.button(_t("back_to_chat")):
         st.session_state.page = "chat"
         st.rerun()
     st.stop()
@@ -498,11 +444,11 @@ if st.session_state.page == "rgpd":
             st.image(str(logo_path), width=64)
     with col2:
         st.markdown('<p class="eldaana-title">Eldaana</p>', unsafe_allow_html=True)
-        st.markdown('<p class="eldaana-subtitle">Vie privée & RGPD</p>', unsafe_allow_html=True)
+        st.markdown(f'<p class="eldaana-subtitle">{_t("page_rgpd")}</p>', unsafe_allow_html=True)
     st.divider()
     show_rgpd_page(profile)
     st.markdown("<br>", unsafe_allow_html=True)
-    if st.button("← Retour à la conversation"):
+    if st.button(_t("back_to_chat")):
         st.session_state.page = "chat"
         st.rerun()
     st.stop()
@@ -515,7 +461,7 @@ if st.session_state.page == "agent_permissions":
             st.image(str(logo_path), width=64)
     with col2:
         st.markdown('<p class="eldaana-title">Eldaana</p>', unsafe_allow_html=True)
-        st.markdown('<p class="eldaana-subtitle">Agent — Permissions</p>', unsafe_allow_html=True)
+        st.markdown(f'<p class="eldaana-subtitle">'+_t('page_agent')+'</p>', unsafe_allow_html=True)
     st.divider()
     try:
         from agents.permissions import show_permissions_settings
@@ -523,7 +469,7 @@ if st.session_state.page == "agent_permissions":
     except Exception as _e:
         st.error(f"Impossible de charger les paramètres agent : {_e}")
     st.markdown("<br>", unsafe_allow_html=True)
-    if st.button("← Retour à la conversation"):
+    if st.button(_t("back_to_chat")):
         st.session_state.page = "chat"
         st.rerun()
     st.stop()
@@ -536,11 +482,11 @@ if st.session_state.page == "social":
             st.image(str(logo_path), width=64)
     with col2:
         st.markdown('<p class="eldaana-title">Eldaana</p>', unsafe_allow_html=True)
-        st.markdown('<p class="eldaana-subtitle">Ma vie numérique</p>', unsafe_allow_html=True)
+        st.markdown(f'<p class="eldaana-subtitle">'+_t('page_social')+'</p>', unsafe_allow_html=True)
     st.divider()
     show_social_connect(profile)
     st.markdown("<br>", unsafe_allow_html=True)
-    if st.button("← Retour à la conversation"):
+    if st.button(_t("back_to_chat")):
         st.session_state.page = "chat"
         st.rerun()
     st.stop()
@@ -553,11 +499,11 @@ if st.session_state.page == "profile":
             st.image(str(logo_path), width=64)
     with col2:
         st.markdown('<p class="eldaana-title">Eldaana</p>', unsafe_allow_html=True)
-        st.markdown('<p class="eldaana-subtitle">Compléter mon profil</p>', unsafe_allow_html=True)
+        st.markdown(f'<p class="eldaana-subtitle">'+_t('page_profile')+'</p>', unsafe_allow_html=True)
     st.divider()
     show_profile_form(profile)
     st.markdown("<br>", unsafe_allow_html=True)
-    if st.button("← Retour à la conversation"):
+    if st.button(_t("back_to_chat")):
         st.session_state.page = "chat"
         st.rerun()
     st.stop()

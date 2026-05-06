@@ -15,6 +15,7 @@ from humeur import load_humeur, SUGGESTIONS_HUMEUR
 from budget import get_current_month_total
 from shopping import get_reminders
 from transport_alerts import get_transport_alerts, is_departure_window
+from translations import t, t_list
 
 
 def show_dashboard(profile: dict, weather: dict | None = None):
@@ -22,20 +23,19 @@ def show_dashboard(profile: dict, weather: dict | None = None):
     prenom  = profile.get("prenom", "")
     user_id = profile.get("user_id", "")
 
-    mois_fr = ["janvier","février","mars","avril","mai","juin",
-               "juillet","août","septembre","octobre","novembre","décembre"]
-    jours_fr = ["Lundi","Mardi","Mercredi","Jeudi","Vendredi","Samedi","Dimanche"]
-    now = datetime.now()
-    date_str = f"{jours_fr[now.weekday()]} {now.day} {mois_fr[now.month-1]}"
+    jours  = t_list("days")
+    mois   = t_list("months")
+    now    = datetime.now()
+    date_str = f"{jours[now.weekday()]} {now.day} {mois[now.month - 1]}"
 
-    st.markdown(f"### 🏠 Bonjour {prenom} !")
+    st.markdown(f"### {t('dash_hello', prenom=prenom)}")
     st.caption(date_str)
 
-    # ── Ligne 1 : Météo + Humeur ─────────────────────────────────────────────────
+    # ── Ligne 1 : Météo + Humeur ──────────────────────────────────────────────
     col1, col2 = st.columns(2)
 
     with col1:
-        st.markdown("**☀️ Météo**")
+        st.markdown(t("dash_weather"))
         if weather:
             st.markdown(f"""
             <div style="background:linear-gradient(135deg,#fdf4ff,#e8f8ff);
@@ -52,10 +52,10 @@ def show_dashboard(profile: dict, weather: dict | None = None):
             </div>
             """, unsafe_allow_html=True)
         else:
-            st.info("Ajoute ta ville dans le profil pour voir la météo")
+            st.info(t("dash_weather_tip"))
 
     with col2:
-        st.markdown("**😊 Humeur du jour**")
+        st.markdown(t("dash_mood"))
         humeur = load_humeur(user_id)
         if humeur:
             code  = humeur.get("code", "")
@@ -72,56 +72,56 @@ def show_dashboard(profile: dict, weather: dict | None = None):
             </div>
             """, unsafe_allow_html=True)
         else:
-            st.markdown("""
+            st.markdown(f"""
             <div style="background:#f9fafb;border:1.5px dashed #d1d5db;border-radius:16px;
                         padding:1rem;text-align:center;min-height:120px;
                         display:flex;flex-direction:column;justify-content:center;">
-                <p style="color:#9ca3af;margin:0;">Non renseignée</p>
+                <p style="color:#9ca3af;margin:0;">{t("dash_mood_empty")}</p>
             </div>
             """, unsafe_allow_html=True)
 
     st.markdown("<br>", unsafe_allow_html=True)
 
-    # ── Ligne 2 : Budget + Courses ───────────────────────────────────────────────
+    # ── Ligne 2 : Budget + Courses ────────────────────────────────────────────
     col3, col4 = st.columns(2)
 
     with col3:
-        st.markdown("**💰 Budget du mois**")
+        st.markdown(t("dash_budget"))
         summary = get_current_month_total(user_id)
         if summary["budget_mensuel"] > 0:
-            pct      = summary["pourcentage"]
-            restant  = summary["restant"]
-            color    = "#22c55e" if pct < 60 else "#f59e0b" if pct < 80 else "#ef4444"
-            emoji_b  = "🟢" if pct < 60 else "🟡" if pct < 80 else "🔴"
+            pct     = summary["pourcentage"]
+            restant = summary["restant"]
+            color   = "#22c55e" if pct < 60 else "#f59e0b" if pct < 80 else "#ef4444"
+            emoji_b = "🟢" if pct < 60 else "🟡" if pct < 80 else "🔴"
             st.markdown(f"""
             <div style="background:white;border:1.5px solid {color};border-radius:16px;padding:1rem;">
-                <p style="margin:0 0 0.3rem 0;font-size:0.85rem;color:#6b7280;">Utilisé</p>
+                <p style="margin:0 0 0.3rem 0;font-size:0.85rem;color:#6b7280;">{t("dash_budget_used")}</p>
                 <p style="margin:0 0 0.5rem 0;font-size:1.5rem;font-weight:700;color:{color};">
                     {pct:.0f}%
                 </p>
                 <p style="margin:0;font-size:0.85rem;color:#374151;">
-                    {emoji_b} Restant : <b>{restant:.0f} €</b>
+                    {emoji_b} {t("dash_budget_left")} <b>{restant:.0f} €</b>
                 </p>
             </div>
             """, unsafe_allow_html=True)
         elif summary["total"] > 0:
             st.markdown(f"""
             <div style="background:white;border:1.5px solid #c084fc;border-radius:16px;padding:1rem;">
-                <p style="margin:0;color:#374151;">💸 Dépensé ce mois : <b>{summary['total']:.0f} €</b></p>
+                <p style="margin:0;color:#374151;">{t("dash_budget_spent")} <b>{summary['total']:.0f} €</b></p>
                 <p style="margin:0.3rem 0 0;font-size:0.8rem;color:#9ca3af;">
-                    Définis un budget mensuel pour le suivi
+                    {t("dash_budget_hint")}
                 </p>
             </div>
             """, unsafe_allow_html=True)
         else:
-            st.markdown("""
+            st.markdown(f"""
             <div style="background:#f9fafb;border:1.5px dashed #d1d5db;border-radius:16px;padding:1rem;">
-                <p style="color:#9ca3af;margin:0;text-align:center;">Aucune donnée budget</p>
+                <p style="color:#9ca3af;margin:0;text-align:center;">{t("dash_budget_empty")}</p>
             </div>
             """, unsafe_allow_html=True)
 
     with col4:
-        st.markdown("**🛒 Courses à faire**")
+        st.markdown(t("dash_shopping"))
         reminders = get_reminders(user_id)
         if reminders:
             urgent = [r for r in reminders if r["days_left"] <= 0]
@@ -129,49 +129,54 @@ def show_dashboard(profile: dict, weather: dict | None = None):
             html = '<div style="background:white;border:1.5px solid #fca5a5;border-radius:16px;padding:1rem;">'
             if urgent:
                 for r in urgent[:3]:
-                    html += f'<p style="margin:0 0 0.2rem;font-size:0.9rem;">🔴 <b>{r["name"].capitalize()}</b> — épuisé</p>'
+                    html += (f'<p style="margin:0 0 0.2rem;font-size:0.9rem;">'
+                             f'🔴 <b>{r["name"].capitalize()}</b> — {t("dash_shop_empty")}</p>')
             if bientot:
                 for r in bientot[:2]:
-                    html += f'<p style="margin:0 0 0.2rem;font-size:0.9rem;">🟡 <b>{r["name"].capitalize()}</b> — dans {r["days_left"]}j</p>'
+                    html += (f'<p style="margin:0 0 0.2rem;font-size:0.9rem;">'
+                             f'🟡 <b>{r["name"].capitalize()}</b> — {t("dash_shop_soon", n=r["days_left"])}</p>')
             html += "</div>"
             st.markdown(html, unsafe_allow_html=True)
         else:
-            st.markdown("""
+            st.markdown(f"""
             <div style="background:#f0fdf4;border:1.5px solid #86efac;border-radius:16px;padding:1rem;">
-                <p style="color:#16a34a;margin:0;text-align:center;">✅ Tout est OK !</p>
+                <p style="color:#16a34a;margin:0;text-align:center;">{t("dash_shop_ok")}</p>
             </div>
             """, unsafe_allow_html=True)
 
-    # ── Ligne 3 : Transport ──────────────────────────────────────────────────────
+    # ── Ligne 3 : Transport ───────────────────────────────────────────────────
     lines_config = profile.get("transport_detail", {}).get("lines", [])
     if lines_config:
-        st.markdown("**🚆 Mes transports**")
+        st.markdown(t("dash_transport"))
         depart_heure = profile.get("transport_detail", {}).get("depart_heure", "")
         in_window    = is_departure_window(profile, tz_name=weather.get("timezone") if weather else None)
 
-        # Affichage simplifié dans le dashboard (pas d'appel API systématique)
         if in_window:
+            depart_label = (f"{t('dash_depart_soon')} {t('dash_at')} {depart_heure}"
+                            if depart_heure else t("dash_depart_soon"))
             st.markdown(f"""
             <div style="background:#fffbeb;border:1.5px solid #f59e0b;border-radius:12px;padding:0.8rem 1rem;">
                 <p style="margin:0;font-size:0.9rem;color:#92400e;font-weight:600;">
-                    ⏰ Départ bientôt{" à " + depart_heure if depart_heure else ""}
+                    {depart_label}
                 </p>
                 <p style="margin:0.3rem 0 0;font-size:0.82rem;color:#6b7280;">
-                    Lignes : {", ".join(lines_config[:3])}
+                    {t("dash_lines")} {", ".join(lines_config[:3])}
                 </p>
             </div>
             """, unsafe_allow_html=True)
-            if st.button("🔍 Vérifier les perturbations maintenant", use_container_width=True, key="dash_transport_check"):
-                with st.spinner("Vérification en cours…"):
+            if st.button(t("dash_check_btn"), use_container_width=True, key="dash_transport_check"):
+                with st.spinner(t("dash_checking")):
                     alerts = get_transport_alerts(profile, weather)
                 if alerts["has_alerts"]:
-                    st.warning(f"⚠️ Perturbation détectée sur {', '.join({a['line'] for a in alerts['tc_alerts']})} !")
-                    st.session_state.page = "chat"  # → bannière s'affichera
+                    lines_str = ", ".join({a["line"] for a in alerts["tc_alerts"]})
+                    st.warning(t("dash_alert", lines=lines_str))
+                    st.session_state.page = "chat"
                     st.rerun()
                 else:
-                    st.success("✅ Trafic normal sur toutes tes lignes !")
+                    st.success(t("dash_traffic_ok"))
         else:
-            depart_str = f" · Départ habituel : {depart_heure}" if depart_heure else ""
+            depart_str = (f" · {t('dash_depart_usual')} {depart_heure}"
+                          if depart_heure else "")
             st.markdown(f"""
             <div style="background:#f0fdf4;border:1px solid #86efac;border-radius:12px;padding:0.6rem 0.8rem;">
                 <p style="margin:0;font-size:0.82rem;color:#16a34a;">
@@ -182,8 +187,8 @@ def show_dashboard(profile: dict, weather: dict | None = None):
 
     st.markdown("<br>", unsafe_allow_html=True)
 
-    # ── Suggestion du jour ───────────────────────────────────────────────────────
-    st.markdown("**✨ Suggestion du jour**")
+    # ── Suggestion du jour ────────────────────────────────────────────────────
+    st.markdown(t("dash_suggestion"))
     humeur = load_humeur(user_id)
     code   = humeur.get("code", "") if humeur else ""
     sugg   = SUGGESTIONS_HUMEUR.get(code, {})
@@ -196,45 +201,44 @@ def show_dashboard(profile: dict, weather: dict | None = None):
         st.markdown(f"""
         <div style="background:linear-gradient(135deg,#7c3aed15,#c084fc15);
                     border:1.5px solid #c084fc;border-radius:16px;padding:1rem 1.2rem;">
-            <p style="margin:0 0 0.3rem 0;font-weight:600;color:#7c3aed;">Activité suggérée</p>
+            <p style="margin:0 0 0.3rem 0;font-weight:600;color:#7c3aed;">{t("dash_activity")}</p>
             <p style="margin:0 0 0.5rem 0;color:#374151;">🎯 {activite}</p>
             {"<p style='margin:0;color:#6b7280;font-size:0.85rem;'>🎵 " + musique + "</p>" if musique else ""}
         </div>
         """, unsafe_allow_html=True)
     else:
-        # Suggestions génériques
         heure = datetime.now().hour
         if heure < 10:
-            txt = "🌅 Commence ta journée avec 5 min de plein air — ça change tout !"
+            txt = t("sugg_morning")
         elif heure < 14:
-            txt = "☀️ Prends une vraie pause déjeuner aujourd'hui."
+            txt = t("sugg_noon")
         elif heure < 19:
-            txt = "💪 Tu as bien avancé. Prends un moment pour toi avant ce soir."
+            txt = t("sugg_afternoon")
         else:
-            txt = "🌙 Prépare-toi à une bonne nuit. Pose ton téléphone 30 min avant de dormir."
+            txt = t("sugg_evening")
         st.info(txt)
 
-    # ── Accès rapide ──────────────────────────────────────────────────────────────
+    # ── Accès rapide ──────────────────────────────────────────────────────────
     st.markdown("<br>", unsafe_allow_html=True)
-    st.markdown("**Accès rapide**")
+    st.markdown(t("dash_quick"))
     c1, c2, c3, c4, c5 = st.columns(5)
     with c1:
-        if st.button("📧 Emails", use_container_width=True):
+        if st.button(t("dash_btn_emails"), use_container_width=True):
             st.session_state.page = "email"
             st.rerun()
     with c2:
-        if st.button("🛒 Courses", use_container_width=True):
+        if st.button(t("dash_btn_shopping"), use_container_width=True):
             st.session_state.page = "shopping"
             st.rerun()
     with c3:
-        if st.button("💰 Budget", use_container_width=True):
+        if st.button(t("dash_btn_budget"), use_container_width=True):
             st.session_state.page = "budget"
             st.rerun()
     with c4:
-        if st.button("🔮 Prédict.", use_container_width=True):
+        if st.button(t("dash_btn_predict"), use_container_width=True):
             st.session_state.page = "voyance"
             st.rerun()
     with c5:
-        if st.button("💬 Chat", use_container_width=True):
+        if st.button(t("dash_btn_chat"), use_container_width=True):
             st.session_state.page = "chat"
             st.rerun()

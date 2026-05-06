@@ -310,6 +310,7 @@ def show_voyance_page(profile: dict):
                     st.session_state[cache_key] = compute_scores(
                         profile=profile,
                         weather=weather,
+                        lang=_lang(),
                     )
                 st.rerun()
         else:

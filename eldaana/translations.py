@@ -372,6 +372,11 @@ _STRINGS: dict[str, dict[str, str]] = {
         "email_gmail_connected_ok": "✅ Gmail connecté !",
         "email_oauth_error":       "Erreur OAuth : {e}",
 
+        # ── Badges abonnement sidebar ─────────────────────────────────────
+        "badge_premium_active":      "✨ Premium actif",
+        "badge_essential_active":    "⭐ Essentiel actif",
+        "manage_subscription":       "Gérer mon abonnement",
+
         # ── Tier / upgrade prompts ────────────────────────────────────────
         "tier_essential_label":      "Essentiel",
         "tier_premium_label":        "Premium",
@@ -786,6 +791,11 @@ _STRINGS: dict[str, dict[str, str]] = {
         "stripe_premium_welcome":   "🌟 Welcome to Eldaana Premium! Eldaana Voice mode activated.",
         "stripe_essential_welcome": "⭐ Welcome to Eldaana Essential! Voice synthesis is now available.",
         "stripe_success":           "✅ Subscription activated! Welcome to Eldaana.",
+
+        # ── Badges abonnement sidebar ─────────────────────────────────────
+        "badge_premium_active":      "✨ Premium active",
+        "badge_essential_active":    "⭐ Essential active",
+        "manage_subscription":       "Manage my subscription",
 
         # ── Misc app ─────────────────────────────────────────────────────
         "error_agent_load":    "Failed to load agent settings: {e}",

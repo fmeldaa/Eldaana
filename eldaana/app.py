@@ -277,7 +277,15 @@ if st.query_params.get("stripe_success") and _uid_now:
     _ok, _plan = handle_stripe_success(_session_id_stripe, _uid_now)
     if not _ok:
         _ok = handle_stripe_return(_uid_now)  # fallback ancien flux
-        _plan = "essential"
+        if _ok:
+            # Lire le vrai plan depuis la DB plutôt que deviner "essential"
+            try:
+                from tier_access import get_user_tier as _get_tier_now
+                _plan = _get_tier_now(_uid_now)
+            except Exception:
+                _plan = "essential"
+        else:
+            _plan = "essential"
     if _ok:
         st.query_params.clear()
         st.query_params["uid"] = _uid_now
@@ -564,6 +572,7 @@ with st.sidebar:
                     humeur_data    = _get_humeur_stats(_uid_scores),
                     budget_data    = _get_budget_stats(_uid_scores),
                     transport_data = _get_transport_summary(profile or {}, weather or {}),
+                    lang           = st.session_state.get("lang", "fr"),
                 )
             except Exception:
                 pass  # scores non disponibles, on skip le widget
@@ -606,9 +615,8 @@ with st.sidebar:
         _tier_sb = "essential" if _premium else "free"
 
     if _tier_sb == "premium":
-        _badge_label = "✨ Premium actif" if _tier_sb == "premium" else "⭐ Essentiel actif"
-        _badge_color = "linear-gradient(135deg,#7c3aed,#c084fc)" if _tier_sb == "premium" \
-                       else "linear-gradient(135deg,#f59e0b,#f97316)"
+        _badge_label = _t("badge_premium_active")
+        _badge_color = "linear-gradient(135deg,#7c3aed,#c084fc)"
         st.markdown(
             f'<div style="background:{_badge_color};'
             f'color:#fff;border-radius:10px;padding:7px 10px;text-align:center;'
@@ -622,7 +630,7 @@ with st.sidebar:
         if _portal_url:
             st.markdown(
                 f'<a href="{_portal_url}" style="display:block;text-align:center;'
-                f'color:#9ca3af;font-size:0.72rem;margin-bottom:8px;">Gérer mon abonnement</a>',
+                f'color:#9ca3af;font-size:0.72rem;margin-bottom:8px;">{_t("manage_subscription")}</a>',
                 unsafe_allow_html=True,
             )
     elif _tier_sb == "essential":
@@ -774,7 +782,8 @@ with st.sidebar:
         # Android : EldaanaNav.goBack() est utilisé en priorité (bridge WebView)
         # PC      : window.location.href = back_url
         _back = _uparse.quote(_app_url, safe="")
-        _url_voice     = f"{_voice_base}/?uid={_uid}&voice={_current_voice}&back={_back}"
+        _lang_voice    = st.session_state.get("lang", "fr")
+        _url_voice     = f"{_voice_base}/?uid={_uid}&voice={_current_voice}&lang={_lang_voice}&back={_back}"
 
         if is_premium(_uid):
             # ── Premium → bouton Eldaana Voice ───────────────────────────────────

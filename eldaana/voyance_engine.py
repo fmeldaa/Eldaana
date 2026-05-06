@@ -24,6 +24,17 @@ Règles absolues :
 - Les facteurs doivent être courts (max 8 mots) et en français
 - Le conseil_jour doit être concret et actionnable en 1 phrase"""
 
+SCORING_SYSTEM_EN = """You are Eldaana's predictive engine.
+You analyse user data and produce probabilistic scores between 0 and 100.
+0 = very negative/risky. 100 = excellent/positive.
+
+Absolute rules:
+- Respond ONLY in valid JSON, no surrounding text, no markdown
+- Be realistic: avoid extremes (scores generally between 15 and 92)
+- Each score must be justified by the provided data
+- Factors must be short (max 8 words) and in English
+- conseil_jour must be a concrete, actionable sentence in English"""
+
 SCORING_PROMPT_TEMPLATE = """Analyse ces données et produis les scores prédictifs pour aujourd'hui.
 
 DONNÉES DISPONIBLES :
@@ -125,10 +136,12 @@ def build_data_block(profile: dict, weather: dict = None,
 # ── Calcul des scores ──────────────────────────────────────────────────────────
 
 def compute_scores(profile: dict, weather: dict = None, humeur_data: dict = None,
-                   budget_data: dict = None, transport_data: dict = None) -> dict:
+                   budget_data: dict = None, transport_data: dict = None,
+                   lang: str = "fr") -> dict:
     """
     Calcule les 6 scores prédictifs via Claude Haiku.
     Retourne un dict avec les scores, ou des valeurs par défaut en cas d'erreur.
+    lang : 'fr' | 'en' — langue des facteurs et conseils générés
     """
     data_block = build_data_block(
         profile or {}, weather or {}, humeur_data or {},
@@ -136,6 +149,7 @@ def compute_scores(profile: dict, weather: dict = None, humeur_data: dict = None
     )
 
     prompt = SCORING_PROMPT_TEMPLATE.format(data_block=data_block)
+    _system = SCORING_SYSTEM_EN if lang == "en" else SCORING_SYSTEM
 
     try:
         response = client.messages.create(
@@ -143,7 +157,7 @@ def compute_scores(profile: dict, weather: dict = None, humeur_data: dict = None
             max_tokens=400,
             system=[{
                 "type": "text",
-                "text": SCORING_SYSTEM,
+                "text": _system,
                 "cache_control": {"type": "ephemeral"}
             }],
             messages=[{"role": "user", "content": prompt}]

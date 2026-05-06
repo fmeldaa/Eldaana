@@ -48,12 +48,17 @@ app.add_middleware(
 # ── Clients API ───────────────────────────────────────────────────────────────
 
 _anthropic = AsyncAnthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))
-_OPENAI_KEY = os.getenv("OPENAI_API_KEY")
+_OPENAI_KEY      = os.getenv("OPENAI_API_KEY")
+_PERPLEXITY_KEY  = os.getenv("PERPLEXITY_API_KEY")
 
 # Vérification au démarrage
 if not _OPENAI_KEY:
     print("[STARTUP] ⚠️  OPENAI_API_KEY non configurée — Whisper et TTS désactivés")
     print("[STARTUP]     Fly.io : fly secrets set OPENAI_API_KEY=sk-...")
+if _PERPLEXITY_KEY:
+    print("[STARTUP] ✅ Perplexity Sonar activé (recherche web temps réel)")
+else:
+    print("[STARTUP] ℹ️  PERPLEXITY_API_KEY absente — recherche web désactivée")
 
 # ── Prompts ───────────────────────────────────────────────────────────────────
 
@@ -294,6 +299,98 @@ _WHISPER_ARTIFACTS = {
     "transcription automatique par whisper.",
 }
 
+# ── Perplexity — Recherche web temps réel ────────────────────────────────────
+
+# Mots-clés déclencheurs (FR + EN) — recherche activée si un mot est présent
+_SEARCH_TRIGGERS_FR = {
+    "transport", "métro", "bus", "rer", "tram", "tramway", "ratp", "sncf",
+    "grève", "greve", "perturbation", "trafic", "circulation", "embouteillage",
+    "train", "eurostar", "ter", "tgv", "autoroute", "route",
+    "actualité", "actualite", "info", "infos", "news", "nouvelles",
+    "prix", "cours", "bourse", "inflation", "taux",
+    "météo", "meteo", "température", "temperature", "pluie", "vent",
+    "résultat", "resultat", "score", "match", "classement",
+    "ouvert", "fermé", "ferme", "horaire", "heure", "programme",
+    "aujourd'hui", "maintenant", "ce soir", "demain",
+}
+_SEARCH_TRIGGERS_EN = {
+    "transport", "metro", "tube", "bus", "tram", "underground", "subway",
+    "strike", "disruption", "traffic", "roadworks", "congestion",
+    "train", "eurostar", "rail", "motorway", "highway",
+    "news", "latest", "update", "current", "today", "tonight", "now",
+    "price", "stock", "market", "inflation", "rate",
+    "weather", "temperature", "rain", "wind", "forecast",
+    "result", "score", "match", "standings", "game",
+    "open", "closed", "hours", "schedule", "timetable",
+}
+
+
+def _should_search(text: str, lang: str = "fr") -> bool:
+    """Renvoie True si la question suggère un besoin d'information en temps réel."""
+    if not _PERPLEXITY_KEY:
+        return False
+    lower = text.lower()
+    triggers = _SEARCH_TRIGGERS_EN if lang == "en" else _SEARCH_TRIGGERS_FR
+    return any(kw in lower for kw in triggers)
+
+
+def _perplexity_search_sync(query: str, lang: str = "fr", profile: dict = None) -> str:
+    """Appel Perplexity Sonar synchrone — retourne la réponse texte ou ''."""
+    if not _PERPLEXITY_KEY:
+        return ""
+    city = (profile or {}).get("ville", "")
+    locale_hint = "English" if lang == "en" else "French"
+    if lang == "en":
+        system_msg = (
+            f"You are a real-time information assistant for Eldaana voice mode. "
+            f"Answer concisely in 2-3 sentences in English. "
+            f"{'User is in ' + city + '.' if city else ''} "
+            "Focus on what is actionable and relevant right now."
+        )
+    else:
+        system_msg = (
+            f"Tu es un assistant d'information temps réel pour le mode vocal d'Eldaana. "
+            f"Réponds de façon concise en 2-3 phrases en français. "
+            f"{'Utilisateur à ' + city + '.' if city else ''} "
+            "Concentre-toi sur ce qui est actionnable et pertinent maintenant."
+        )
+    try:
+        resp = requests.post(
+            "https://api.perplexity.ai/chat/completions",
+            headers={
+                "Authorization": f"Bearer {_PERPLEXITY_KEY}",
+                "Content-Type":  "application/json",
+            },
+            json={
+                "model":   "sonar",
+                "messages": [
+                    {"role": "system", "content": system_msg},
+                    {"role": "user",   "content": query},
+                ],
+                "max_tokens":            300,
+                "temperature":           0.1,
+                "search_recency_filter": "day",
+            },
+            timeout=8,
+        )
+        if resp.status_code == 200:
+            result = resp.json()["choices"][0]["message"]["content"].strip()
+            print(f"[Perplexity] réponse ({len(result)} chars): {result[:100]}")
+            return result
+        print(f"[Perplexity] HTTP {resp.status_code}: {resp.text[:200]}")
+    except Exception as e:
+        print(f"[Perplexity] erreur: {e}")
+    return ""
+
+
+async def perplexity_async(query: str, lang: str = "fr", profile: dict = None) -> str:
+    """Wrapper async de _perplexity_search_sync."""
+    loop = asyncio.get_event_loop()
+    return await loop.run_in_executor(
+        None, _perplexity_search_sync, query, lang, profile
+    )
+
+
 # ── Helpers synchrones (exécutés dans un thread executor) ─────────────────────
 
 _MIME_EXT = {
@@ -485,7 +582,28 @@ async def voice_endpoint(ws: WebSocket):
 
             print(f"[Pipeline] transcript: {transcript!r}")
             await _send(ws, {"type": "transcript", "text": transcript})
-            history.append({"role": "user", "content": transcript})
+
+            # ── Perplexity — enrichissement temps réel ────────────────────────
+            user_content = transcript
+            if _should_search(transcript, lang):
+                print("[Pipeline] → Perplexity (recherche web)")
+                web_result = await perplexity_async(transcript, lang=lang, profile=profile)
+                if web_result:
+                    if lang == "en":
+                        user_content = (
+                            f"{transcript}\n\n"
+                            f"[Real-time web search result]\n{web_result}\n"
+                            f"[Use this information in your answer if relevant. "
+                            f"Keep your answer to 2-3 spoken sentences.]"
+                        )
+                    else:
+                        user_content = (
+                            f"{transcript}\n\n"
+                            f"[Résultat recherche web temps réel]\n{web_result}\n"
+                            f"[Utilise cette information dans ta réponse si pertinente. "
+                            f"Reste en 2-3 phrases parlées.]"
+                        )
+            history.append({"role": "user", "content": user_content})
 
             # ── Détection de crise (vocal) ────────────────────────────────────
             _crisis_system = system

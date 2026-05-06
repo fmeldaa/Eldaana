@@ -297,7 +297,7 @@ def show_voyance_page(profile: dict):
     st.markdown(_t("voy_scores_title"))
 
     if not can_access("voyance_daily_scores", uid):
-        show_upgrade_prompt("Scores prédictifs quotidiens (humeur, énergie, stress, budget)", "essential")
+        show_upgrade_prompt(_t("voy_scores_feature"), "essential")
     else:
         # Cache : ne calculer qu'une fois par jour
         cache_key = f"scores_{uid}_{date.today().isoformat()}"
@@ -359,7 +359,7 @@ def show_voyance_page(profile: dict):
                         st.markdown(_t("voy_vigilance"))
                         for f in neg: st.markdown(f"• {f}")
             else:
-                show_upgrade_prompt("Facteurs détaillés & forecast 7 jours", "premium")
+                show_upgrade_prompt(_t("voy_factors_feature"), "premium")
 
             # Recalculer
             if st.button(_t("voy_recalc"), key="btn_recompute"):

@@ -9,6 +9,7 @@ Tiers :
 
 import streamlit as st
 from stripe_payment import get_user_plan
+from translations import t as _t
 
 
 # ── Définition des features par tier ──────────────────────────────────────────
@@ -74,8 +75,14 @@ def can_access(feature: str, uid: str) -> bool:
 
 def show_upgrade_prompt(feature_label: str, required_tier: str = "essential"):
     """Affiche un bloc d'upgrade quand une feature est verrouillée."""
-    price    = "9,99€/mois" if required_tier == "essential" else "29€/mois"
-    tier_lbl = "Essentiel" if required_tier == "essential" else "Premium"
+    if required_tier == "essential":
+        tier_lbl = _t("tier_essential_label")
+        price    = _t("tier_price_essential")
+    else:
+        tier_lbl = _t("tier_premium_label")
+        price    = _t("tier_price_premium")
+    feature_line = _t("tier_feature_line", tier=tier_lbl, price=price)
+    upgrade_line = _t("tier_upgrade_line", tier=tier_lbl)
     st.markdown(f"""
     <div style="background:linear-gradient(135deg,#fdf4ff,#ede9fe);
                 border:1.5px solid #c084fc;border-radius:16px;
@@ -84,10 +91,10 @@ def show_upgrade_prompt(feature_label: str, required_tier: str = "essential"):
             🔮 {feature_label}
         </p>
         <p style="color:#6b7280;font-size:0.85rem;margin:0 0 12px 0;">
-            Fonctionnalité {tier_lbl} — {price}
+            {feature_line}
         </p>
         <p style="color:#9ca3af;font-size:0.8rem;margin:0;">
-            Passe à {tier_lbl} pour débloquer cette fonctionnalité et bien plus.
+            {upgrade_line}
         </p>
     </div>
     """, unsafe_allow_html=True)

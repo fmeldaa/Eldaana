@@ -54,7 +54,7 @@ def anonymize_user(user_id: str) -> bool:
     return True
 
 
-POLITIQUE_CONFIDENTIALITE = """
+POLITIQUE_CONFIDENTIALITE_FR = """
 ## Politique de confidentialité Eldaana
 
 **Dernière mise à jour : Avril 2026**
@@ -85,10 +85,47 @@ Les conversations sont traitées via l'API Claude (Anthropic).
 Consultez la politique de confidentialité d'Anthropic : https://www.anthropic.com/privacy
 
 ### 6. Contact
-Pour toute question : **eldaana.app@gmail.com**
+Pour toute question : **eldaana@eldaana.com**
 
 ### 7. Modifications
 Toute modification importante de cette politique vous sera notifiée dans l'application.
+"""
+
+POLITIQUE_CONFIDENTIALITE_EN = """
+## Eldaana Privacy Policy
+
+**Last updated: April 2026**
+
+### 1. Data collected
+Eldaana only collects data that you voluntarily provide:
+- First name, city, age, gender, profession
+- Dietary habits, hobbies, relationship status
+- Daily mood, shopping, expenses
+- Conversation messages (stored temporarily in session memory)
+
+### 2. Purpose
+This data is used **solely** to personalise Eldaana's responses and predictions.
+It is never sold, shared, or transmitted to third parties.
+
+### 3. Storage
+Your data is stored securely (Supabase or local JSON files).
+Conversations are not persisted between sessions.
+
+### 4. Your rights (GDPR)
+- **Right of access**: you can download all your data (Article 20)
+- **Right to erasure**: you can delete your account and data (Article 17)
+- **Right of rectification**: edit your data via "Enrich my profile" (Article 16)
+- **Right to data portability**: JSON export available below
+
+### 5. Artificial intelligence
+Conversations are processed via the Claude API (Anthropic).
+See Anthropic's privacy policy: https://www.anthropic.com/privacy
+
+### 6. Contact
+For any questions: **eldaana@eldaana.com**
+
+### 7. Changes
+Any significant changes to this policy will be notified within the application.
 """
 
 
@@ -101,8 +138,10 @@ def show_rgpd_page(profile: dict):
     st.caption(_t("rgpd_subtitle"))
 
     # ── Politique de confidentialité ────────────────────────────────────────────
+    _lang = st.session_state.get("lang", "fr")
+    _policy = POLITIQUE_CONFIDENTIALITE_EN if _lang == "en" else POLITIQUE_CONFIDENTIALITE_FR
     with st.expander(_t("rgpd_policy_expander"), expanded=False):
-        st.markdown(POLITIQUE_CONFIDENTIALITE)
+        st.markdown(_policy)
 
     st.divider()
 

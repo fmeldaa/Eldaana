@@ -346,7 +346,7 @@ _STRINGS: dict[str, dict[str, str]] = {
         "rgpd_consent3":        "J'accepte de recevoir des suggestions proactives (courses, budget, humeur)",
         "rgpd_save_prefs":      "💾 Mettre à jour mes préférences",
         "rgpd_prefs_ok":        "✅ Préférences mises à jour.",
-        "rgpd_contact":         "Contact : eldaana.app@gmail.com · RGPD conforme",
+        "rgpd_contact":         "Contact : eldaana@eldaana.com · RGPD conforme",
 
         # ── Wakeup page ─────────────────────────────────────────────────
         "wakeup_title":       "Bonjour ☀️",
@@ -371,6 +371,16 @@ _STRINGS: dict[str, dict[str, str]] = {
         "email_gmail_connect_btn": "📧 Connecter ma boîte Gmail",
         "email_gmail_connected_ok": "✅ Gmail connecté !",
         "email_oauth_error":       "Erreur OAuth : {e}",
+
+        # ── Tier / upgrade prompts ────────────────────────────────────────
+        "tier_essential_label":    "Essentiel",
+        "tier_premium_label":      "Premium",
+        "tier_price_essential":    "9,99€/mois",
+        "tier_price_premium":      "29,99€/mois",
+        "tier_feature_line":       "Fonctionnalité {tier} — {price}",
+        "tier_upgrade_line":       "Passe à {tier} pour débloquer cette fonctionnalité et bien plus.",
+        "voy_scores_feature":      "Scores prédictifs quotidiens (humeur, énergie, stress, budget)",
+        "voy_factors_feature":     "Facteurs détaillés & forecast 7 jours",
 
         # ── Profile form extras ──────────────────────────────────────────
         "pf_children_no":          "Non",
@@ -734,7 +744,7 @@ _STRINGS: dict[str, dict[str, str]] = {
         "rgpd_consent3":        "I agree to receive proactive suggestions (shopping, budget, mood)",
         "rgpd_save_prefs":      "💾 Update my preferences",
         "rgpd_prefs_ok":        "✅ Preferences updated.",
-        "rgpd_contact":         "Contact: eldaana.app@gmail.com · GDPR compliant",
+        "rgpd_contact":         "Contact: eldaana@eldaana.com · GDPR compliant",
 
         # ── Wakeup page ─────────────────────────────────────────────────
         "wakeup_title":       "Good morning ☀️",
@@ -759,6 +769,16 @@ _STRINGS: dict[str, dict[str, str]] = {
         "email_gmail_connect_btn": "📧 Connect my Gmail inbox",
         "email_gmail_connected_ok": "✅ Gmail connected!",
         "email_oauth_error":       "OAuth error: {e}",
+
+        # ── Tier / upgrade prompts ────────────────────────────────────────
+        "tier_essential_label":    "Essential",
+        "tier_premium_label":      "Premium",
+        "tier_price_essential":    "€9.99/month",
+        "tier_price_premium":      "€29.99/month",
+        "tier_feature_line":       "{tier} feature — {price}",
+        "tier_upgrade_line":       "Upgrade to {tier} to unlock this feature and much more.",
+        "voy_scores_feature":      "Daily predictive scores (mood, energy, stress, budget)",
+        "voy_factors_feature":     "Detailed factors & 7-day forecast",
 
         # ── Profile form extras ──────────────────────────────────────────
         "pf_children_no":          "No",

@@ -168,15 +168,22 @@ def logout():
 # ── Résumé sidebar ─────────────────────────────────────────────────────────────
 
 def profile_summary(profile: dict) -> str:
+    from translations import t_list as _tl_ps
     lines = []
     if profile.get("ville"):
         lines.append(f"📍 {profile['ville']}")
     if profile.get("sexe"):
-        lines.append(f"· {profile['sexe']}")
+        _GENDER_FR  = ["Femme", "Homme", "Non-binaire", "Préfère ne pas préciser"]
+        _gender_idx = _GENDER_FR.index(profile["sexe"]) if profile["sexe"] in _GENDER_FR else -1
+        _gender_opts_display = _tl_ps("pf_gender_opts")
+        _gender_display = (
+            _gender_opts_display[_gender_idx]
+            if 0 <= _gender_idx < len(_gender_opts_display)
+            else profile["sexe"]
+        )
+        lines.append(f"· {_gender_display}")
     if profile.get("profession"):
         lines.append(f"· {profile['profession']}")
-    if profile.get("situation_maritale"):
-        lines.append(f"· {profile['situation_maritale']}")
     hobbies = profile.get("hobbies", [])
     if hobbies:
         lines.append("♥ " + ", ".join(hobbies[:3]))

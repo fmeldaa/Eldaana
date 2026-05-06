@@ -384,6 +384,13 @@ _STRINGS: dict[str, dict[str, str]] = {
         "voy_scores_feature":        "Scores prédictifs quotidiens (humeur, énergie, stress, budget)",
         "voy_factors_feature":       "Facteurs détaillés & forecast 7 jours",
 
+        # ── Voice section ────────────────────────────────────────────────
+        "voice_premium_lock":        "🔒 Mode Vocal Eldaana — Premium",
+        "voice_open_btn":            "🎙️ Ouvrir Eldaana Voice →",
+        "voice_open_caption":        "Conversation vocale temps réel · Premium",
+        "voice_unlock_btn":          "🔒 Débloquer Eldaana Voice",
+        "voice_unlock_caption":      "Fonctionnalité Premium · 29,99€/mois",
+
         # ── Profile form extras ──────────────────────────────────────────
         "pf_children_no":          "Non",
         "pf_children_yes":         "Oui",
@@ -783,6 +790,13 @@ _STRINGS: dict[str, dict[str, str]] = {
         "tier_upgrade_premium":      "Upgrade to Premium to unlock this feature and much more.",
         "voy_scores_feature":        "Daily predictive scores (mood, energy, stress, budget)",
         "voy_factors_feature":       "Detailed factors & 7-day forecast",
+
+        # ── Voice section ────────────────────────────────────────────────
+        "voice_premium_lock":        "🔒 Eldaana Voice Mode — Premium",
+        "voice_open_btn":            "🎙️ Open Eldaana Voice →",
+        "voice_open_caption":        "Real-time voice conversation · Premium",
+        "voice_unlock_btn":          "🔒 Unlock Eldaana Voice",
+        "voice_unlock_caption":      "Premium feature · €29.99/month",
 
         # ── Profile form extras ──────────────────────────────────────────
         "pf_children_no":          "No",

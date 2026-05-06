@@ -313,9 +313,11 @@ if "eldaana_voice" not in st.session_state:
     _saved_voice = profile.get("preferred_voice", "nova")
     st.session_state.eldaana_voice = _saved_voice
 
-# ── Météo + timezone : récupérés une seule fois par session ───────────────────
-if "weather" not in st.session_state:
-    ville = profile.get("ville", "")
+# ── Météo + timezone : récupérés une fois par session, retentative si None ────
+ville = profile.get("ville", "")
+if "weather" not in st.session_state or (
+    st.session_state.weather is None and ville
+):
     st.session_state.weather = get_weather(ville, profile) if ville else None
     # Stocker le timezone dans le profil pour l'utiliser partout
     if st.session_state.weather and st.session_state.weather.get("timezone"):
@@ -345,7 +347,12 @@ if heure_reveil:
 
 # ── Message d'accueil ──────────────────────────────────────────────────────────
 if weather:
-    GREETING = build_briefing(weather, profile)
+    try:
+        GREETING = build_briefing(weather, profile)
+    except Exception:
+        genre = profile.get("sexe", "").lower() if profile else ""
+        accord = _t("greeting_f") if genre == "femme" else _t("greeting_m")
+        GREETING = _t("greeting_msg").format(prenom=prenom, accord=accord)
 else:
     genre = profile.get("sexe", "").lower() if profile else ""
     accord = _t("greeting_f") if genre == "femme" else _t("greeting_m")
@@ -743,8 +750,8 @@ with st.sidebar:
         if _tier_sb == "essential":
             # Cadenas visible pour Essentiel — invite à Premium
             st.markdown(
-                '<div style="opacity:.55;padding:6px 0 2px 0;font-size:0.83rem;color:#9ca3af;">'
-                '🔒 Mode Vocal Eldaana — Premium</div>',
+                f'<div style="opacity:.55;padding:6px 0 2px 0;font-size:0.83rem;color:#9ca3af;">'
+                f'{_t("voice_premium_lock")}</div>',
                 unsafe_allow_html=True
             )
 
@@ -786,15 +793,15 @@ box-shadow:0 0 16px rgba(192,132,252,0.4);}}
   if(!b)try{{b=window.parent.EldaanaAndroid;}}catch(e){{}}
   if(!b)try{{b=window.top.EldaanaAndroid;}}catch(e){{}}
   if(b){{b.openVoice(u);return false;}}
-  window.location.href=u;return false;">🎙️ Ouvrir Eldaana Voice →</a>
+  window.location.href=u;return false;">{_t("voice_open_btn")}</a>
 </body></html>""", height=54)
             else:
                 # PC/navigateur : lien simple qui s'ouvre dans un nouvel onglet
                 st.markdown(
                     f'<a href="{_url_voice}" target="_blank" style="{_BTN_STYLE_VOICE}">'
-                    f'🎙️ Ouvrir Eldaana Voice →</a>'
+                    f'{_t("voice_open_btn")}</a>'
                     f'<p style="color:#9ca3af;font-size:0.75rem;text-align:center;margin:4px 0 0 0;">'
-                    f'Conversation vocale temps réel · Premium</p>',
+                    f'{_t("voice_open_caption")}</p>',
                     unsafe_allow_html=True,
                 )
         else:
@@ -825,15 +832,15 @@ box-shadow:0 0 16px rgba(251,146,60,0.4);}}
   if(!b)try{{b=window.parent.EldaanaAndroid;}}catch(e){{}}
   if(!b)try{{b=window.top.EldaanaAndroid;}}catch(e){{}}
   if(b){{b.openVoice(u);return false;}}
-  window.location.href=u;return false;">🔒 Débloquer Eldaana Voice</a>
+  window.location.href=u;return false;">{_t("voice_unlock_btn")}</a>
 </body></html>""", height=54)
             else:
                 # PC/navigateur : lien simple nouvel onglet
                 st.markdown(
                     f'<a href="{_dest}" target="_blank" style="{_BTN_STYLE_STRIPE}">'
-                    f'🔒 Débloquer Eldaana Voice</a>'
+                    f'{_t("voice_unlock_btn")}</a>'
                     f'<p style="color:#9ca3af;font-size:0.75rem;text-align:center;margin:4px 0 0 0;">'
-                    f'Fonctionnalité Premium · 9,99€/mois</p>',
+                    f'{_t("voice_unlock_caption")}</p>',
                     unsafe_allow_html=True,
                 )
 

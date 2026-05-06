@@ -11,6 +11,7 @@ import json
 import uuid
 from pathlib import Path
 from google_auth import show_google_button, google_to_profile
+from facebook_auth import show_facebook_button, facebook_to_profile
 from storage import db_load, db_save
 from cloudinary_storage import upload_profile_photo, get_profile_photo_url, invalidate_photo_cache
 from translations import t as _t, t_list as _tl
@@ -159,7 +160,7 @@ def is_onboarding_done() -> bool:
 
 def logout():
     """Déconnecte l'utilisateur actif (nettoie la session uniquement)."""
-    for key in ["user_id", "google_prefill", "messages", "display_messages",
+    for key in ["user_id", "social_prefill", "google_prefill", "messages", "display_messages",
                 "weather", "transport_alert_checked", "departure_alert",
                 "email_list", "email_summary"]:
         st.session_state.pop(key, None)
@@ -271,8 +272,7 @@ def show_onboarding() -> bool:
     with col_g:
         google_info = show_google_button()
     with col_fb:
-        st.markdown(f'<button onclick="alert(\'Facebook — bientôt disponible !\')" style="{_btn}">'
-                    f'{_LOGO_FACEBOOK} Facebook</button>', unsafe_allow_html=True)
+        facebook_info = show_facebook_button()
     with col_li:
         st.markdown(f'<button onclick="alert(\'LinkedIn — bientôt disponible !\')" style="{_btn}">'
                     f'{_LOGO_LINKEDIN} LinkedIn</button>', unsafe_allow_html=True)
@@ -280,28 +280,43 @@ def show_onboarding() -> bool:
         st.markdown(f'<button onclick="alert(\'X — bientôt disponible !\')" style="{_btn}">'
                     f'{_LOGO_X} Twitter</button>', unsafe_allow_html=True)
 
+    # ── Callback Google ───────────────────────────────────────────────────────
     if google_info:
         google_sub = google_info.get("sub", "")
-
-        # Utilisateur déjà connu ? → connexion directe
         existing = load_profile_by_google_sub(google_sub)
         if existing and existing.get("onboarding_complete"):
             st.session_state["user_id"] = google_sub
             _sync_social_photo(google_sub, google_info.get("picture", ""))
             return True
-
-        # Nouvel utilisateur Google → pré-remplissage + photo
         prefill_data = google_to_profile(google_info)
         _sync_social_photo(google_sub, google_info.get("picture", ""))
-        st.session_state["google_prefill"] = prefill_data
+        st.session_state["social_prefill"] = prefill_data
+        st.rerun()
+
+    # ── Callback Facebook ─────────────────────────────────────────────────────
+    if facebook_info:
+        fb_id = facebook_info.get("id", "")
+        existing = db_load(fb_id) if fb_id else None
+        if existing and existing.get("onboarding_complete"):
+            st.session_state["user_id"] = fb_id
+            prefill_fb = facebook_to_profile(facebook_info)
+            _sync_social_photo(fb_id, prefill_fb.get("fb_picture", ""))
+            return True
+        prefill_data = facebook_to_profile(facebook_info)
+        _sync_social_photo(fb_id, prefill_data.get("fb_picture", ""))
+        st.session_state["social_prefill"] = prefill_data
         st.rerun()
 
     # ── Formulaire ─────────────────────────────────────────────────────────────
-    prefill    = st.session_state.get("google_prefill", {})
-    from_google = bool(prefill)
+    prefill      = st.session_state.get("social_prefill", {})
+    from_social  = bool(prefill)
+    from_fb      = from_social and bool(prefill.get("fb_id"))
 
-    if from_google:
-        st.success(_t("ob_google_ok", prenom=prefill.get('prenom', '')))
+    if from_social:
+        if from_fb:
+            st.success(_t("ob_fb_ok", prenom=prefill.get('prenom', '')))
+        else:
+            st.success(_t("ob_google_ok", prenom=prefill.get('prenom', '')))
         st.markdown(_t("ob_form_google"))
     else:
         st.markdown(
@@ -314,7 +329,7 @@ def show_onboarding() -> bool:
     # Canonical FR gender list for storage (always stored in French for data consistency)
     _GENDER_OPTS_FR = ["Femme", "Homme", "Non-binaire", "Préfère ne pas préciser"]
 
-    if not from_google:
+    if not from_social:
         prenom = st.text_input(_t("ob_first_name"), placeholder=_t("ob_first_name_ph"))
     else:
         prenom = prefill.get("prenom", "")
@@ -355,8 +370,10 @@ def show_onboarding() -> bool:
             for e in errors:
                 st.error(e)
         else:
-            # Détermine l'ID : Google sub ou nouvel UUID
-            user_id = prefill.get("google_sub") or str(uuid.uuid4())
+            # Détermine l'ID : Google sub, Facebook ID, ou nouvel UUID
+            user_id = (prefill.get("google_sub")
+                       or prefill.get("fb_id")
+                       or str(uuid.uuid4()))
 
             _country_cfg = COUNTRY_CONFIG.get(country_label, COUNTRY_CONFIG["🇫🇷 France"])
             profile = {
@@ -368,6 +385,9 @@ def show_onboarding() -> bool:
                 "google_email":   prefill.get("google_email", ""),
                 "google_picture": prefill.get("google_picture", ""),
                 "google_sub":     prefill.get("google_sub", ""),
+                "fb_id":          prefill.get("fb_id", ""),
+                "fb_email":       prefill.get("fb_email", ""),
+                "fb_picture":     prefill.get("fb_picture", ""),
                 # Localisation
                 "country":             _country_cfg["code"],
                 "country_label":       country_label,
@@ -396,7 +416,8 @@ def show_onboarding() -> bool:
                 "onboarding_lifestyle_complete": False,
             }
             save_profile(profile)
-            st.session_state.pop("google_prefill", None)
+            st.session_state.pop("social_prefill", None)
+            st.session_state.pop("google_prefill", None)  # compat ancien code
             return True
 
     return False

@@ -62,9 +62,14 @@ def show_google_button() -> dict | None:
     state = st.query_params.get("state", "")
 
     if code and state:
-        # Décoder la plateforme encodée dans le state : "<token>|<platform>"
-        state_parts = state.split("|", 1)
-        platform    = state_parts[1] if len(state_parts) > 1 else "web"
+        # Décoder le state : "<token>|<platform>" (Google) ou "<token>|<platform>|fb" (Facebook)
+        state_parts = state.split("|", 2)
+
+        # Ignorer les callbacks Facebook (state se termine par "|fb")
+        if len(state_parts) >= 3 and state_parts[2] == "fb":
+            return None
+
+        platform = state_parts[1] if len(state_parts) > 1 else "web"
 
         token = _exchange_code(code, client_id, client_secret, redirect_uri)
         if token:

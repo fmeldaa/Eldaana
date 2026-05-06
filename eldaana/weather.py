@@ -43,6 +43,46 @@ WEATHER_CODES = {
     99: ("Orage avec forte grêle", "⛈️"),
 }
 
+WEATHER_CODES_EN = {
+    0:  "Clear sky",
+    1:  "Mainly clear",
+    2:  "Partly cloudy",
+    3:  "Overcast",
+    45: "Foggy",
+    48: "Icy fog",
+    51: "Light drizzle",
+    53: "Moderate drizzle",
+    55: "Heavy drizzle",
+    61: "Light rain",
+    63: "Moderate rain",
+    65: "Heavy rain",
+    71: "Light snow",
+    73: "Moderate snow",
+    75: "Heavy snow",
+    77: "Snow grains",
+    80: "Light showers",
+    81: "Moderate showers",
+    82: "Heavy showers",
+    85: "Snow showers",
+    86: "Heavy snow showers",
+    95: "Thunderstorm",
+    96: "Thunderstorm with hail",
+    99: "Thunderstorm with heavy hail",
+}
+
+
+def get_weather_desc(code: int, lang: str = "fr") -> str:
+    """Retourne la description météo traduite pour le code WMO donné."""
+    if lang == "en":
+        return WEATHER_CODES_EN.get(code, "Variable conditions")
+    desc, _ = WEATHER_CODES.get(code, ("Conditions variables", "🌡️"))
+    return desc
+
+
+def _c_to_f(celsius: float) -> int:
+    """Convertit °C en °F."""
+    return round(celsius * 9 / 5 + 32)
+
 
 def get_coordinates(city: str) -> tuple[float, float, str] | None:
     """Retourne (latitude, longitude, nom_ville) pour une ville."""
@@ -236,13 +276,23 @@ def build_wakeup_message(weather: dict, profile: dict) -> str:
     else:
         positif = _t_w("wakeup_cloudy")
 
+    try:
+        import streamlit as _st_wu
+        _lang_wu = _st_wu.session_state.get("lang", "fr")
+    except Exception:
+        _lang_wu = "fr"
+
+    _desc_wu = get_weather_desc(weather.get("weathercode", 0), _lang_wu)
+    _temp_wu = _c_to_f(weather["temp_current"]) if _lang_wu == "en" else weather["temp_current"]
+    _tmax_wu = _c_to_f(weather["temp_max"])     if _lang_wu == "en" else weather["temp_max"]
+
     base = _t_w("wakeup_greeting",
                 prenom=prenom,
                 heure=heure_str,
                 city=weather["city"],
-                desc=weather["description"],
-                temp=weather["temp_current"],
-                tmax=weather["temp_max"],
+                desc=_desc_wu,
+                temp=_temp_wu,
+                tmax=_tmax_wu,
                 positif=positif)
 
     # Alertes transport au réveil (si départ bientôt)
@@ -287,16 +337,34 @@ def build_briefing(weather: dict, profile: dict, lang: str = "fr") -> str:
 
     outfit = outfit_suggestion(weather, sexe)
 
+    # Langue active pour description traduite et unité température
+    try:
+        import streamlit as _st_brf
+        _lang_brf = _st_brf.session_state.get("lang", "fr")
+    except Exception:
+        _lang_brf = "fr"
+
+    _desc_brf = get_weather_desc(weather.get("weathercode", 0), _lang_brf)
+
+    # Conversion °C → °F si EN
+    _tc  = weather["temp_current"]
+    _tmin = weather["temp_min"]
+    _tmax = weather["temp_max"]
+    if _lang_brf == "en":
+        _tc   = _c_to_f(_tc)
+        _tmin = _c_to_f(_tmin)
+        _tmax = _c_to_f(_tmax)
+
     lines = [
         f"{salut} {_t_w('greeting_date', date=date_str)}",
         "",
         _t_w("greeting_weather",
              emoji=weather["emoji"],
              city=weather["city"],
-             desc=weather["description"],
-             temp=weather["temp_current"],
-             tmin=weather["temp_min"],
-             tmax=weather["temp_max"]),
+             desc=_desc_brf,
+             temp=_tc,
+             tmin=_tmin,
+             tmax=_tmax),
     ]
 
     if weather["rain_prob"] and weather["rain_prob"] >= 30:

@@ -428,7 +428,7 @@ _STRINGS: dict[str, dict[str, str]] = {
         "greeting_afternoon": "Good afternoon {prenom} ☀️",
         "greeting_evening":   "Good evening {prenom} 🌙",
         "greeting_date":      "Today is **{date}**.",
-        "greeting_weather":   "**{emoji} Weather in {city}:** {desc} · {temp}°C (min {tmin}° / max {tmax}°)",
+        "greeting_weather":   "**{emoji} Weather in {city}:** {desc} · {temp}°F (min {tmin}° / max {tmax}°F)",
         "greeting_rain":      "☔ Rain risk: **{pct}%**",
         "greeting_outfit":    "**👗 Outfit suggestion:** {outfit}",
         "greeting_close_m":   "Tell me how you're doing — how can I make you happy today? 💜",

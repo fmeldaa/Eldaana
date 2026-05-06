@@ -525,9 +525,18 @@ with st.sidebar:
 
     # Météo résumée
     if weather:
+        from weather import get_weather_desc as _get_wdesc, _c_to_f as _ctof
+        _lang_sb = st.session_state.get("lang", "fr")
+        _wdesc_sb = _get_wdesc(weather.get("weathercode", 0), _lang_sb)
+        if _lang_sb == "en":
+            _temp_sb = f"{_ctof(weather['temp_current'])}°F"
+            _tmax_sb = f"max {_ctof(weather['temp_max'])}°F"
+        else:
+            _temp_sb = f"{weather['temp_current']}°C"
+            _tmax_sb = f"max {weather['temp_max']}°"
         st.markdown(
-            f"{weather['emoji']} **{weather['city']}** · {weather['temp_current']}°C  \n"
-            f"{weather['description']} · max {weather['temp_max']}°"
+            f"{weather['emoji']} **{weather['city']}** · {_temp_sb}  \n"
+            f"{_wdesc_sb} · {_tmax_sb}"
         )
 
     # Statut transport en temps réel
@@ -685,7 +694,7 @@ with st.sidebar:
                 height=72,
             )
 
-    if not profile.get("onboarding_lifestyle_complete"):
+    if not profile.get("onboarding_lifestyle_complete") and _tier_sb == "free":
         st.info(_t("sidebar_enrich_info"))
 
     if st.button(_t("btn_dashboard"), use_container_width=True):

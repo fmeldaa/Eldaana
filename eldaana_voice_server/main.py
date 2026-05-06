@@ -66,6 +66,15 @@ Tu es en conversation VOCALE en temps réel. Règles strictes :
 - Si la question nécessite plus, résume l'essentiel en 2-3 phrases et propose d'envoyer les détails par écrit
 Tu parles français."""
 
+_VOICE_SYSTEM_BASE_EN = """You are Eldaana — a warm, caring and direct personal confidante.
+You are in a REAL-TIME VOICE conversation. Strict rules:
+- Reply in 2 to 3 sentences maximum
+- No markdown (no **, *, #, lists, dashes)
+- Speak naturally as if on the phone
+- Be warm, direct and spontaneous
+- If the question needs more detail, summarise in 2-3 sentences and offer to send the details in writing
+You speak English."""
+
 # Chemin vers les profils Streamlit (dossier frère eldaana/)
 _PROFILES_DIR   = Path(__file__).parent.parent / "eldaana" / "user_data" / "profiles"
 _SUPABASE_URL   = os.getenv("SUPABASE_URL", "")
@@ -164,10 +173,12 @@ def _load_profile(uid: str) -> dict:
     return {}
 
 
-def _build_system_prompt(profile: dict) -> str:
+def _build_system_prompt(profile: dict, lang: str = "fr") -> str:
     """Injecte le profil utilisateur dans le prompt système."""
+    base = _VOICE_SYSTEM_BASE_EN if lang == "en" else _VOICE_SYSTEM_BASE
+
     if not profile:
-        return _VOICE_SYSTEM_BASE
+        return base
 
     parts = []
     if p := profile.get("prenom"):       parts.append(f"Prénom : {p}")
@@ -184,7 +195,16 @@ def _build_system_prompt(profile: dict) -> str:
 
     profile_block = "\n".join(parts)
     prenom = profile.get("prenom", "l'utilisateur")
-    return f"""{_VOICE_SYSTEM_BASE}
+    if lang == "en":
+        pronoun = "her" if profile.get("sexe", "").lower() == "femme" else "him"
+        return f"""{base}
+
+Profile of {prenom} (use this info to personalise your responses):
+{profile_block}
+
+Use {prenom}'s first name from time to time."""
+    else:
+        return f"""{base}
 
 Profil de {prenom} (utilise ces infos pour personnaliser tes réponses) :
 {profile_block}
@@ -283,16 +303,16 @@ _MIME_EXT = {
     "ogg":  ("audio.ogg",  "audio/ogg"),
 }
 
-def _whisper_sync(audio_bytes: bytes, fmt: str = "wav") -> Optional[str]:
+def _whisper_sync(audio_bytes: bytes, fmt: str = "wav", lang: str = "fr") -> Optional[str]:
     """Transcription Whisper (synchrone). fmt = 'wav' | 'webm' | 'mp4' | 'ogg'"""
     filename, mime = _MIME_EXT.get(fmt, ("audio.wav", "audio/wav"))
-    print(f"[Whisper] envoi {len(audio_bytes)} octets, format={fmt}, mime={mime}")
+    print(f"[Whisper] envoi {len(audio_bytes)} octets, format={fmt}, mime={mime}, lang={lang}")
     try:
         resp = requests.post(
             "https://api.openai.com/v1/audio/transcriptions",
             headers={"Authorization": f"Bearer {_OPENAI_KEY}"},
             files={"file": (filename, io.BytesIO(audio_bytes), mime)},
-            data={"model": "whisper-1", "language": "fr"},
+            data={"model": "whisper-1", "language": lang},
             timeout=20,
         )
         print(f"[Whisper] status={resp.status_code}, réponse={resp.text[:200]}")
@@ -326,9 +346,9 @@ def _tts_sync(text: str, voice: str = "nova") -> Optional[bytes]:
 
 # ── Helpers async ─────────────────────────────────────────────────────────────
 
-async def whisper_async(audio: bytes, fmt: str = "wav") -> Optional[str]:
+async def whisper_async(audio: bytes, fmt: str = "wav", lang: str = "fr") -> Optional[str]:
     loop = asyncio.get_event_loop()
-    return await loop.run_in_executor(None, _whisper_sync, audio, fmt)
+    return await loop.run_in_executor(None, _whisper_sync, audio, fmt, lang)
 
 
 async def tts_async(text: str, voice: str = "nova") -> Optional[bytes]:
@@ -380,20 +400,25 @@ async def voice_endpoint(ws: WebSocket):
 
     # Charger le profil utilisateur depuis le uid (query param ?uid=)
     uid     = ws.query_params.get("uid", "")
+    lang    = ws.query_params.get("lang", "fr")   # "fr" | "en"
     profile = _load_profile(uid)
     context = _fetch_context(profile)
-    base_prompt = _build_system_prompt(profile)
+    base_prompt = _build_system_prompt(profile, lang=lang)
     system  = f"{base_prompt}\n\nContexte actuel :\n{context}"
     prenom  = profile.get("prenom", "")
-    print(f"[WS] uid={uid!r} profil={'chargé' if profile else 'anonyme'} prénom={prenom!r}")
+    print(f"[WS] uid={uid!r} lang={lang!r} profil={'chargé' if profile else 'anonyme'} prénom={prenom!r}")
     print(f"[WS] contexte: {context[:120]}")
 
     # Historique de conversation — chargé depuis Supabase pour continuité texte/voix
     history: list[dict] = _supabase_load_conversation(uid)
     print(f"[WS] historique chargé: {len(history)} messages")
 
-    greeting = f"Coucou {prenom} ! Appuie sur le bouton et parle-moi 🎙️" if prenom \
-               else "Coucou ! Appuie sur le bouton et parle-moi 🎙️"
+    if lang == "en":
+        greeting = f"Hey {prenom}! Press the button and talk to me 🎙️" if prenom \
+                   else "Hey! Press the button and talk to me 🎙️"
+    else:
+        greeting = f"Coucou {prenom} ! Appuie sur le bouton et parle-moi 🎙️" if prenom \
+                   else "Coucou ! Appuie sur le bouton et parle-moi 🎙️"
     await _send(ws, {"type": "ready", "message": greeting})
 
     pending_meta = None
@@ -451,7 +476,7 @@ async def voice_endpoint(ws: WebSocket):
 
             print("[Pipeline] → Whisper")
             await _send(ws, {"type": "status", "step": "transcribing"})
-            transcript = await whisper_async(audio_bytes, audio_fmt)
+            transcript = await whisper_async(audio_bytes, audio_fmt, lang=lang)
 
             if not transcript:
                 await _send(ws, {"type": "error",

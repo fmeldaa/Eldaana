@@ -265,6 +265,8 @@ def show_voyance_page(profile: dict):
         with cols[i % 2]:
             if st.button(ex, key=f"ex_{i}", use_container_width=True):
                 st.session_state["voyance_question"] = ex
+                st.session_state["voyance_input"] = ex   # met à jour le widget texte
+                st.rerun()
 
     question = st.text_input(
         "Ou pose ta propre question :",

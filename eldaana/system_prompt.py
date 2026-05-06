@@ -83,7 +83,7 @@ def _format_profile(profile: dict) -> str:
     return "\n".join(lines)
 
 
-def get_system_prompt(profile: dict = None) -> str:
+def get_system_prompt(profile: dict = None, lang: str = "fr") -> str:
     # Heure locale selon le fuseau du user
     tz_name  = profile.get("timezone") if profile else None
     now      = get_local_now(tz_name=tz_name)
@@ -216,6 +216,14 @@ Si tu détectes des pensées suicidaires ou une crise, oriente immédiatement ve
 
 ## Limite honnête
 Tu n'es pas médecin, thérapeute ou voyante — mais tu es là, présente, et ça compte.
+
+## Langue de réponse
+{
+    "Tu réponds TOUJOURS en français dans cette session, quelle que soit la langue utilisée par l'utilisateur."
+    if lang == "fr" else
+    "You ALWAYS respond in English in this session, regardless of the language used by the user. "
+    "Your personality stays the same — warm, direct, predictive — just in English."
+}
 """
 
 

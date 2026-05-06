@@ -193,9 +193,66 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# ── Langue de l'app (définie au premier lancement Android) ───────────────────
+# ── Langue de l'app (définie au premier lancement Android ou par le toggle) ──
 if "lang" not in st.session_state:
     st.session_state.lang = st.query_params.get("lang", "fr")
+
+# ── Traductions FR / EN ───────────────────────────────────────────────────────
+_TRANSLATIONS: dict[str, dict[str, str]] = {
+    "fr": {
+        "greeting_m":      "heureux",
+        "greeting_f":      "heureuse",
+        "greeting_msg":    "Bonjour {prenom} — Comment puis-je te rendre {accord} aujourd'hui ?",
+        "scores_title":    "Scores du jour",
+        "btn_dashboard":   "🏠 Tableau de bord",
+        "btn_profile":     "✏️ Enrichir mon profil",
+        "btn_social":      "🌐 Ma vie numérique",
+        "btn_emails":      "📧 Mes emails",
+        "btn_shopping":    "🛒 Mes courses",
+        "btn_budget":      "💰 Mon budget",
+        "btn_predictions": "🔮 Prédictions",
+        "btn_privacy":     "🔒 Vie privée",
+        "btn_agent":       "🤖 Agent — Permissions",
+        "btn_new_conv":    "🔄 Nouvelle conversation",
+        "btn_switch_user": "🔀 Changer d'utilisateur",
+        "btn_lang":        "🇬🇧 English",
+        "voice_on":        "🔊 Voix activée",
+        "voice_off":       "🔇 Désactivée",
+        "voice_label":     "🎙️ Choix de la voix",
+        "voice_on_label":  "🎙️ Mode vocal ON",
+        "voice_off_label": "🎙️ Mode vocal OFF",
+    },
+    "en": {
+        "greeting_m":      "happy",
+        "greeting_f":      "happy",
+        "greeting_msg":    "Hello {prenom} — How can I make you {accord} today?",
+        "scores_title":    "Today's scores",
+        "btn_dashboard":   "🏠 Dashboard",
+        "btn_profile":     "✏️ Enrich my profile",
+        "btn_social":      "🌐 My digital life",
+        "btn_emails":      "📧 My emails",
+        "btn_shopping":    "🛒 My shopping",
+        "btn_budget":      "💰 My budget",
+        "btn_predictions": "🔮 Predictions",
+        "btn_privacy":     "🔒 Privacy",
+        "btn_agent":       "🤖 Agent — Permissions",
+        "btn_new_conv":    "🔄 New conversation",
+        "btn_switch_user": "🔀 Switch user",
+        "btn_lang":        "🇫🇷 Français",
+        "voice_on":        "🔊 Voice enabled",
+        "voice_off":       "🔇 Disabled",
+        "voice_label":     "🎙️ Choose voice",
+        "voice_on_label":  "🎙️ Voice mode ON",
+        "voice_off_label": "🎙️ Voice mode OFF",
+    },
+}
+
+def _t(key: str) -> str:
+    """Retourne la traduction d'une clé selon la langue active."""
+    lang = st.session_state.get("lang", "fr")
+    return _TRANSLATIONS.get(lang, _TRANSLATIONS["fr"]).get(
+        key, _TRANSLATIONS["fr"].get(key, key)
+    )
 
 # ── Détection APK Android (platform=android dans l'URL) ──────────────────────
 # Mise à jour à chaque rechargement si platform=android est présent dans l'URL
@@ -345,8 +402,8 @@ if weather:
     GREETING = build_briefing(weather, profile)
 else:
     genre = profile.get("sexe", "").lower() if profile else ""
-    accord = "heureuse" if genre == "femme" else "heureux"
-    GREETING = f"Bonjour {prenom} — Comment puis-je te rendre {accord} aujourd'hui ?"
+    accord = _t("greeting_f") if genre == "femme" else _t("greeting_m")
+    GREETING = _t("greeting_msg").format(prenom=prenom, accord=accord)
 
 # ── PAGE : COURSES ────────────────────────────────────────────────────────────
 if st.session_state.page == "shopping":
@@ -563,7 +620,7 @@ with st.sidebar:
         <div style="background:rgba(124,58,237,0.07);border:1px solid rgba(192,132,252,0.3);
                     border-radius:12px;padding:0.55rem 0.7rem;margin:0.4rem 0;">
             <p style="margin:0 0 5px 0;font-size:0.72rem;color:#a78bfa;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;">
-                Scores du jour
+                {_t("scores_title")}
             </p>
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;">
                 <span style="font-size:0.75rem;color:#e9d5ff;">😊 <b style="color:{_sc_color(_s_hum)}">{_s_hum}</b></span>
@@ -666,49 +723,53 @@ with st.sidebar:
                 f'🌟 Premium<br>29,99€/mois</a>'
             ) if _checkout_prem else '<div style="flex:1"></div>'
             _cmp_stripe.html(
-                f'<div style="display:flex;gap:8px;background:transparent;">'
-                f'{_btn_ess}{_btn_prem}</div>',
-                height=52,
+                f'<html><head><meta charset="utf-8">'
+                f'<style>*{{margin:0;padding:0;box-sizing:border-box;}}body{{background:transparent;}}'
+                f'</style></head><body>'
+                f'<div style="display:flex;gap:8px;">'
+                f'{_btn_ess}{_btn_prem}</div>'
+                f'</body></html>',
+                height=72,
             )
 
     if not profile.get("onboarding_lifestyle_complete"):
         st.info("💡 Plus Eldaana vous connaît, plus elle est précise !")
 
-    if st.button("🏠 Tableau de bord", use_container_width=True):
+    if st.button(_t("btn_dashboard"), use_container_width=True):
         st.session_state.page = "dashboard"
         st.rerun()
 
-    if st.button("✏️ Enrichir mon profil", use_container_width=True):
+    if st.button(_t("btn_profile"), use_container_width=True):
         st.session_state.page = "profile"
         st.rerun()
 
-    if st.button("🌐 Ma vie numérique", use_container_width=True):
+    if st.button(_t("btn_social"), use_container_width=True):
         st.session_state.page = "social"
         st.rerun()
 
-    if st.button("📧 Mes emails", use_container_width=True):
+    if st.button(_t("btn_emails"), use_container_width=True):
         st.session_state.page = "email"
         st.rerun()
 
-    if st.button("🛒 Mes courses", use_container_width=True):
+    if st.button(_t("btn_shopping"), use_container_width=True):
         st.session_state.page = "shopping"
         st.rerun()
 
-    if st.button("💰 Mon budget", use_container_width=True):
+    if st.button(_t("btn_budget"), use_container_width=True):
         st.session_state.page = "budget"
         st.rerun()
 
-    if st.button("🔮 Prédictions", use_container_width=True):
+    if st.button(_t("btn_predictions"), use_container_width=True):
         st.session_state.page = "voyance"
         st.rerun()
 
-    if st.button("🔒 Vie privée", use_container_width=True):
+    if st.button(_t("btn_privacy"), use_container_width=True):
         st.session_state.page = "rgpd"
         st.rerun()
 
     # Agent — Premium uniquement
     if _tier_sb == "premium":
-        if st.button("🤖 Agent — Permissions", use_container_width=True):
+        if st.button(_t("btn_agent"), use_container_width=True):
             st.session_state.page = "agent_permissions"
             st.rerun()
 
@@ -724,7 +785,7 @@ with st.sidebar:
             voice_mode = st.toggle("vm", value=st.session_state.voice_mode,
                                    key="voice_mode_toggle", label_visibility="collapsed")
         with col_lbl2:
-            lbl2 = "🎙️ Mode vocal ON" if voice_mode else "🎙️ Mode vocal OFF"
+            lbl2 = _t("voice_on_label") if voice_mode else _t("voice_off_label")
             st.markdown(
                 f'<p style="color:#C9A84C;font-size:0.85rem;font-weight:600;margin:8px 0 0 0;">{lbl2}</p>',
                 unsafe_allow_html=True
@@ -840,7 +901,7 @@ box-shadow:0 0 16px rgba(251,146,60,0.4);}}
             voice_on = st.toggle("v", value=st.session_state.voice_on,
                                  key="voice_toggle", label_visibility="collapsed")
         with col_lbl:
-            lbl = "🔊 Voix activée" if voice_on else "🔇 Désactivée"
+            lbl = _t("voice_on") if voice_on else _t("voice_off")
             st.markdown(
                 f'<p style="color:#F0E6FF;font-size:0.85rem;margin:8px 0 0 0;">{lbl}</p>',
                 unsafe_allow_html=True
@@ -854,8 +915,8 @@ box-shadow:0 0 16px rgba(251,146,60,0.4);}}
         # Sélecteur de voix filtré par tier
         if voice_on or voice_mode:
             st.markdown(
-                '<p style="color:#F0E6FF;font-size:0.82rem;margin:8px 0 4px 0;">'
-                '🎙️ Choix de la voix</p>',
+                f'<p style="color:#F0E6FF;font-size:0.82rem;margin:8px 0 4px 0;">'
+                f'{_t("voice_label")}</p>',
                 unsafe_allow_html=True
             )
             _voice_opts   = get_voice_options(_tier_sb)
@@ -889,14 +950,19 @@ box-shadow:0 0 16px rgba(251,146,60,0.4);}}
 
     st.markdown("<br>", unsafe_allow_html=True)
 
-    if st.button("🔄 Nouvelle conversation", use_container_width=True):
+    if st.button(_t("btn_new_conv"), use_container_width=True):
         st.session_state.messages = []
         st.session_state.display_messages = [{"role": "assistant", "content": GREETING}]
         st.rerun()
 
+    # ── Bascule de langue FR ↔ EN ─────────────────────────────────────────────
+    if st.button(_t("btn_lang"), use_container_width=True):
+        st.session_state.lang = "en" if st.session_state.get("lang", "fr") == "fr" else "fr"
+        st.rerun()
+
     st.markdown("<br>", unsafe_allow_html=True)
 
-    if st.button("🔀 Changer d'utilisateur", use_container_width=True):
+    if st.button(_t("btn_switch_user"), use_container_width=True):
         logout()
         # Effacer le localStorage (window.parent car iframe Streamlit)
         _components_uid.html("""
@@ -1173,7 +1239,7 @@ if user_input:
     if not _agent_handled:
 
         # ── Construction du prompt système enrichi ────────────────────────────
-        system_prompt = get_system_prompt(profile)
+        system_prompt = get_system_prompt(profile, lang=st.session_state.get("lang", "fr"))
 
         # Mode vocal : réponses courtes + sans markdown
         if _voice_mode:

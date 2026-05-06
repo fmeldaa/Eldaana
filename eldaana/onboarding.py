@@ -13,6 +13,7 @@ from pathlib import Path
 from google_auth import show_google_button, google_to_profile
 from storage import db_load, db_save
 from cloudinary_storage import upload_profile_photo, get_profile_photo_url, invalidate_photo_cache
+from translations import t as _t, t_list as _tl
 
 # ── Configuration des pays supportés ─────────────────────────────────────────
 COUNTRY_CONFIG = {
@@ -228,22 +229,22 @@ def show_onboarding() -> bool:
         if LOGO_PATH.exists():
             st.image(str(LOGO_PATH), width=80)
     with col_title:
-        st.markdown("""
+        st.markdown(f"""
         <p style="font-size:1.7rem;font-weight:700;
                   background:linear-gradient(135deg,#c084fc,#818cf8,#38bdf8);
                   -webkit-background-clip:text;-webkit-text-fill-color:transparent;
                   margin:14px 0 2px 0;">
-            Bienvenue sur Eldaana
+            {_t("ob_welcome")}
         </p>
         <p style="color:#9ca3af;font-size:0.88rem;margin:0;">
-            Votre assistante IA bienveillante &amp; prédictive 🌸
+            {_t("ob_tagline")}
         </p>
         """, unsafe_allow_html=True)
 
     st.markdown("<br>", unsafe_allow_html=True)
     st.markdown(
-        '<p style="text-align:center;color:#6b7280;font-size:0.85rem;margin:0 0 10px 0;">'
-        'Continuer avec</p>',
+        f'<p style="text-align:center;color:#6b7280;font-size:0.85rem;margin:0 0 10px 0;">'
+        f'{_t("ob_continue_with")}</p>',
         unsafe_allow_html=True,
     )
 
@@ -293,49 +294,56 @@ def show_onboarding() -> bool:
     from_google = bool(prefill)
 
     if from_google:
-        st.success(f"✅ Connecté avec Google — bonjour **{prefill.get('prenom', '')}** !")
-        st.markdown("##### Deux dernières infos :")
+        st.success(_t("ob_google_ok", prenom=prefill.get('prenom', '')))
+        st.markdown(_t("ob_form_google"))
     else:
         st.markdown(
-            '<div style="text-align:center;color:#9ca3af;font-size:0.82rem;'
-            'margin:8px 0;">— ou —</div>',
+            f'<div style="text-align:center;color:#9ca3af;font-size:0.82rem;'
+            f'margin:8px 0;">{_t("ob_or")}</div>',
             unsafe_allow_html=True,
         )
-        st.markdown("##### Juste 3 infos pour commencer :")
+        st.markdown(_t("ob_form_title"))
+
+    # Canonical FR gender list for storage (always stored in French for data consistency)
+    _GENDER_OPTS_FR = ["Femme", "Homme", "Non-binaire", "Préfère ne pas préciser"]
 
     if not from_google:
-        prenom = st.text_input("Votre prénom *", placeholder="Comment vous appelez-vous ?")
+        prenom = st.text_input(_t("ob_first_name"), placeholder=_t("ob_first_name_ph"))
     else:
         prenom = prefill.get("prenom", "")
 
     ville = st.text_input(
-        "Votre ville *",
-        placeholder="Ex : Paris, Lyon, Dakar, Montréal…",
-        help="Pour la météo et les suggestions du jour",
+        _t("ob_city"),
+        placeholder=_t("ob_city_ph"),
+        help=_t("ob_city_help"),
     )
 
     country_label = st.selectbox(
-        "🌍 Dans quel pays vivez-vous ?",
+        _t("ob_country"),
         options=list(COUNTRY_CONFIG.keys()),
         index=0,
         key="onboarding_country",
     )
 
-    sexe = st.radio(
-        "Vous êtes *",
-        ["Femme", "Homme", "Non-binaire", "Préfère ne pas préciser"],
+    gender_opts_display = _tl("ob_gender_opts")
+    sexe_display = st.radio(
+        _t("ob_gender"),
+        gender_opts_display,
         horizontal=True,
         index=0,
     )
+    # Map display value back to canonical French for storage
+    _sexe_idx = gender_opts_display.index(sexe_display) if sexe_display in gender_opts_display else 0
+    sexe = _GENDER_OPTS_FR[_sexe_idx]
 
-    submitted = st.button("C'est parti avec Eldaana ✨", use_container_width=True, type="primary")
+    submitted = st.button(_t("ob_submit"), use_container_width=True, type="primary")
 
     if submitted:
         errors = []
         if not str(prenom).strip():
-            errors.append("Votre prénom est requis.")
+            errors.append(_t("ob_err_name"))
         if not ville.strip():
-            errors.append("Votre ville est requise.")
+            errors.append(_t("ob_err_city"))
         if errors:
             for e in errors:
                 st.error(e)
@@ -390,17 +398,30 @@ def show_onboarding() -> bool:
 # ── Formulaire profil enrichi ──────────────────────────────────────────────────
 
 def show_profile_form(profile: dict):
-    st.markdown("### ✏️ Mon profil")
-    st.caption("Plus Eldaana vous connaît, plus ses prédictions sont précises.")
+    st.markdown(_t("pf_title"))
+    st.caption(_t("pf_subtitle"))
 
-    sexe_opts   = ["Femme", "Homme", "Non-binaire", "Préfère ne pas préciser"]
-    orient_opts = ["Hétérosexuel(le)", "Homosexuel(le)", "Bisexuel(le)", "Autre", "Préfère ne pas préciser"]
-    sit_opts    = ["Célibataire", "En couple", "Marié(e) / Pacsé(e)", "Divorcé(e)", "Veuf/Veuve", "C'est compliqué"]
-    alim_opts   = ["Omnivore", "Végétarien(ne)", "Vegan", "Pescétarien(ne)", "Sans gluten", "Halal", "Casher", "Autre"]
-    transp_opts = ["Voiture", "Transport en commun", "Vélo", "À pied", "Moto / Scooter", "Télétravail", "Mixte"]
+    # Canonical FR lists for storage (data compatibility with existing profiles)
+    _GENDER_OPTS_FR  = ["Femme", "Homme", "Non-binaire", "Préfère ne pas préciser"]
+    _ORIENT_OPTS_FR  = ["Hétérosexuel(le)", "Homosexuel(le)", "Bisexuel(le)", "Autre", "Préfère ne pas préciser"]
+    _SIT_OPTS_FR     = ["Célibataire", "En couple", "Marié(e) / Pacsé(e)", "Divorcé(e)", "Veuf/Veuve", "C'est compliqué"]
+    _ALIM_OPTS_FR    = ["Omnivore", "Végétarien(ne)", "Vegan", "Pescétarien(ne)", "Sans gluten", "Halal", "Casher", "Autre"]
+    _TRANSP_OPTS_FR  = ["Voiture", "Transport en commun", "Vélo", "À pied", "Moto / Scooter", "Télétravail", "Mixte"]
 
-    def _idx(lst, val, default=0):
-        return lst.index(val) if val in lst else default
+    # Translated display lists
+    sexe_opts_display   = _tl("pf_gender_opts")
+    orient_opts_display = _tl("pf_orient_opts")
+    sit_opts_display    = _tl("pf_sit_opts")
+    alim_opts_display   = _tl("pf_alim_opts")
+    transp_opts_display = _tl("pf_transp_opts")
+
+    def _idx_fr(fr_list, display_list, stored_val, default=0):
+        """Find index in FR list for a stored value, then return same index for display list."""
+        idx = fr_list.index(stored_val) if stored_val in fr_list else default
+        return idx
+
+    def _idx_display(display_list, val, default=0):
+        return display_list.index(val) if val in display_list else default
 
     # ── Photo de profil (hors formulaire pour mise à jour immédiate) ─────────────
     PHOTOS_DIR.mkdir(parents=True, exist_ok=True)
@@ -419,55 +440,68 @@ def show_profile_form(profile: dict):
                 'font-size:36px;">👤</div>', unsafe_allow_html=True
             )
     with col_ph2:
-        uploaded = st.file_uploader("📷 Photo de profil", type=["jpg","jpeg","png"],
+        uploaded = st.file_uploader(_t("pf_photo"), type=["jpg","jpeg","png"],
                                     key="profile_photo_upload")
         if uploaded and uid:
             url = upload_profile_photo(uploaded.getbuffer(), uid)
             if url:
                 invalidate_photo_cache(uid)
-                st.success("Photo mise à jour !")
+                st.success(_t("pf_photo_ok"))
                 st.rerun()
 
     with st.form("profile_form"):
-        st.markdown("**Identité**")
+        st.markdown(_t("pf_identity"))
         c1, c2 = st.columns(2)
         with c1:
-            prenom = st.text_input("Prénom",  value=profile.get("prenom", ""))
-            ville  = st.text_input("Ville",   value=profile.get("ville",  ""))
-            age    = st.number_input("Âge", min_value=11, max_value=120,
+            prenom = st.text_input(_t("pf_prenom"), value=profile.get("prenom", ""))
+            ville  = st.text_input(_t("pf_ville"),  value=profile.get("ville",  ""))
+            age    = st.number_input(_t("pf_age"), min_value=11, max_value=120,
                                      value=max(11, int(profile.get("age") or 11)))
             _ddn_str = profile.get("date_naissance", "")
             date_naissance = st.text_input(
-                "Date de naissance *(optionnel)*",
+                _t("pf_ddn"),
                 value=_ddn_str,
-                placeholder="JJ/MM/AAAA",
-                help="Pour qu'Eldaana te souhaite joyeux anniversaire 🎂",
+                placeholder=_t("pf_ddn_ph"),
+                help=_t("pf_ddn_help"),
             )
-            poids  = st.number_input("Poids (kg) *(optionnel)*", min_value=0, max_value=300,
+            poids  = st.number_input(_t("pf_poids"), min_value=0, max_value=300,
                                      value=int(profile.get("poids") or 0),
                                      help="Utilisé pour des suggestions santé/alimentation personnalisées")
-            taille = st.number_input("Taille (cm) *(optionnel)*", min_value=0, max_value=250,
+            taille = st.number_input(_t("pf_taille"), min_value=0, max_value=250,
                                      value=int(profile.get("taille") or 0),
                                      help="Utilisé pour des suggestions de tenue vestimentaire")
         with c2:
-            sexe       = st.selectbox("Sexe", sexe_opts, index=_idx(sexe_opts, profile.get("sexe", "")))
-            profession = st.text_input("Profession", value=profile.get("profession", ""),
-                                       placeholder="Ex : Infirmière, Étudiant…")
+            _sexe_stored = profile.get("sexe", "")
+            _sexe_idx = _idx_fr(_GENDER_OPTS_FR, sexe_opts_display, _sexe_stored)
+            sexe_display = st.selectbox(_t("pf_sexe"), sexe_opts_display, index=_sexe_idx)
+            sexe_sel_idx = _idx_display(sexe_opts_display, sexe_display)
+            sexe = _GENDER_OPTS_FR[sexe_sel_idx] if sexe_sel_idx < len(_GENDER_OPTS_FR) else _sexe_stored
+
+            profession = st.text_input(_t("pf_profession"), value=profile.get("profession", ""),
+                                       placeholder=_t("pf_profession_ph"))
             budget_mensuel = st.number_input(
-                "Budget mensuel (€) *(optionnel)*",
+                _t("pf_budget"),
                 min_value=0, max_value=50000,
                 value=int(profile.get("budget_mensuel") or 0),
                 step=50,
-                help="Ton budget disponible chaque mois — pour les alertes et prédictions",
+                help=_t("pf_budget_help"),
             )
 
-        st.markdown("**Vie personnelle**")
-        orientation = st.selectbox("Orientation sexuelle", orient_opts,
-                                   index=_idx(orient_opts, profile.get("orientation_sexuelle", "")))
-        situation   = st.selectbox("Situation amoureuse", sit_opts,
-                                   index=_idx(sit_opts, profile.get("situation_maritale", "")))
+        st.markdown(_t("pf_personal"))
+        _orient_stored = profile.get("orientation_sexuelle", "")
+        _orient_idx = _idx_fr(_ORIENT_OPTS_FR, orient_opts_display, _orient_stored)
+        orient_display = st.selectbox(_t("pf_orientation"), orient_opts_display, index=_orient_idx)
+        orient_sel_idx = _idx_display(orient_opts_display, orient_display)
+        orientation = _ORIENT_OPTS_FR[orient_sel_idx] if orient_sel_idx < len(_ORIENT_OPTS_FR) else _orient_stored
+
+        _sit_stored = profile.get("situation_maritale", "")
+        _sit_idx = _idx_fr(_SIT_OPTS_FR, sit_opts_display, _sit_stored)
+        sit_display = st.selectbox(_t("pf_situation"), sit_opts_display, index=_sit_idx)
+        sit_sel_idx = _idx_display(sit_opts_display, sit_display)
+        situation = _SIT_OPTS_FR[sit_sel_idx] if sit_sel_idx < len(_SIT_OPTS_FR) else _sit_stored
+
         fam = profile.get("famille", {})
-        st.markdown("**Enfants ?**")
+        st.markdown(_t("pf_children"))
         a_enfants_val = "Oui" if fam.get("a_enfants") else "Non"
         col_enf1, col_enf2 = st.columns(2)
         with col_enf1:
@@ -480,21 +514,28 @@ def show_profile_form(profile: dict):
             min_value=0, max_value=20,
             value=int(fam.get("nb_enfants") or 0),
         )
-        hobbies = st.text_area("Hobbies / Centres d'intérêt",
+        hobbies = st.text_area(_t("pf_hobbies"),
                                value=", ".join(profile.get("hobbies", [])),
-                               placeholder="Ex : Lecture, sport, cuisine, voyages…")
+                               placeholder=_t("pf_hobbies_ph"))
 
-        st.markdown("**Mode de vie**")
+        st.markdown(_t("pf_lifestyle"))
         c3, c4 = st.columns(2)
         with c3:
-            alim = st.selectbox("Régime alimentaire", alim_opts,
-                                index=_idx(alim_opts, profile.get("habitudes_alimentaires", "")))
+            _alim_stored = profile.get("habitudes_alimentaires", "")
+            _alim_idx = _idx_fr(_ALIM_OPTS_FR, alim_opts_display, _alim_stored)
+            alim_display = st.selectbox(_t("pf_diet"), alim_opts_display, index=_alim_idx)
+            alim_sel_idx = _idx_display(alim_opts_display, alim_display)
+            alim = _ALIM_OPTS_FR[alim_sel_idx] if alim_sel_idx < len(_ALIM_OPTS_FR) else _alim_stored
         with c4:
-            st.markdown("**Transports utilisés**")
+            st.markdown(_t("pf_transport"))
             saved_transport = profile.get("transport", "")
-            saved_list = [t.strip() for t in saved_transport.split(",")] if saved_transport else []
-            transport_checks = {t: st.checkbox(t, value=(t in saved_list), key=f"tr_{t}") for t in transp_opts}
-            transport = ", ".join([t for t, v in transport_checks.items() if v])
+            # saved_transport stores FR canonical values; match against FR list
+            saved_list = [s.strip() for s in saved_transport.split(",")] if saved_transport else []
+            transport_checks = {
+                fr_val: st.checkbox(disp_val, value=(fr_val in saved_list), key=f"tr_{fr_val}")
+                for fr_val, disp_val in zip(_TRANSP_OPTS_FR, transp_opts_display)
+            }
+            transport = ", ".join([fr_val for fr_val, checked in transport_checks.items() if checked])
 
         # ── Détail transport pour les alertes ──
         st.markdown("**🚦 Mes lignes & trajets** *(pour les alertes en temps réel)*")
@@ -551,7 +592,7 @@ def show_profile_form(profile: dict):
         photos = st.file_uploader("Photos de tenues", type=["jpg", "jpeg", "png"],
                                   accept_multiple_files=True)
 
-        saved = st.form_submit_button("💾 Enregistrer", use_container_width=True)
+        saved = st.form_submit_button(_t("pf_save"), use_container_width=True)
 
     if saved:
         saved_photos = list(gdr.get("photos", []))
@@ -592,5 +633,5 @@ def show_profile_form(profile: dict):
             "onboarding_lifestyle_complete": True,
         })
         save_profile(profile)
-        st.success("✅ Profil mis à jour !")
+        st.success(_t("pf_saved"))
         st.rerun()

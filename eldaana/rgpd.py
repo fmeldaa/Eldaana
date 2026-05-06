@@ -13,6 +13,7 @@ import json
 from datetime import datetime
 from pathlib import Path
 from storage import db_load, db_save
+from translations import t as _t
 
 
 def export_user_data(user_id: str) -> dict:
@@ -96,103 +97,94 @@ def show_rgpd_page(profile: dict):
     user_id = profile.get("user_id", "")
     prenom  = profile.get("prenom", "")
 
-    st.markdown("### 🔒 Vie privée & RGPD")
-    st.caption("Tes droits sur tes données personnelles.")
+    st.markdown(_t("rgpd_title"))
+    st.caption(_t("rgpd_subtitle"))
 
     # ── Politique de confidentialité ────────────────────────────────────────────
-    with st.expander("📋 Politique de confidentialité complète", expanded=False):
+    with st.expander(_t("rgpd_policy_expander"), expanded=False):
         st.markdown(POLITIQUE_CONFIDENTIALITE)
 
     st.divider()
 
     # ── Export des données ──────────────────────────────────────────────────────
-    st.markdown("#### 📥 Télécharger mes données")
-    st.caption("Conformément à l'Article 20 du RGPD, tu peux télécharger toutes tes données.")
+    st.markdown(_t("rgpd_export_title"))
+    st.caption(_t("rgpd_export_caption"))
 
-    if st.button("📦 Préparer l'export de mes données", use_container_width=True):
+    if st.button(_t("rgpd_export_btn"), use_container_width=True):
         data = export_user_data(user_id)
         if data:
             json_str = json.dumps(data, ensure_ascii=False, indent=2)
             st.download_button(
-                label="⬇️ Télécharger (JSON)",
+                label=_t("rgpd_download_btn"),
                 data=json_str,
                 file_name=f"eldaana_data_{prenom}_{datetime.now().strftime('%Y%m%d')}.json",
                 mime="application/json",
                 use_container_width=True,
             )
-            st.success("✅ Tes données sont prêtes au téléchargement.")
+            st.success(_t("rgpd_export_ok"))
         else:
-            st.error("Impossible de récupérer les données.")
+            st.error(_t("rgpd_export_error"))
 
     st.divider()
 
     # ── Suppression du compte ───────────────────────────────────────────────────
-    st.markdown("#### 🗑️ Supprimer mon compte")
-    st.caption(
-        "Conformément à l'Article 17 du RGPD (droit à l'oubli), tu peux supprimer toutes tes données. "
-        "**Cette action est irréversible.**"
-    )
+    st.markdown(_t("rgpd_delete_title"))
+    st.caption(_t("rgpd_delete_caption"))
 
-    with st.expander("⚠️ Supprimer mon compte Eldaana", expanded=False):
-        st.warning(
-            "En supprimant ton compte :\n"
-            "- Toutes tes données personnelles seront anonymisées\n"
-            "- Ton historique de courses et budget sera effacé\n"
-            "- Tu devras recommencer l'onboarding\n"
-            "**Cette action ne peut pas être annulée.**"
-        )
+    with st.expander(_t("rgpd_delete_expander"), expanded=False):
+        st.warning(_t("rgpd_delete_warning"))
         confirm_text = st.text_input(
-            f"Pour confirmer, tape **SUPPRIMER** (en majuscules) :",
-            placeholder="SUPPRIMER",
+            _t("rgpd_delete_confirm"),
+            placeholder=_t("rgpd_delete_ph"),
             key="confirm_delete",
         )
-        if st.button("🗑️ Confirmer la suppression", type="primary", use_container_width=True):
-            if confirm_text.strip() == "SUPPRIMER":
+        if st.button(_t("rgpd_delete_btn"), type="primary", use_container_width=True):
+            if confirm_text.strip() == _t("rgpd_delete_word"):
                 if anonymize_user(user_id):
-                    st.success("✅ Tes données ont été anonymisées.")
-                    st.info("Tu vas être redirigé vers l'onboarding dans quelques secondes.")
+                    st.success(_t("rgpd_delete_ok"))
+                    st.info(_t("rgpd_delete_redirect"))
                     # Reset session
                     from onboarding import logout
                     logout()
                     st.session_state.page = "onboarding"
                     st.rerun()
                 else:
-                    st.error("Erreur lors de la suppression.")
+                    st.error(_t("rgpd_delete_error"))
             else:
-                st.error("Confirmation incorrecte. Tape exactement **SUPPRIMER** pour confirmer.")
+                st.error(_t("rgpd_delete_wrong"))
 
     st.divider()
 
     # ── Consentements ────────────────────────────────────────────────────────────
-    st.markdown("#### ✅ Mes consentements")
+    st.markdown(_t("rgpd_consents_title"))
     consents = profile.get("consents", {})
 
     c1 = st.checkbox(
-        "J'accepte que mes données de profil soient utilisées pour personnaliser les réponses",
+        _t("rgpd_consent1"),
         value=consents.get("profil", True),
         key="consent_profil",
     )
     c2 = st.checkbox(
-        "J'accepte que mes conversations soient traitées par l'API Claude (Anthropic)",
+        _t("rgpd_consent2"),
         value=consents.get("claude", True),
         key="consent_claude",
     )
     c3 = st.checkbox(
-        "J'accepte de recevoir des suggestions proactives (courses, budget, humeur)",
+        _t("rgpd_consent3"),
         value=consents.get("suggestions", True),
         key="consent_suggestions",
     )
 
-    if st.button("💾 Mettre à jour mes préférences", use_container_width=True):
+    if st.button(_t("rgpd_save_prefs"), use_container_width=True):
         from storage import db_load, db_save
         p = db_load(user_id)
         if p:
             p["consents"] = {"profil": c1, "claude": c2, "suggestions": c3}
             db_save(p)
-            st.success("✅ Préférences mises à jour.")
+            st.success(_t("rgpd_prefs_ok"))
 
     st.markdown(
-        '<p style="text-align:center;color:#9ca3af;font-size:0.8rem;margin-top:2rem;">'
-        'Contact : eldaana.app@gmail.com · RGPD conforme</p>',
+        f'<p style="text-align:center;color:#9ca3af;font-size:0.8rem;margin-top:2rem;">'
+        f'{_t("rgpd_contact")}</p>',
         unsafe_allow_html=True,
     )

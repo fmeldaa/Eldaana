@@ -18,6 +18,7 @@ import re
 import time
 from datetime import datetime
 from storage import db_load, db_save
+from translations import t as _t, t_list as _tl
 
 try:
     from streamlit_oauth import OAuth2Component
@@ -534,20 +535,14 @@ def show_email_page(profile: dict):
     user_id = profile.get("user_id", "")
     prenom  = profile.get("prenom", "")
 
-    st.markdown("### 📧 Mes emails")
-    st.caption("Eldaana lit, résume et t'aide à répondre à tes emails.")
+    st.markdown(_t("email_title"))
+    st.caption(_t("email_subtitle"))
 
     # ── Connexion Gmail ──────────────────────────────────────────────────────
     token = load_gmail_token(user_id)
 
     if not token:
-        st.info(
-            "Connecte ta boîte Gmail pour qu'Eldaana puisse :\n"
-            "- Résumer tes emails non lus\n"
-            "- Détecter les emails urgents\n"
-            "- T'aider à rédiger des réponses\n\n"
-            "🔒 **Tes emails ne quittent jamais ton appareil** — tout est traité localement."
-        )
+        st.info(_t("email_connect_info"))
         connected = show_gmail_connect(user_id)
         if not connected:
             return
@@ -557,9 +552,9 @@ def show_email_page(profile: dict):
     gmail_email = token.get("gmail_email") or profile.get("gmail_email", "")
     col_a, col_b = st.columns([4, 1])
     with col_a:
-        st.success(f"✅ Gmail connecté : **{gmail_email}**")
+        st.success(_t("email_connected", email=gmail_email))
     with col_b:
-        if st.button("🔌 Déconnecter", key="gmail_disconnect"):
+        if st.button(_t("email_disconnect"), key="gmail_disconnect"):
             clear_gmail_token(user_id)
             st.rerun()
             return
@@ -569,7 +564,7 @@ def show_email_page(profile: dict):
     # ── Chargement des emails ────────────────────────────────────────────────
     access_token = _refresh_token(user_id)
     if not access_token:
-        st.error("Session expirée. Reconnecte-toi.")
+        st.error(_t("email_expired"))
         clear_gmail_token(user_id)
         st.rerun()
         return
@@ -579,20 +574,20 @@ def show_email_page(profile: dict):
 
     col1, col2, col3 = st.columns(3)
     with col1:
-        st.metric("📬 Non lus", unread_count)
+        st.metric(_t("email_unread"), unread_count)
 
     # ── Résumé IA ────────────────────────────────────────────────────────────
-    st.markdown("#### 🤖 Résumé intelligent")
-    if st.button("✨ Résumer mes emails avec Eldaana", use_container_width=True, type="primary"):
-        with st.spinner("Lecture des emails en cours…"):
+    st.markdown(_t("email_ai_title"))
+    if st.button(_t("email_summarize"), use_container_width=True, type="primary"):
+        with st.spinner(_t("email_loading")):
             emails = fetch_emails(user_id, max_results=15)
         if emails:
-            with st.spinner("Analyse par Eldaana…"):
+            with st.spinner(_t("email_analysing")):
                 summary = summarize_emails_with_claude(emails, prenom)
             st.session_state["email_summary"]  = summary
             st.session_state["email_list"]     = emails
         else:
-            st.warning("Aucun email récupéré. Vérifie ta connexion.")
+            st.warning(_t("email_no_emails"))
 
     if "email_summary" in st.session_state:
         st.markdown(f"""
@@ -609,40 +604,42 @@ def show_email_page(profile: dict):
 
     # ── Liste des emails ─────────────────────────────────────────────────────
     if "email_list" not in st.session_state:
-        if st.button("📋 Voir mes emails récents", use_container_width=True):
-            with st.spinner("Chargement…"):
+        if st.button(_t("email_see_recent"), use_container_width=True):
+            with st.spinner(_t("email_loading2")):
                 st.session_state["email_list"] = fetch_emails(user_id, max_results=15)
             st.rerun()
     else:
         emails = st.session_state["email_list"]
         if not emails:
-            st.info("Aucun email récupéré.")
+            st.info(_t("email_none"))
             return
 
         # Filtres
+        filter_opts = _tl("email_filters")
         filtre = st.radio(
-            "Afficher :",
-            ["📬 Tous", "🔴 Urgents", "📭 Non lus", "📰 Newsletters"],
+            _t("email_filter_label"),
+            filter_opts,
             horizontal=True,
             key="email_filter",
         )
+        filtre_idx = filter_opts.index(filtre) if filtre in filter_opts else 0
 
         filtered = emails
-        if filtre == "🔴 Urgents":
+        if filtre_idx == 1:
             filtered = [e for e in emails if e["is_urgent"]]
-        elif filtre == "📭 Non lus":
+        elif filtre_idx == 2:
             filtered = [e for e in emails if e["is_unread"]]
-        elif filtre == "📰 Newsletters":
+        elif filtre_idx == 3:
             filtered = [e for e in emails if e["is_newsletter"]]
 
         if not filtered:
-            st.info("Aucun email dans cette catégorie.")
+            st.info(_t("email_none_category"))
         else:
             st.markdown(f"**{len(filtered)} email{'s' if len(filtered) > 1 else ''}**")
             for email in filtered:
                 _show_email_card(email, user_id, prenom, access_token)
 
-        if st.button("🔄 Rafraîchir", use_container_width=True):
+        if st.button(_t("email_refresh"), use_container_width=True):
             del st.session_state["email_list"]
             if "email_summary" in st.session_state:
                 del st.session_state["email_summary"]
@@ -654,13 +651,13 @@ def _show_email_card(email: dict, user_id: str, prenom: str, access_token: str):
     # Couleurs selon le type
     if email["is_urgent"]:
         border_color = "#ef4444"
-        badge = "🔴 Urgent"
+        badge = _t("email_badge_urgent")
     elif email["is_unread"]:
         border_color = "#c084fc"
-        badge = "📭 Non lu"
+        badge = _t("email_badge_unread")
     elif email["is_newsletter"]:
         border_color = "#e5e7eb"
-        badge = "📰 Newsletter"
+        badge = _t("email_badge_news")
     else:
         border_color = "#e5e7eb"
         badge = ""
@@ -676,18 +673,18 @@ def _show_email_card(email: dict, user_id: str, prenom: str, access_token: str):
         <div style="border-left:3px solid {border_color};padding:0.5rem 0.8rem;
                     margin-bottom:0.5rem;border-radius:0 8px 8px 0;">
             <p style="margin:0 0 0.2rem;font-size:0.85rem;color:#6b7280;">
-                <b>De :</b> {email['sender_name']} &lt;{email['sender_email']}&gt;
+                <b>{_t('email_from')}</b> {email['sender_name']} &lt;{email['sender_email']}&gt;
                 {'&nbsp;&nbsp;<span style="background:#ef4444;color:white;padding:1px 6px;border-radius:8px;font-size:0.75rem;">' + badge + '</span>' if badge else ''}
             </p>
             <p style="margin:0 0 0.5rem;font-size:0.85rem;color:#6b7280;">
-                <b>Date :</b> {email['date']}
+                <b>{_t('email_date')}</b> {email['date']}
             </p>
         </div>
         """, unsafe_allow_html=True)
 
         if email["body"]:
             st.text_area(
-                "Contenu",
+                _t("email_content"),
                 value=email["body"][:800],
                 height=150,
                 key=f"body_{email['id']}",
@@ -702,9 +699,9 @@ def _show_email_card(email: dict, user_id: str, prenom: str, access_token: str):
 
         with col1:
             if email["is_unread"]:
-                if st.button("✅ Marquer comme lu", key=f"read_{email['id']}", use_container_width=True):
+                if st.button(_t("email_mark_read"), key=f"read_{email['id']}", use_container_width=True):
                     mark_as_read(access_token, email["id"])
-                    st.toast("✅ Email marqué comme lu")
+                    st.toast(_t("email_marked_read"))
                     if "email_list" in st.session_state:
                         for e in st.session_state["email_list"]:
                             if e["id"] == email["id"]:
@@ -712,8 +709,8 @@ def _show_email_card(email: dict, user_id: str, prenom: str, access_token: str):
                     st.rerun()
 
         with col2:
-            if st.button("✍️ Brouillon de réponse", key=f"reply_{email['id']}", use_container_width=True):
-                with st.spinner("Rédaction en cours…"):
+            if st.button(_t("email_draft_btn"), key=f"reply_{email['id']}", use_container_width=True):
+                with st.spinner(_t("email_drafting")):
                     draft = generate_reply_draft(email, prenom)
                 st.session_state[f"draft_{email['id']}"] = draft
 
@@ -723,28 +720,28 @@ def _show_email_card(email: dict, user_id: str, prenom: str, access_token: str):
         # Afficher le brouillon si généré
         if f"draft_{email['id']}" in st.session_state:
             draft_text = st.session_state[f"draft_{email['id']}"]
-            st.markdown("**📝 Brouillon de réponse :**")
+            st.markdown(_t("email_draft_title"))
             edited_draft = st.text_area(
-                "Modifier avant d'envoyer",
+                _t("email_draft_edit"),
                 value=draft_text,
                 height=150,
                 key=f"edit_draft_{email['id']}",
             )
             col_send, col_cancel = st.columns(2)
             with col_send:
-                if st.button("📤 Envoyer", key=f"send_{email['id']}", type="primary", use_container_width=True):
+                if st.button(_t("email_send"), key=f"send_{email['id']}", type="primary", use_container_width=True):
                     subject_reply = (
                         f"Re: {email['subject']}"
                         if not email["subject"].startswith("Re:") else email["subject"]
                     )
                     success = send_email(access_token, email["sender_email"], subject_reply, edited_draft)
                     if success:
-                        st.success("✅ Email envoyé !")
+                        st.success(_t("email_sent"))
                         del st.session_state[f"draft_{email['id']}"]
                         st.rerun()
                     else:
-                        st.error("❌ Erreur lors de l'envoi.")
+                        st.error(_t("email_send_error"))
             with col_cancel:
-                if st.button("❌ Annuler", key=f"cancel_{email['id']}", use_container_width=True):
+                if st.button(_t("email_cancel"), key=f"cancel_{email['id']}", use_container_width=True):
                     del st.session_state[f"draft_{email['id']}"]
                     st.rerun()

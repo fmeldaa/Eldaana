@@ -6,6 +6,7 @@ Les données enrichissent le profil Eldaana pour une prédiction plus précise.
 """
 
 import streamlit as st
+from translations import t as _t, t_list as _tl
 
 
 # ── Réseaux avec leurs icônes et questions guidées ────────────────────────────
@@ -85,22 +86,58 @@ NETWORKS = {
     },
 }
 
+NETWORKS_EN = {
+    "Instagram": {
+        "question": "Paste your Instagram bio or describe what you post (travel, food, fashion, sport…)",
+        "placeholder": "e.g. 'Street food enthusiast 🍜 | Paris | Weekly adventure photos'",
+    },
+    "LinkedIn": {
+        "question": "Paste your LinkedIn headline or describe your professional life",
+        "placeholder": "e.g. 'Digital Project Manager at SNCF | 8 years experience | Open to opportunities'",
+    },
+    "TikTok": {
+        "question": "What type of content do you watch or create on TikTok?",
+        "placeholder": "e.g. 'I mostly watch recipes and fitness tips. I sometimes post comedy sketches.'",
+    },
+    "Twitter / X": {
+        "question": "Describe your Twitter/X usage",
+        "placeholder": "e.g. 'I follow tech and politics accounts. I post opinions sometimes.'",
+    },
+    "YouTube": {
+        "question": "What channels or topics do you follow on YouTube?",
+        "placeholder": "e.g. 'Tech reviews, gaming, travel vlogs, documentaries.'",
+    },
+    "Snapchat": {
+        "question": "How do you use Snapchat?",
+        "placeholder": "e.g. 'I snap with friends daily, mostly stories.'",
+    },
+    "Pinterest": {
+        "question": "What do you pin on Pinterest?",
+        "placeholder": "e.g. 'Interior design, recipes, fashion inspiration.'",
+    },
+    "BeReal": {
+        "question": "How do you use BeReal?",
+        "placeholder": "e.g. 'I post daily, mostly at home or at work.'",
+    },
+}
+
 
 def show_social_connect(profile: dict):
     """
     Affiche le formulaire de connexion vie numérique.
     Enrichit le profil avec les données saisies.
     """
-    st.markdown("### 🌐 Ma vie numérique")
-    st.caption(
-        "Plus Eldaana connaît ta présence en ligne, mieux elle peut anticiper "
-        "tes besoins, tes humeurs et tes opportunités. "
-        "Partage ce que tu veux — tout reste strictement confidentiel."
-    )
+    st.markdown(_t("soc_title"))
+    st.caption(_t("soc_subtitle"))
 
     social = profile.get("social_networks", {})
 
-    st.markdown("#### Sélectionne tes réseaux actifs :")
+    try:
+        lang = st.session_state.get("lang", "fr")
+    except Exception:
+        lang = "fr"
+
+    st.markdown(_t("soc_select_networks"))
 
     # Sélection des réseaux actifs avec des checkboxes
     selected = []
@@ -121,15 +158,16 @@ def show_social_connect(profile: dict):
     updated_social = {}
     for name in selected:
         info = NETWORKS[name]
+        net_info = NETWORKS_EN.get(name, info) if lang == "en" else info
         st.markdown(
             f"<span style='font-size:1.1rem;font-weight:600;color:{info['color']}'>"
             f"{info['emoji']} {name}</span>",
             unsafe_allow_html=True
         )
         val = st.text_area(
-            info["question"],
+            net_info["question"],
             value=social.get(name, {}).get("description", ""),
-            placeholder=info["placeholder"],
+            placeholder=net_info["placeholder"],
             height=80,
             key=f"social_text_{name}",
             label_visibility="visible",
@@ -139,50 +177,49 @@ def show_social_connect(profile: dict):
     st.markdown("---")
 
     # Questions sur les habitudes numériques globales
-    st.markdown("#### 📊 Tes habitudes numériques")
+    st.markdown(_t("soc_habits_title"))
+
+    shopping_opts = _tl("soc_shopping_opts")
+    saved_shopping = profile.get("online_shopping", "Parfois")
+    # Try to find the saved value in current locale opts; fall back to index 1
+    try:
+        shopping_index = shopping_opts.index(saved_shopping)
+    except ValueError:
+        shopping_index = 1
 
     c1, c2 = st.columns(2)
     with c1:
         screen_time = st.select_slider(
-            "Temps moyen sur les écrans / jour",
+            _t("soc_screen_time"),
             options=["< 1h", "1-2h", "2-4h", "4-6h", "6-8h", "> 8h"],
             value=profile.get("screen_time", "2-4h"),
         )
         online_shopping = st.selectbox(
-            "Tu fais tes achats en ligne ?",
-            ["Rarement", "Parfois", "Souvent", "Presque toujours"],
-            index=["Rarement", "Parfois", "Souvent", "Presque toujours"].index(
-                profile.get("online_shopping", "Parfois")
-            ),
+            _t("soc_shopping"),
+            shopping_opts,
+            index=shopping_index,
         )
     with c2:
         peak_hours = st.multiselect(
-            "À quelle(s) heure(s) tu es le plus actif en ligne ?",
-            ["Matin (6h-9h)", "Journée (9h-12h)", "Après-midi (12h-18h)",
-             "Soir (18h-22h)", "Nuit (22h-2h)"],
-            default=profile.get("peak_hours", ["Soir (18h-22h)"]),
+            _t("soc_peak"),
+            _tl("soc_peak_opts"),
+            default=[],
         )
         content_type = st.multiselect(
-            "Quel type de contenu tu consommes ?",
-            ["Actualités", "Entertainment / Humour", "Sport", "Musique",
-             "Tech / Innovation", "Mode / Beauté", "Cuisine", "Voyages",
-             "Politique", "Développement personnel", "Finance"],
-            default=profile.get("content_type", []),
+            _t("soc_content"),
+            _tl("soc_content_opts"),
+            default=[],
         )
 
-    st.markdown("#### 💭 Ta présence en ligne en quelques mots")
+    st.markdown(_t("soc_desc_title"))
     digital_life_desc = st.text_area(
-        "Décris librement ta vie numérique — ce qui te passionne, t'énerve, t'inspire en ligne",
+        _t("soc_desc_label"),
         value=profile.get("digital_life_desc", ""),
-        placeholder=(
-            "Ex : 'Je suis hyperconnecté le soir, je scroll beaucoup Instagram mais ça me stresse. "
-            "J'adore les débats Twitter mais je fais attention à ma santé mentale. "
-            "LinkedIn c'est pour le boulot, je poste rarement mais je lis beaucoup.'"
-        ),
+        placeholder=_t("soc_desc_ph"),
         height=100,
     )
 
-    if st.button("💾 Sauvegarder ma vie numérique", use_container_width=True, type="primary"):
+    if st.button(_t("soc_save"), use_container_width=True, type="primary"):
         profile.update({
             "social_networks":   updated_social,
             "screen_time":       screen_time,
@@ -194,7 +231,7 @@ def show_social_connect(profile: dict):
         })
         from onboarding import save_profile
         save_profile(profile)
-        st.success("✅ Vie numérique enregistrée ! Eldaana peut maintenant mieux te connaître.")
+        st.success(_t("soc_saved"))
         st.rerun()
 
 

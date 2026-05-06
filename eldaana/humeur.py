@@ -11,6 +11,7 @@ import streamlit as st
 from datetime import datetime
 from storage import db_load, db_save
 
+# ── Libellés d'humeur (clé = emoji + label affiché, valeur = code neutre) ────
 HUMEURS = {
     "😴 Fatigué(e)":   "fatigue",
     "😊 Bien":          "bien",
@@ -21,6 +22,17 @@ HUMEURS = {
     "🤒 Pas en forme": "malade",
 }
 
+HUMEURS_EN = {
+    "😴 Tired":        "fatigue",
+    "😊 Good":         "bien",
+    "🎉 Amazing!":     "super",
+    "😰 Stressed":     "stress",
+    "😢 Not great":    "triste",
+    "😡 Angry":        "colere",
+    "🤒 Unwell":       "malade",
+}
+
+# ── Suggestions selon humeur ─────────────────────────────────────────────────
 SUGGESTIONS_HUMEUR = {
     "fatigue": {
         "titre":     "Tu as besoin de te recharger 🔋",
@@ -56,7 +68,7 @@ SUGGESTIONS_HUMEUR = {
                       "Appeler quelqu'un qui compte pour toi",
                       "Te préparer ton repas ou dessert préféré",
                       "Une petite sortie en plein air, même courte"],
-        "musique":   "R&B doux, pop mélancolique (pour sentir que tu n'es pas seul(e))",
+        "musique":   "R&B doux, pop mélancolique",
         "conseil":   "Ce que tu ressens est valide. Tu n'as pas besoin de faire semblant d'aller bien.",
     },
     "colere": {
@@ -72,6 +84,60 @@ SUGGESTIONS_HUMEUR = {
                       "Un film ou podcast en fond sonore", "Consulter si ça dure plus de 2-3 jours"],
         "musique":   "ambiance calme, podcasts légers",
         "conseil":   "Ton corps a besoin de repos. Les tâches peuvent attendre.",
+    },
+}
+
+SUGGESTIONS_HUMEUR_EN = {
+    "fatigue": {
+        "titre":     "You need to recharge 🔋",
+        "activites": ["A short 20-min nap", "A warm bath or relaxing shower",
+                      "A light series in couch mode", "Some gentle stretches"],
+        "musique":   "lofi hip-hop, soft music, nature sounds",
+        "conseil":   "Listen to your body. Even a short break makes a big difference.",
+    },
+    "bien": {
+        "titre":     "A beautiful day ahead 🌸",
+        "activites": ["An outdoor walk", "Call a close friend",
+                      "Cook something delicious", "Make progress on a project you care about"],
+        "musique":   "positive pop, acoustic, feel-good",
+        "conseil":   "You're in a great headspace. Use it to do something you love.",
+    },
+    "super": {
+        "titre":     "You're on fire today! 🔥",
+        "activites": ["Intense workout or dancing", "Tackle that project you've been putting off",
+                      "Go out and explore something new", "Invite friends over for a night out"],
+        "musique":   "electro, rap, energetic pop",
+        "conseil":   "Your energy is contagious! Share it with the people around you.",
+    },
+    "stress": {
+        "titre":     "Breathe. It'll be okay. 💜",
+        "activites": ["5 minutes of deep breathing (4-7-8)", "A short walk outside",
+                      "Write down what's stressing you", "Hot tea + soft music"],
+        "musique":   "meditation, gentle classical, ambient",
+        "conseil":   "Stress always passes. One problem at a time.",
+    },
+    "triste": {
+        "titre":     "I'm here for you 💙",
+        "activites": ["Watch a film or series that makes you smile",
+                      "Call someone who matters to you",
+                      "Prepare your favourite meal or dessert",
+                      "A short trip outside, even a brief one"],
+        "musique":   "soft R&B, melancholic pop",
+        "conseil":   "What you feel is valid. You don't need to pretend to be okay.",
+    },
+    "colere": {
+        "titre":     "Release that energy 💪",
+        "activites": ["Sport or boxing (even shadowboxing)", "Write a letter you'll never send",
+                      "A video game to decompress", "Talk to someone you trust"],
+        "musique":   "rock, metal, powerful rap",
+        "conseil":   "Anger is a normal emotion. What matters is how you channel it.",
+    },
+    "malade": {
+        "titre":     "Take care of yourself 🤗",
+        "activites": ["Drink plenty of water and herbal tea", "Rest without guilt",
+                      "A film or podcast in the background", "See a doctor if it lasts more than 2-3 days"],
+        "musique":   "calm atmosphere, light podcasts",
+        "conseil":   "Your body needs rest. Tasks can wait.",
     },
 }
 
@@ -157,14 +223,29 @@ def get_humeur_stats(user_id: str) -> dict:
     return result
 
 
+def _get_lang() -> str:
+    """Retourne la langue active depuis la session Streamlit."""
+    try:
+        return st.session_state.get("lang", "fr")
+    except Exception:
+        return "fr"
+
+
+def _sugg_dict(code: str) -> dict:
+    """Retourne les suggestions dans la langue active."""
+    lang = _get_lang()
+    bank = SUGGESTIONS_HUMEUR_EN if lang == "en" else SUGGESTIONS_HUMEUR
+    return bank.get(code, {})
+
+
 def format_humeur_for_prompt(user_id: str) -> str:
     """Retourne l'humeur pour injection dans le system prompt."""
     humeur = load_humeur(user_id)
     if not humeur:
         return ""
-    code  = humeur.get("code", "")
-    label = humeur.get("label", "")
-    sugg  = SUGGESTIONS_HUMEUR.get(code, {})
+    code    = humeur.get("code", "")
+    label   = humeur.get("label", "")
+    sugg    = _sugg_dict(code)
     conseil = sugg.get("conseil", "")
     return (
         f"\n\n[HUMEUR DU JOUR]\n"
@@ -179,11 +260,14 @@ def show_humeur_widget(user_id: str) -> str | None:
     Affiche le sélecteur d'humeur dans l'interface.
     Retourne le code humeur sélectionné ou None.
     """
+    from translations import t as _t_h
+    lang = _get_lang()
+
     humeur_actuelle = load_humeur(user_id)
     if humeur_actuelle:
         code  = humeur_actuelle["code"]
         label = humeur_actuelle["label"]
-        sugg  = SUGGESTIONS_HUMEUR.get(code, {})
+        sugg  = _sugg_dict(code)
 
         st.markdown(f"""
         <div style="
@@ -194,28 +278,29 @@ def show_humeur_widget(user_id: str) -> str | None:
             margin: 0.5rem 0;
         ">
             <p style="margin:0 0 0.3rem 0;font-weight:600;color:#7c3aed;">
-                {sugg.get('titre', 'Humeur du jour')}
+                {sugg.get('titre', _t_h('humeur_label'))}
             </p>
             <p style="margin:0;font-size:0.9rem;color:#4b5563;">{label}</p>
         </div>
         """, unsafe_allow_html=True)
 
         if sugg.get("activites"):
-            with st.expander("💡 Suggestions pour toi aujourd'hui"):
+            with st.expander(_t_h("humeur_suggestions")):
                 for act in sugg["activites"]:
                     st.markdown(f"• {act}")
                 if sugg.get("musique"):
-                    st.markdown(f"🎵 **Musique** : {sugg['musique']}")
+                    st.markdown(f"🎵 **{_t_h('humeur_music')}** : {sugg['musique']}")
 
-        if st.button("🔄 Changer mon humeur", key="change_humeur"):
+        if st.button(_t_h("humeur_change"), key="change_humeur"):
             _clear_humeur(user_id)
             st.rerun()
         return code
 
     else:
-        st.markdown("**Comment tu te sens aujourd'hui ?**")
+        st.markdown(_t_h("humeur_today"))
+        humeur_map = HUMEURS_EN if lang == "en" else HUMEURS
         cols = st.columns(4)
-        humeur_list = list(HUMEURS.items())
+        humeur_list = list(humeur_map.items())
         for i, (label, code) in enumerate(humeur_list):
             col = cols[i % 4]
             with col:

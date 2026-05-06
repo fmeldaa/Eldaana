@@ -142,8 +142,9 @@ def get_weather(city: str, profile: dict = None) -> dict | None:
 
 
 def outfit_suggestion(weather: dict, sexe: str = "") -> str:
-    """Suggère une tenue selon la météo et le genre (variée selon le jour)."""
+    """Suggère une tenue selon la météo, le genre et la langue active."""
     import datetime, random
+    from translations import t as _t_o
     temp   = weather["temp_max"]
     rain   = weather["rain_prob"] or 0
     wcode  = weather["weathercode"]
@@ -153,90 +154,64 @@ def outfit_suggestion(weather: dict, sexe: str = "") -> str:
     day_seed = datetime.date.today().toordinal()
     rng = random.Random(day_seed)
 
+    # ── Choix des tenues selon la langue active ───────────────────────────────
+    try:
+        import streamlit as _st
+        lang = _st.session_state.get("lang", "fr")
+    except Exception:
+        lang = "fr"
+
+    _choices: dict = {
+        "fr": {
+            "hot_f":    ["une robe légère ou un short","une robe fluide et des sandales","un crop top + jupe légère","une combinaison estivale"],
+            "hot_h":    ["un short et un t-shirt","bermuda et polo","short en lin et t-shirt léger","tenue légère sport-chic"],
+            "warm_f":   ["une tenue légère — robe ou jupe","jupe midi + top","robe printanière","jean clair + blouse légère"],
+            "warm_h":   ["pantalon léger et chemise","chino et polo","jean slim + t-shirt","pantalon en lin et chemise courte"],
+            "mild_f":   ["jean + haut + veste légère","trench léger sur une robe","jean slim + pull fin + baskets","blazer décontracté sur un top"],
+            "mild_h":   ["jean et veste légère","chino + chemise + cardigan","jean + pull col V","pantalon droit + bomber léger"],
+            "cool_f":   ["manteau chaud + collants","doudoune courte + collants épais","manteau long + boots","pull oversize + legging chaud"],
+            "cool_h":   ["manteau chaud + pull épais","doudoune + jean chaud","parka + pull en laine","manteau + écharpe légère"],
+            "cold":     ["tenue bien chaude : manteau, écharpe et gants","grosse doudoune, bonnet et gants","manteau long, écharpe et sous-vêtements thermiques","tenue hivernale complète — couvre-toi bien !"],
+        },
+        "en": {
+            "hot_f":    ["a light dress or shorts","a flowy dress and sandals","crop top + light skirt","a summer jumpsuit"],
+            "hot_h":    ["shorts and a t-shirt","bermuda shorts and a polo","linen shorts and a light tee","casual sport-chic outfit"],
+            "warm_f":   ["a light outfit — dress or skirt","midi skirt + top","a spring dress","light jeans + blouse"],
+            "warm_h":   ["light trousers and a shirt","chinos and a polo","slim jeans + t-shirt","linen trousers and a short-sleeve shirt"],
+            "mild_f":   ["jeans + top + light jacket","light trench coat over a dress","slim jeans + thin sweater + sneakers","relaxed blazer over a top"],
+            "mild_h":   ["jeans and a light jacket","chinos + shirt + cardigan","jeans + V-neck sweater","straight trousers + light bomber"],
+            "cool_f":   ["warm coat + tights","short puffer jacket + thick tights","long coat + boots","oversized sweater + warm leggings"],
+            "cool_h":   ["warm coat + thick sweater","puffer jacket + warm jeans","parka + wool sweater","coat + light scarf"],
+            "cold":     ["bundle up: coat, scarf and gloves","heavy puffer jacket, beanie and gloves","long coat, scarf and thermal underwear","full winter outfit — wrap up warm!"],
+        },
+    }
+    c = _choices.get(lang, _choices["fr"])
+
     parts = []
-
-    # Vêtements principaux selon température
     if temp >= 28:
-        choices_f = [
-            "une robe légère ou un short",
-            "une robe fluide et des sandales",
-            "un crop top + jupe légère",
-            "une combinaison estivale",
-        ]
-        choices_h = [
-            "un short et un t-shirt",
-            "bermuda et polo",
-            "short en lin et t-shirt léger",
-            "tenue légère sport-chic",
-        ]
-        parts.append(rng.choice(choices_f if femme else choices_h))
-        parts.append("couleurs claires recommandées")
+        parts.append(rng.choice(c["hot_f"] if femme else c["hot_h"]))
+        parts.append(_t_o("outfit_light_colors"))
     elif temp >= 22:
-        choices_f = [
-            "une tenue légère — robe ou jupe",
-            "jupe midi + top",
-            "robe printanière",
-            "jean clair + blouse légère",
-        ]
-        choices_h = [
-            "pantalon léger et chemise",
-            "chino et polo",
-            "jean slim + t-shirt",
-            "pantalon en lin et chemise courte",
-        ]
-        parts.append(rng.choice(choices_f if femme else choices_h))
+        parts.append(rng.choice(c["warm_f"] if femme else c["warm_h"]))
     elif temp >= 15:
-        choices_f = [
-            "jean + haut + veste légère",
-            "trench léger sur une robe",
-            "jean slim + pull fin + baskets",
-            "blazer décontracté sur un top",
-        ]
-        choices_h = [
-            "jean et veste légère",
-            "chino + chemise + cardigan",
-            "jean + pull col V",
-            "pantalon droit + bomber léger",
-        ]
-        parts.append(rng.choice(choices_f if femme else choices_h))
+        parts.append(rng.choice(c["mild_f"] if femme else c["mild_h"]))
     elif temp >= 8:
-        choices_f = [
-            "manteau chaud + collants",
-            "doudoune courte + collants épais",
-            "manteau long + boots",
-            "pull oversize + legging chaud",
-        ]
-        choices_h = [
-            "manteau chaud + pull épais",
-            "doudoune + jean chaud",
-            "parka + pull en laine",
-            "manteau + écharpe légère",
-        ]
-        parts.append(rng.choice(choices_f if femme else choices_h))
+        parts.append(rng.choice(c["cool_f"] if femme else c["cool_h"]))
     else:
-        choices = [
-            "tenue bien chaude : manteau, écharpe et gants",
-            "grosse doudoune, bonnet et gants",
-            "manteau long, écharpe et sous-vêtements thermiques",
-            "tenue hivernale complète — couvre-toi bien !",
-        ]
-        parts.append(rng.choice(choices))
+        parts.append(rng.choice(c["cold"]))
 
-    # Pluie
     if rain >= 60 or wcode in [51, 53, 55, 61, 63, 65, 80, 81, 82]:
-        parts.append("🌂 parapluie indispensable")
+        parts.append(_t_o("outfit_rain_heavy"))
     elif rain >= 30:
-        parts.append("imperméable au cas où")
+        parts.append(_t_o("outfit_rain_light"))
 
-    # Neige
     if wcode in [71, 73, 75, 77, 85, 86]:
-        parts.append("🥾 bottes imperméables")
+        parts.append(_t_o("outfit_snow"))
 
-    # Vent fort
     if weather.get("wind", 0) >= 40:
-        parts.append("attention au vent fort")
+        parts.append(_t_o("outfit_wind"))
 
-    return " — ".join(parts) if parts else "tenue adaptée à la météo"
+    return " — ".join(parts) if parts else _t_o("outfit_fallback")
 
 
 def build_wakeup_message(weather: dict, profile: dict) -> str:
@@ -244,30 +219,31 @@ def build_wakeup_message(weather: dict, profile: dict) -> str:
     Message parlé au réveil : heure + météo + message positif.
     Optimisé pour la synthèse vocale (pas de markdown).
     """
+    from translations import t as _t_w
     tz_name   = weather.get("timezone") or profile.get("timezone")
     now       = get_local_now(tz_name=tz_name)
     prenom    = profile.get("prenom", "")
     sexe      = profile.get("sexe", "").lower()
-    heure_str = now.strftime("%Hh%M")
+    heure_str = now.strftime("%H:%M")
 
     wcode = weather.get("weathercode", 0)
     if wcode == 0:
-        positif = "Le soleil est là, ça s'annonce comme une belle journée !"
+        positif = _t_w("wakeup_sunny")
     elif wcode in [71, 73, 75, 77, 85, 86]:
-        positif = "Il neige dehors, prends ton temps, c'est beau !"
+        positif = _t_w("wakeup_snow")
     elif wcode >= 51:
-        positif = "Un peu de pluie ne t'arrêtera pas, tu vas briller aujourd'hui !"
+        positif = _t_w("wakeup_rain")
     else:
-        positif = "Quelques nuages, mais rien qui tienne face à toi aujourd'hui !"
+        positif = _t_w("wakeup_cloudy")
 
-    accord = "prête" if sexe == "femme" else "prêt"
-
-    base = (
-        f"Bonjour {prenom} ! Il est {heure_str}. "
-        f"Aujourd'hui à {weather['city']} : {weather['description']}, "
-        f"{weather['temp_current']} degrés, avec un max de {weather['temp_max']}. "
-        f"{positif} "
-    )
+    base = _t_w("wakeup_greeting",
+                prenom=prenom,
+                heure=heure_str,
+                city=weather["city"],
+                desc=weather["description"],
+                temp=weather["temp_current"],
+                tmax=weather["temp_max"],
+                positif=positif)
 
     # Alertes transport au réveil (si départ bientôt)
     transport_alert = ""
@@ -276,7 +252,8 @@ def build_wakeup_message(weather: dict, profile: dict) -> str:
         if departure_alerts and departure_alerts.get("tc_alerts"):
             transport_alert = " " + format_departure_alert_message(departure_alerts)
 
-    suffix = transport_alert if transport_alert else f"Tu es {accord} pour cette nouvelle journée ?"
+    ready_key = "wakeup_ready_f" if sexe == "femme" else "wakeup_ready_m"
+    suffix = transport_alert if transport_alert else _t_w(ready_key)
 
     return base + suffix
 

@@ -103,6 +103,30 @@ _STRINGS: dict[str, dict[str, str]] = {
         "sugg_afternoon":     "💪 Tu as bien avancé. Prends un moment pour toi avant ce soir.",
         "sugg_evening":       "🌙 Prépare-toi à une bonne nuit. Pose ton téléphone 30 min avant de dormir.",
 
+        # ── Humeur widget ────────────────────────────────────────────────────
+        "humeur_today":       "**Comment tu te sens aujourd'hui ?**",
+        "humeur_suggestions": "💡 Suggestions pour toi aujourd'hui",
+        "humeur_change":      "🔄 Changer mon humeur",
+        "humeur_label":       "Humeur du jour",
+        "humeur_music":       "Musique",
+
+        # ── Outfit fallback ──────────────────────────────────────────────────
+        "outfit_fallback":    "tenue adaptée à la météo",
+        "outfit_rain_heavy":  "🌂 parapluie indispensable",
+        "outfit_rain_light":  "imperméable au cas où",
+        "outfit_snow":        "🥾 bottes imperméables",
+        "outfit_wind":        "attention au vent fort",
+        "outfit_light_colors":"couleurs claires recommandées",
+
+        # ── Wakeup message ───────────────────────────────────────────────────
+        "wakeup_sunny":       "Le soleil est là, ça s'annonce comme une belle journée !",
+        "wakeup_snow":        "Il neige dehors, prends ton temps, c'est beau !",
+        "wakeup_rain":        "Un peu de pluie ne t'arrêtera pas, tu vas briller aujourd'hui !",
+        "wakeup_cloudy":      "Quelques nuages, mais rien qui tienne face à toi aujourd'hui !",
+        "wakeup_greeting":    "Bonjour {prenom} ! Il est {heure}. Aujourd'hui à {city} : {desc}, {temp} degrés, avec un max de {tmax}. {positif} ",
+        "wakeup_ready_m":     "Tu es prêt pour cette nouvelle journée ?",
+        "wakeup_ready_f":     "Tu es prête pour cette nouvelle journée ?",
+
         # ── Dates ───────────────────────────────────────────────────────────
         "days":   ["Lundi","Mardi","Mercredi","Jeudi","Vendredi","Samedi","Dimanche"],
         "months": ["janvier","février","mars","avril","mai","juin",
@@ -199,6 +223,30 @@ _STRINGS: dict[str, dict[str, str]] = {
         "sugg_noon":          "☀️ Take a real lunch break today.",
         "sugg_afternoon":     "💪 You've made great progress. Take a moment for yourself before tonight.",
         "sugg_evening":       "🌙 Get ready for a good night. Put your phone down 30 min before bed.",
+
+        # ── Humeur widget ────────────────────────────────────────────────────
+        "humeur_today":       "**How are you feeling today?**",
+        "humeur_suggestions": "💡 Suggestions for you today",
+        "humeur_change":      "🔄 Change my mood",
+        "humeur_label":       "Today's mood",
+        "humeur_music":       "Music",
+
+        # ── Outfit fallback ──────────────────────────────────────────────────
+        "outfit_fallback":    "weather-appropriate outfit",
+        "outfit_rain_heavy":  "☂️ umbrella essential",
+        "outfit_rain_light":  "light raincoat just in case",
+        "outfit_snow":        "🥾 waterproof boots",
+        "outfit_wind":        "watch out for strong wind",
+        "outfit_light_colors":"light colors recommended",
+
+        # ── Wakeup message ───────────────────────────────────────────────────
+        "wakeup_sunny":       "The sun is out — it's going to be a beautiful day!",
+        "wakeup_snow":        "It's snowing outside, take your time — it's beautiful!",
+        "wakeup_rain":        "A bit of rain won't stop you — you're going to shine today!",
+        "wakeup_cloudy":      "A few clouds, but nothing that can stand in your way today!",
+        "wakeup_greeting":    "Good morning {prenom}! It's {heure}. Today in {city}: {desc}, {temp} degrees, with a high of {tmax}. {positif} ",
+        "wakeup_ready_m":     "Ready for this new day?",
+        "wakeup_ready_f":     "Ready for this new day?",
 
         # ── Dates ───────────────────────────────────────────────────────────
         "days":   ["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"],

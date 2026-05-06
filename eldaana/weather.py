@@ -281,47 +281,53 @@ def build_wakeup_message(weather: dict, profile: dict) -> str:
     return base + suffix
 
 
-def build_briefing(weather: dict, profile: dict) -> str:
+def build_briefing(weather: dict, profile: dict, lang: str = "fr") -> str:
     """
     Génère le briefing personnalisé du matin / début de journée.
     C'est le premier message qu'Eldaana envoie à l'ouverture de l'app.
+    Supporte FR et EN via le paramètre lang.
     """
+    # t() lit st.session_state.lang automatiquement — appel dans le contexte Streamlit
+    from translations import t as _t_w, t_list as _tl_w
+
     tz_name = weather.get("timezone") or profile.get("timezone")
     now     = get_local_now(tz_name=tz_name)
     hour    = now.hour
-    prenom = profile.get("prenom", "")
-    sexe   = profile.get("sexe", "")
+    prenom  = profile.get("prenom", "")
+    sexe    = profile.get("sexe", "")
 
-    jours_fr = ["lundi", "mardi", "mercredi", "jeudi",
-                "vendredi", "samedi", "dimanche"]
-    mois_fr  = ["janvier", "février", "mars", "avril", "mai", "juin",
-                "juillet", "août", "septembre", "octobre", "novembre", "décembre"]
-    date_str = f"{jours_fr[now.weekday()]} {now.day} {mois_fr[now.month - 1]}"
+    jours  = _tl_w("days")
+    mois   = _tl_w("months")
+    date_str = f"{jours[now.weekday()]} {now.day} {mois[now.month - 1]}"
 
     # Salutation selon l'heure
     if hour < 12:
-        salut = f"Bonjour {prenom} 🌸"
+        salut = _t_w("greeting_morning", prenom=prenom)
     elif hour < 18:
-        salut = f"Bon après-midi {prenom} ☀️"
+        salut = _t_w("greeting_afternoon", prenom=prenom)
     else:
-        salut = f"Bonsoir {prenom} 🌙"
+        salut = _t_w("greeting_evening", prenom=prenom)
 
     outfit = outfit_suggestion(weather, sexe)
 
     lines = [
-        f"{salut} Nous sommes le **{date_str}**.",
+        f"{salut} {_t_w('greeting_date', date=date_str)}",
         "",
-        f"**{weather['emoji']} Météo à {weather['city']} :** "
-        f"{weather['description']} · {weather['temp_current']}°C "
-        f"(min {weather['temp_min']}° / max {weather['temp_max']}°)",
+        _t_w("greeting_weather",
+             emoji=weather["emoji"],
+             city=weather["city"],
+             desc=weather["description"],
+             temp=weather["temp_current"],
+             tmin=weather["temp_min"],
+             tmax=weather["temp_max"]),
     ]
 
     if weather["rain_prob"] and weather["rain_prob"] >= 30:
-        lines.append(f"☔ Risque de pluie : **{weather['rain_prob']}%**")
+        lines.append(_t_w("greeting_rain", pct=weather["rain_prob"]))
 
     lines += [
         "",
-        f"**👗 Suggestion tenue :** {outfit}",
+        _t_w("greeting_outfit", outfit=outfit),
     ]
 
     # Alertes transport en temps réel
@@ -331,9 +337,7 @@ def build_briefing(weather: dict, profile: dict) -> str:
     if transport_section:
         lines.append(transport_section)
 
-    lines += [
-        "",
-        f"Dis-moi comment tu vas — comment puis-je te rendre {'heureuse' if profile.get('sexe','').lower() == 'femme' else 'heureux'} aujourd'hui ? 💜",
-    ]
+    close_key = "greeting_close_f" if sexe.lower() == "femme" else "greeting_close_m"
+    lines += ["", _t_w(close_key)]
 
     return "\n".join(lines)

@@ -15,6 +15,18 @@ _STRINGS: dict[str, dict[str, str]] = {
     "fr": {
         "back_to_chat":       "← Retour à la conversation",
 
+        # ── Page chat ───────────────────────────────────────────────────────
+        "chat_subtitle":      "Ta confidente. Ta présence. Là pour toi.",
+        "greeting_morning":   "Bonjour {prenom} 🌸",
+        "greeting_afternoon": "Bon après-midi {prenom} ☀️",
+        "greeting_evening":   "Bonsoir {prenom} 🌙",
+        "greeting_date":      "Nous sommes le **{date}**.",
+        "greeting_weather":   "**{emoji} Météo à {city} :** {desc} · {temp}°C (min {tmin}° / max {tmax}°)",
+        "greeting_rain":      "☔ Risque de pluie : **{pct}%**",
+        "greeting_outfit":    "**👗 Suggestion tenue :** {outfit}",
+        "greeting_close_m":   "Dis-moi comment tu vas — comment puis-je te rendre heureux aujourd'hui ? 💜",
+        "greeting_close_f":   "Dis-moi comment tu vas — comment puis-je te rendre heureuse aujourd'hui ? 💜",
+
         # ── Langue ──────────────────────────────────────────────────────────
         "lang_instruction":   "Tu réponds TOUJOURS en français dans cette session, quelle que soit la langue utilisée par l'utilisateur.",
 
@@ -99,6 +111,18 @@ _STRINGS: dict[str, dict[str, str]] = {
 
     "en": {
         "back_to_chat":       "← Back to conversation",
+
+        # ── Page chat ───────────────────────────────────────────────────────
+        "chat_subtitle":      "Your confidante. Your presence. Here for you.",
+        "greeting_morning":   "Good morning {prenom} 🌸",
+        "greeting_afternoon": "Good afternoon {prenom} ☀️",
+        "greeting_evening":   "Good evening {prenom} 🌙",
+        "greeting_date":      "Today is **{date}**.",
+        "greeting_weather":   "**{emoji} Weather in {city}:** {desc} · {temp}°C (min {tmin}° / max {tmax}°)",
+        "greeting_rain":      "☔ Rain risk: **{pct}%**",
+        "greeting_outfit":    "**👗 Outfit suggestion:** {outfit}",
+        "greeting_close_m":   "Tell me how you're doing — how can I make you happy today? 💜",
+        "greeting_close_f":   "Tell me how you're doing — how can I make you happy today? 💜",
 
         # ── Langue ──────────────────────────────────────────────────────────
         "lang_instruction":   "You ALWAYS respond in English in this session, regardless of the language used by the user. Your personality stays the same — warm, direct, predictive — just in English.",

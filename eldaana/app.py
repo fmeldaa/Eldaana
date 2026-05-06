@@ -1011,7 +1011,7 @@ with col1:
 with col2:
     st.markdown('<p class="eldaana-title">Eldaana</p>', unsafe_allow_html=True)
     st.markdown(
-        '<p class="eldaana-subtitle">Ta confidente. Ta présence. Là pour toi.</p>',
+        f'<p class="eldaana-subtitle">{_t("chat_subtitle")}</p>',
         unsafe_allow_html=True,
     )
 st.divider()

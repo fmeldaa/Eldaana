@@ -13,6 +13,15 @@ import json
 from datetime import datetime, timedelta
 from pathlib import Path
 from storage import db_load, db_save
+from translations import t as _t, t_list as _tl
+
+
+def _lang() -> str:
+    try:
+        import streamlit as _st
+        return _st.session_state.get("lang", "fr")
+    except Exception:
+        return "fr"
 
 # ── Durées moyennes en jours par catégorie ────────────────────────────────────
 DUREES_DEFAUT = {
@@ -200,32 +209,30 @@ def detect_purchases_in_message(message: str) -> list[str]:
     Détecte si l'utilisateur mentionne un achat dans son message.
     Retourne la liste des produits achetés détectés.
     """
-    triggers = [
-        "j'ai acheté", "j'ai pris", "j'ai fait les courses",
-        "j'ai récupéré", "j'viens d'acheter", "je viens d'acheter",
-        "on a acheté", "on a pris", "j'ai commandé",
-    ]
+    from translations import t_list as _tl2
+    triggers = _tl2("shop_triggers")
     msg_lower = message.lower()
     if not any(t in msg_lower for t in triggers):
         return []
 
-    # Extraction basique des produits (après le trigger)
     products = []
     for trigger in triggers:
         if trigger in msg_lower:
             rest = msg_lower.split(trigger, 1)[1]
-            # Nettoyer et séparer
             rest = rest.strip(" .,!?")
-            # Séparer par virgule, "et", "du", "de la", "des", "un", "une"
             import re
-            parts = re.split(r",|\bet\b|\bdu\b|\bde la\b|\bdes\b|\bun\b|\bune\b", rest)
+            lang = _lang()
+            if lang == "en":
+                parts = re.split(r",|\band\b|\bsome\b|\ba\b|\ban\b", rest)
+            else:
+                parts = re.split(r",|\bet\b|\bdu\b|\bde la\b|\bdes\b|\bun\b|\bune\b", rest)
             for p in parts:
                 p = p.strip(" .,!?")
                 if 2 < len(p) < 40:
                     products.append(p)
             break
 
-    return products[:10]  # max 10 produits détectés
+    return products[:10]
 
 
 def show_shopping_page(profile: dict):
@@ -235,17 +242,17 @@ def show_shopping_page(profile: dict):
     items    = shopping.get("items", [])
     today    = datetime.now().date()
 
-    st.markdown("### 🛒 Mes courses")
-    st.caption("Eldaana suit tes achats et te rappelle quand racheter.")
+    st.markdown(_t("shop_title"))
+    st.caption(_t("shop_subtitle"))
 
     # ── Ajouter un achat manuellement ──
     with st.form("add_purchase_form"):
-        st.markdown("**Ajouter un achat**")
+        st.markdown(_t("shop_add_title"))
         new_items = st.text_input(
-            "Produit(s) achetés",
-            placeholder="Ex : lait, shampoing, pâtes…",
+            _t("shop_input_label"),
+            placeholder=_t("shop_input_ph"),
         )
-        submitted = st.form_submit_button("✅ Enregistrer l'achat", use_container_width=True)
+        submitted = st.form_submit_button(_t("shop_add_btn"), use_container_width=True)
 
     if submitted and new_items.strip():
         products = [p.strip() for p in new_items.split(",") if p.strip()]
@@ -253,36 +260,36 @@ def show_shopping_page(profile: dict):
         for a in added:
             restock = datetime.strptime(a["restock_date"], "%Y-%m-%d").date()
             days    = (restock - today).days
-            st.success(f"✅ **{a['name'].capitalize()}** — à racheter dans ~{days} jours")
+            st.success(_t("shop_added", name=a['name'].capitalize(), days=days))
         st.rerun()
 
     st.divider()
 
     # ── Liste des produits ──
     if not items:
-        st.info("Aucun produit enregistré. Dis à Eldaana ce que tu as acheté !")
+        st.info(_t("shop_empty"))
         return
 
     # Trier par date de rachat
     items_sorted = sorted(items, key=lambda x: x["restock_date"])
 
-    st.markdown("**Suivi des produits**")
+    st.markdown(_t("shop_tracker"))
     for item in items_sorted:
         restock   = datetime.strptime(item["restock_date"], "%Y-%m-%d").date()
         days_left = (restock - today).days
 
         if days_left < 0:
             emoji, color = "🔴", "#fee2e2"
-            status = f"Épuisé depuis {abs(days_left)}j"
+            status = _t("shop_overdue", n=abs(days_left))
         elif days_left == 0:
             emoji, color = "🟠", "#fff7ed"
-            status = "À racheter aujourd'hui"
+            status = _t("shop_today")
         elif days_left <= 3:
             emoji, color = "🟡", "#fefce8"
-            status = f"Dans {days_left} jour(s)"
+            status = _t("shop_soon", n=days_left)
         else:
             emoji, color = "🟢", "#f0fdf4"
-            status = f"Dans {days_left} jours"
+            status = _t("shop_days", n=days_left)
 
         col1, col2, col3 = st.columns([3, 2, 1])
         with col1:
@@ -290,7 +297,7 @@ def show_shopping_page(profile: dict):
         with col2:
             st.caption(status)
         with col3:
-            if st.button("🗑️", key=f"del_{item['name']}", help="Supprimer"):
+            if st.button("🗑️", key=f"del_{item['name']}", help=_t("shop_delete_tip")):
                 shopping["items"] = [i for i in shopping["items"] if i["name"] != item["name"]]
                 save_shopping(user_id, shopping)
                 st.rerun()

@@ -12,6 +12,7 @@ Fonctionnalités :
 import streamlit as st
 from datetime import datetime
 from storage import db_load, db_save
+from translations import t as _t, t_list as _tl
 
 CATEGORIES = [
     "Alimentation", "Logement", "Transport", "Loisirs",
@@ -99,9 +100,7 @@ def format_budget_for_prompt(user_id: str) -> str:
         return ""
 
     lines = []
-    mois_fr = ["janvier","février","mars","avril","mai","juin",
-               "juillet","août","septembre","octobre","novembre","décembre"]
-    mois_nom = mois_fr[datetime.now().month - 1]
+    mois_nom = _tl("months")[datetime.now().month - 1]
 
     if summary["budget_mensuel"] > 0:
         lines.append(f"- Budget {mois_nom} : {summary['budget_mensuel']} €")
@@ -160,27 +159,45 @@ def show_budget_page(profile: dict):
     budget_data = load_budget(user_id)
     summary = get_current_month_total(user_id)
 
-    mois_fr = ["janvier","février","mars","avril","mai","juin",
-               "juillet","août","septembre","octobre","novembre","décembre"]
-    mois_nom = mois_fr[datetime.now().month - 1]
+    # Category translation helpers
+    cats_display = _tl("bud_categories")
+    cats_fr = ["Alimentation","Logement","Transport","Loisirs","Vêtements","Santé","Abonnements","Sorties","Autre"]
 
-    st.markdown("### 💰 Mon budget")
-    st.caption(f"Suivi de tes dépenses — {mois_nom} {datetime.now().year}")
+    def _cat_to_fr(display: str) -> str:
+        """Map display category name back to French canonical for storage."""
+        try:
+            idx = cats_display.index(display)
+            return cats_fr[idx]
+        except (ValueError, IndexError):
+            return display
+
+    def _cat_to_display(fr_name: str) -> str:
+        """Map French canonical category name to display name."""
+        try:
+            idx = cats_fr.index(fr_name)
+            return cats_display[idx]
+        except (ValueError, IndexError):
+            return fr_name
+
+    mois_nom = _tl("months")[datetime.now().month - 1]
+
+    st.markdown(_t("bud_title"))
+    st.caption(_t("bud_subtitle", mois=mois_nom, year=datetime.now().year))
 
     # ── Budget mensuel ──────────────────────────────────────────────────────────
     budget_mensuel = float(budget_data.get("budget_mensuel") or profile.get("budget_mensuel") or 0)
 
     with st.form("set_budget_form"):
         new_budget = st.number_input(
-            "💳 Budget mensuel (€)",
+            _t("bud_input_label"),
             min_value=0.0, max_value=50000.0,
             value=budget_mensuel, step=50.0,
-            help="Ton budget disponible ce mois-ci"
+            help=_t("bud_input_help")
         )
-        if st.form_submit_button("💾 Enregistrer le budget", use_container_width=True):
+        if st.form_submit_button(_t("bud_save_btn"), use_container_width=True):
             budget_data["budget_mensuel"] = float(new_budget)
             save_budget(user_id, budget_data)
-            st.success(f"✅ Budget fixé à {new_budget:.0f} €")
+            st.success(_t("bud_saved", n=int(new_budget)))
             st.rerun()
 
     st.divider()
@@ -189,13 +206,13 @@ def show_budget_page(profile: dict):
     if summary["budget_mensuel"] > 0 or summary["total"] > 0:
         col1, col2, col3 = st.columns(3)
         with col1:
-            st.metric("💸 Dépensé", f"{summary['total']:.0f} €")
+            st.metric(_t("bud_spent"), f"{summary['total']:.0f} €")
         with col2:
             restant_label = f"{summary['restant']:.0f} €" if summary["budget_mensuel"] > 0 else "—"
-            st.metric("💚 Restant", restant_label)
+            st.metric(_t("bud_remaining"), restant_label)
         with col3:
             pct = f"{summary['pourcentage']:.0f}%" if summary["budget_mensuel"] > 0 else "—"
-            st.metric("📊 Utilisé", pct)
+            st.metric(_t("bud_used"), pct)
 
         if summary["budget_mensuel"] > 0:
             pct_val = min(summary["pourcentage"] / 100, 1.0)
@@ -208,52 +225,52 @@ def show_budget_page(profile: dict):
             """, unsafe_allow_html=True)
 
             if summary["alerte"]:
-                st.warning(f"⚠️ Attention — tu as utilisé **{summary['pourcentage']:.0f}%** de ton budget !")
+                st.warning(_t("bud_alert", pct=f"{summary['pourcentage']:.0f}"))
 
         # Dépenses par catégorie
         if summary["by_cat"]:
-            st.markdown("**Répartition par catégorie**")
+            st.markdown(_t("bud_by_cat"))
             for cat, montant in sorted(summary["by_cat"].items(), key=lambda x: x[1], reverse=True):
                 emoji = EMOJIS_CAT.get(cat, "💸")
                 col_a, col_b = st.columns([4, 1])
                 with col_a:
-                    st.markdown(f"{emoji} {cat}")
+                    st.markdown(f"{emoji} {_cat_to_display(cat)}")
                 with col_b:
                     st.markdown(f"**{montant:.0f} €**")
 
     st.divider()
 
     # ── Ajouter une dépense ──────────────────────────────────────────────────────
-    st.markdown("**➕ Ajouter une dépense**")
+    st.markdown(_t("bud_add_title"))
     with st.form("add_expense_form"):
         c1, c2 = st.columns(2)
         with c1:
-            montant = st.number_input("Montant (€)", min_value=0.01, max_value=10000.0, value=10.0, step=0.5)
+            montant = st.number_input(_t("bud_amount"), min_value=0.01, max_value=10000.0, value=10.0, step=0.5)
         with c2:
-            categorie = st.selectbox("Catégorie", CATEGORIES)
-        description = st.text_input("Description *(optionnel)*", placeholder="Ex : Courses Carrefour")
-        if st.form_submit_button("✅ Enregistrer", use_container_width=True):
-            add_expense(user_id, montant, categorie, description)
-            st.success(f"✅ Dépense de **{montant:.2f} €** enregistrée ({categorie})")
+            categorie = st.selectbox(_t("bud_category"), cats_display)
+        description = st.text_input(_t("bud_desc"), placeholder=_t("bud_desc_ph"))
+        if st.form_submit_button(_t("bud_record_btn"), use_container_width=True):
+            add_expense(user_id, montant, _cat_to_fr(categorie), description)
+            st.success(_t("bud_recorded", n=montant, cat=categorie))
             st.rerun()
 
     st.divider()
 
     # ── Historique du mois ──────────────────────────────────────────────────────
     if summary["depenses"]:
-        st.markdown("**📋 Historique du mois**")
+        st.markdown(_t("bud_history"))
         for dep in reversed(summary["depenses"]):
             emoji = EMOJIS_CAT.get(dep["categorie"], "💸")
             desc  = f" — {dep['description']}" if dep.get("description") else ""
             col1, col2, col3 = st.columns([3, 1, 0.5])
             with col1:
-                st.markdown(f"{emoji} **{dep['categorie']}**{desc}")
+                st.markdown(f"{emoji} **{_cat_to_display(dep['categorie'])}**{desc}")
                 st.caption(dep["date"])
             with col2:
                 st.markdown(f"**{dep['montant']:.2f} €**")
             with col3:
-                if st.button("🗑️", key=f"del_dep_{dep['id']}", help="Supprimer"):
+                if st.button("🗑️", key=f"del_dep_{dep['id']}", help=_t("bud_delete_tip")):
                     delete_expense(user_id, dep["id"])
                     st.rerun()
     else:
-        st.info("Aucune dépense ce mois-ci. Commence à les enregistrer !")
+        st.info(_t("bud_no_expenses"))

@@ -89,27 +89,51 @@ NETWORKS = {
 NETWORKS_EN = {
     "Instagram": {
         "question": "Paste your Instagram bio or describe what you post (travel, food, fashion, sport…)",
-        "placeholder": "e.g. 'Street food enthusiast 🍜 | Paris | Weekly adventure photos'",
+        "placeholder": "e.g. 'Street food enthusiast 🍜 | London | Weekly adventure photos'",
     },
     "LinkedIn": {
         "question": "Paste your LinkedIn headline or describe your professional life",
-        "placeholder": "e.g. 'Digital Project Manager at SNCF | 8 years experience | Open to opportunities'",
+        "placeholder": "e.g. 'Digital Project Manager | 8 years experience | Open to opportunities'",
     },
     "TikTok": {
         "question": "What type of content do you watch or create on TikTok?",
         "placeholder": "e.g. 'I mostly watch recipes and fitness tips. I sometimes post comedy sketches.'",
     },
     "Twitter / X": {
-        "question": "Describe your Twitter/X usage",
-        "placeholder": "e.g. 'I follow tech and politics accounts. I post opinions sometimes.'",
+        "question": "Paste your Twitter bio or describe your favourite topics",
+        "placeholder": "e.g. 'Tech, politics, NBA | Strong opinions | 2k followers'",
+    },
+    "Facebook": {
+        "question": "How do you use Facebook? Family, friends, groups?",
+        "placeholder": "e.g. 'I follow local community groups and keep up with family news'",
+    },
+    "Snapchat": {
+        "question": "How do you use Snapchat? With whom?",
+        "placeholder": "e.g. 'With close friends, daily stories'",
+    },
+    "WhatsApp": {
+        "question": "Describe your main WhatsApp groups and who you communicate with",
+        "placeholder": "e.g. 'Family, work group, close friends. I usually reply in the evenings.'",
+    },
+    "Email": {
+        "question": "What is your email usage? Work, personal, newsletters?",
+        "placeholder": "e.g. 'Intense work email, personal inbox mostly for orders and tech newsletters'",
+    },
+    "Spotify": {
+        "question": "What music genres, artists or playlists do you listen to most?",
+        "placeholder": "e.g. 'R&B, Afrobeats, Drill. Artists: Burna Boy, Drake. I listen mostly on my commute.'",
     },
     "YouTube": {
         "question": "What channels or topics do you follow on YouTube?",
         "placeholder": "e.g. 'Tech reviews, gaming, travel vlogs, documentaries.'",
     },
-    "Snapchat": {
-        "question": "How do you use Snapchat?",
-        "placeholder": "e.g. 'I snap with friends daily, mostly stories.'",
+    "Deezer": {
+        "question": "Your music tastes on Deezer — genres, moods, listening moments?",
+        "placeholder": "e.g. 'Jazz in the morning, hip-hop in the evening. Chill playlists for work, electronic for sport.'",
+    },
+    "Shazam": {
+        "question": "What style of music do you identify most? In what contexts?",
+        "placeholder": "e.g. 'I Shazam mostly at parties or cafés. Lots of Afro and soul.'",
     },
     "Pinterest": {
         "question": "What do you pin on Pinterest?",

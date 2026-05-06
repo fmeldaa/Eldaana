@@ -488,7 +488,7 @@ def show_gmail_connect(user_id: str) -> bool:
         )
 
         result = oauth2.authorize_button(
-            "📧 Connecter ma boîte Gmail",
+            _t("email_gmail_connect_btn"),
             redirect_uri=_get_redirect_uri(),
             scope=GMAIL_SCOPES,
             key="gmail_oauth_btn",
@@ -520,12 +520,12 @@ def show_gmail_connect(user_id: str) -> bool:
             if profile and token_data.get("gmail_email"):
                 profile["gmail_email"] = token_data["gmail_email"]
                 db_save(profile)
-            st.success("✅ Gmail connecté !")
+            st.success(_t("email_gmail_connected_ok"))
             st.rerun()
             return True
 
     except Exception as e:
-        st.error(f"Erreur OAuth : {e}")
+        st.error(_t("email_oauth_error", e=e))
 
     return False
 

@@ -464,12 +464,12 @@ def show_profile_form(profile: dict):
                 placeholder=_t("pf_ddn_ph"),
                 help=_t("pf_ddn_help"),
             )
-            poids  = st.number_input(_t("pf_poids"), min_value=0, max_value=300,
+            poids  = st.number_input(_t("pf_poids"), min_value=0, max_value=700,
                                      value=int(profile.get("poids") or 0),
-                                     help="Utilisé pour des suggestions santé/alimentation personnalisées")
-            taille = st.number_input(_t("pf_taille"), min_value=0, max_value=250,
+                                     help=_t("pf_poids_help"))
+            taille = st.number_input(_t("pf_taille"), min_value=0, max_value=300,
                                      value=int(profile.get("taille") or 0),
-                                     help="Utilisé pour des suggestions de tenue vestimentaire")
+                                     help=_t("pf_taille_help"))
         with c2:
             _sexe_stored = profile.get("sexe", "")
             _sexe_idx = _idx_fr(_GENDER_OPTS_FR, sexe_opts_display, _sexe_stored)
@@ -505,12 +505,12 @@ def show_profile_form(profile: dict):
         a_enfants_val = "Oui" if fam.get("a_enfants") else "Non"
         col_enf1, col_enf2 = st.columns(2)
         with col_enf1:
-            enf_non = st.checkbox("Non", value=(a_enfants_val == "Non"), key="enf_non")
+            enf_non = st.checkbox(_t("pf_children_no"), value=(a_enfants_val == "Non"), key="enf_non")
         with col_enf2:
-            enf_oui = st.checkbox("Oui", value=(a_enfants_val == "Oui"), key="enf_oui")
+            enf_oui = st.checkbox(_t("pf_children_yes"), value=(a_enfants_val == "Oui"), key="enf_oui")
         a_enfants = "Oui" if enf_oui else "Non"
         nb_enfants = st.number_input(
-            "Nombre d'enfants",
+            _t("pf_nb_children"),
             min_value=0, max_value=20,
             value=int(fam.get("nb_enfants") or 0),
         )
@@ -538,7 +538,7 @@ def show_profile_form(profile: dict):
             transport = ", ".join([fr_val for fr_val, checked in transport_checks.items() if checked])
 
         # ── Détail transport pour les alertes ──
-        st.markdown("**🚦 Mes lignes & trajets** *(pour les alertes en temps réel)*")
+        st.markdown(_t("pf_transport_lines_section"))
         transport_info = profile.get("transport_detail", {})
         all_lines = [
             "RER A", "RER B", "RER C", "RER D", "RER E",
@@ -550,46 +550,46 @@ def show_profile_form(profile: dict):
             "TGV", "Intercités", "TER", "Autre ligne",
         ]
         tc_lines = st.multiselect(
-            "Lignes empruntées",
+            _t("pf_lines_label"),
             all_lines,
             default=transport_info.get("lines", []),
-            placeholder="Ex : RER B, Métro 13…",
+            placeholder=_t("pf_lines_ph"),
         )
         c5, c6 = st.columns(2)
         with c5:
             depart_heure = st.text_input(
-                "Heure de départ habituelle",
+                _t("pf_depart_label"),
                 value=transport_info.get("depart_heure", ""),
                 placeholder="Ex : 08:00",
             )
         with c6:
             has_car = st.checkbox(
-                "🚗 J'utilise aussi la voiture",
+                _t("pf_has_car"),
                 value=transport_info.get("has_car", False),
                 key="has_car"
             )
         trajet_desc = st.text_input(
-            "Décris ton trajet principal *(optionnel)*",
+            _t("pf_trajet_label"),
             value=transport_info.get("trajet_desc", ""),
-            placeholder="Ex : Saint-Denis → Paris 15e via RER B + Métro 13",
+            placeholder=_t("pf_trajet_ph"),
         )
 
         # ── Réveil ──
-        st.markdown("**⏰ Heure de réveil** *(pour la notification matinale)*")
+        st.markdown(_t("pf_wakeup_section"))
         heure_reveil = st.text_input(
-            "Heure de réveil",
+            _t("pf_wakeup_label"),
             value=profile.get("heure_reveil", ""),
-            placeholder="Ex : 07:00",
-            help="Eldaana t'enverra une notification à cette heure avec la météo et un message positif",
+            placeholder=_t("pf_wakeup_ph"),
+            help=_t("pf_wakeup_help"),
         )
 
-        st.markdown("**👗 Garde-robe** *(optionnel)*")
+        st.markdown(_t("pf_wardrobe_section"))
         gdr = profile.get("garde_robe", {})
         if not isinstance(gdr, dict):
             gdr = {"description": "", "photos": []}
-        garde_desc = st.text_area("Style vestimentaire", value=gdr.get("description", ""),
-                                  placeholder="Ex : Style casual, couleurs neutres…")
-        photos = st.file_uploader("Photos de tenues", type=["jpg", "jpeg", "png"],
+        garde_desc = st.text_area(_t("pf_wardrobe_style_label"), value=gdr.get("description", ""),
+                                  placeholder=_t("pf_wardrobe_style_ph"))
+        photos = st.file_uploader(_t("pf_wardrobe_photos"), type=["jpg", "jpeg", "png"],
                                   accept_multiple_files=True)
 
         saved = st.form_submit_button(_t("pf_save"), use_container_width=True)

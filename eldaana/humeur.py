@@ -239,14 +239,22 @@ def _sugg_dict(code: str) -> dict:
 
 
 def format_humeur_for_prompt(user_id: str) -> str:
-    """Retourne l'humeur pour injection dans le system prompt."""
+    """Retourne l'humeur pour injection dans le system prompt (bilingue)."""
     humeur = load_humeur(user_id)
     if not humeur:
         return ""
+    lang    = _get_lang()
     code    = humeur.get("code", "")
     label   = humeur.get("label", "")
     sugg    = _sugg_dict(code)
     conseil = sugg.get("conseil", "")
+    if lang == "en":
+        return (
+            f"\n\n[TODAY'S MOOD]\n"
+            f"The user feels: {label}\n"
+            f"Adapt your tone accordingly. {conseil}\n"
+            f"[END MOOD]"
+        )
     return (
         f"\n\n[HUMEUR DU JOUR]\n"
         f"L'utilisateur se sent : {label}\n"

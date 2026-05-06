@@ -348,6 +348,25 @@ _STRINGS: dict[str, dict[str, str]] = {
         "rgpd_prefs_ok":        "✅ Préférences mises à jour.",
         "rgpd_contact":         "Contact : eldaana.app@gmail.com · RGPD conforme",
 
+        # ── Wakeup page ─────────────────────────────────────────────────
+        "wakeup_title":       "Bonjour ☀️",
+        "wakeup_subtitle":    "C'est l'heure de commencer ta journée",
+        "wakeup_replay":      "🔊 Réécouter",
+        "wakeup_start_day":   "💜 Commencer ma journée",
+        "wakeup_in":          "à",
+        "wakeup_rise":        "Bonjour {prenom} ! C'est l'heure de se lever.",
+
+        # ── Stripe ──────────────────────────────────────────────────────
+        "stripe_premium_welcome":   "🌟 Bienvenue dans Eldaana Premium ! Mode vocal Eldaana Voice activé.",
+        "stripe_essential_welcome": "⭐ Bienvenue dans Eldaana Essentiel ! La synthèse vocale est maintenant disponible.",
+        "stripe_success":           "✅ Abonnement activé ! Bienvenue dans Eldaana.",
+
+        # ── Misc app ─────────────────────────────────────────────────────
+        "error_agent_load":    "Impossible de charger les paramètres agent : {e}",
+        "sidebar_enrich_info": "💡 Plus Eldaana vous connaît, plus elle est précise !",
+        "refresh_transport":   "🔄 Vérifier à nouveau",
+        "humeur_expander":     "😊 Comment tu te sens aujourd'hui ?",
+
         # ── Dates ───────────────────────────────────────────────────────────
         "days":   ["Lundi","Mardi","Mercredi","Jeudi","Vendredi","Samedi","Dimanche"],
         "months": ["janvier","février","mars","avril","mai","juin",
@@ -689,6 +708,25 @@ _STRINGS: dict[str, dict[str, str]] = {
         "rgpd_save_prefs":      "💾 Update my preferences",
         "rgpd_prefs_ok":        "✅ Preferences updated.",
         "rgpd_contact":         "Contact: eldaana.app@gmail.com · GDPR compliant",
+
+        # ── Wakeup page ─────────────────────────────────────────────────
+        "wakeup_title":       "Good morning ☀️",
+        "wakeup_subtitle":    "Time to start your day",
+        "wakeup_replay":      "🔊 Listen again",
+        "wakeup_start_day":   "💜 Start my day",
+        "wakeup_in":          "in",
+        "wakeup_rise":        "Good morning {prenom}! Time to get up.",
+
+        # ── Stripe ──────────────────────────────────────────────────────
+        "stripe_premium_welcome":   "🌟 Welcome to Eldaana Premium! Eldaana Voice mode activated.",
+        "stripe_essential_welcome": "⭐ Welcome to Eldaana Essential! Voice synthesis is now available.",
+        "stripe_success":           "✅ Subscription activated! Welcome to Eldaana.",
+
+        # ── Misc app ─────────────────────────────────────────────────────
+        "error_agent_load":    "Failed to load agent settings: {e}",
+        "sidebar_enrich_info": "💡 The more Eldaana knows you, the more accurate she is!",
+        "refresh_transport":   "🔄 Check again",
+        "humeur_expander":     "😊 How are you feeling today?",
 
         # ── Dates ───────────────────────────────────────────────────────────
         "days":   ["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"],

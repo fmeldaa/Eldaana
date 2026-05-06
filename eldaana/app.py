@@ -282,11 +282,11 @@ if st.query_params.get("stripe_success") and _uid_now:
         st.query_params.clear()
         st.query_params["uid"] = _uid_now
         if _plan == "premium":
-            st.success("🌟 Bienvenue dans Eldaana Premium ! Mode vocal Eldaana Voice activé.")
+            st.success(_t("stripe_premium_welcome"))
         elif _plan == "essential":
-            st.success("⭐ Bienvenue dans Eldaana Essentiel ! La synthèse vocale est maintenant disponible.")
+            st.success(_t("stripe_essential_welcome"))
         else:
-            st.success("✅ Abonnement activé ! Bienvenue dans Eldaana.")
+            st.success(_t("stripe_success"))
         st.balloons()
 elif st.query_params.get("stripe_cancel"):
     st.query_params.clear()
@@ -467,7 +467,7 @@ if st.session_state.page == "agent_permissions":
         from agents.permissions import show_permissions_settings
         show_permissions_settings(profile)
     except Exception as _e:
-        st.error(f"Impossible de charger les paramètres agent : {_e}")
+        st.error(_t("error_agent_load", e=_e))
     st.markdown("<br>", unsafe_allow_html=True)
     if st.button(_t("back_to_chat")):
         st.session_state.page = "chat"
@@ -679,7 +679,7 @@ with st.sidebar:
             )
 
     if not profile.get("onboarding_lifestyle_complete"):
-        st.info("💡 Plus Eldaana vous connaît, plus elle est précise !")
+        st.info(_t("sidebar_enrich_info"))
 
     if st.button(_t("btn_dashboard"), use_container_width=True):
         st.session_state.page = "dashboard"
@@ -934,9 +934,9 @@ if st.session_state.page == "wakeup":
         if logo_path.exists():
             st.image(str(logo_path), width=72)
     with col2:
-        st.markdown('<p class="eldaana-title">Bonjour ☀️</p>', unsafe_allow_html=True)
+        st.markdown('<p class="eldaana-title">'+_t("wakeup_title")+'</p>', unsafe_allow_html=True)
         st.markdown(
-            '<p class="eldaana-subtitle">C\'est l\'heure de commencer ta journée</p>',
+            '<p class="eldaana-subtitle">'+_t("wakeup_subtitle")+'</p>',
             unsafe_allow_html=True,
         )
     st.divider()
@@ -959,7 +959,7 @@ if st.session_state.page == "wakeup":
                 {weather['temp_current']}°C
             </p>
             <p style="color:#6b7280;margin:0 0 0.25rem 0;">
-                {weather['description']} à {weather['city']}
+                {weather['description']} {_t('wakeup_in')} {weather['city']}
             </p>
             <p style="color:#9ca3af;font-size:0.85rem;margin:0;">
                 Min {weather['temp_min']}° · Max {weather['temp_max']}°
@@ -968,11 +968,8 @@ if st.session_state.page == "wakeup":
         """, unsafe_allow_html=True)
     else:
         genre = profile.get("sexe", "").lower()
-        accord = "prête" if genre == "femme" else "prêt"
-        wakeup_txt = (
-            f"Bonjour {prenom} ! C'est l'heure de se lever. "
-            f"Tu es {accord} pour une belle journée ?"
-        )
+        ready_key = "wakeup_ready_f" if genre == "femme" else "wakeup_ready_m"
+        wakeup_txt = _t("wakeup_rise", prenom=prenom) + " " + _t(ready_key)
 
     # Message positif
     st.markdown(f"""
@@ -994,10 +991,10 @@ if st.session_state.page == "wakeup":
 
     col_a, col_b = st.columns(2)
     with col_a:
-        if st.button("🔊 Réécouter", use_container_width=True):
+        if st.button(_t("wakeup_replay"), use_container_width=True):
             speak(wakeup_txt)
     with col_b:
-        if st.button("💜 Commencer ma journée", use_container_width=True, type="primary"):
+        if st.button(_t("wakeup_start_day"), use_container_width=True, type="primary"):
             st.session_state.page = "chat"
             st.session_state.wakeup_spoken = False
             st.query_params.clear()
@@ -1028,14 +1025,14 @@ if "transport_alert_checked" not in st.session_state:
 
 if st.session_state.get("departure_alert"):
     show_departure_alert_banner(st.session_state.departure_alert)
-    if st.button("🔄 Vérifier à nouveau", key="refresh_transport"):
+    if st.button(_t("refresh_transport"), key="refresh_transport"):
         st.session_state.transport_alert_checked = False
         st.session_state.departure_alert = None
         st.rerun()
 
 # ── Humeur du jour (widget compact en haut du chat) ───────────────────────────
 user_id_chat = profile.get("user_id", "")
-with st.expander("😊 Comment tu te sens aujourd'hui ?", expanded=False):
+with st.expander(_t("humeur_expander"), expanded=False):
     show_humeur_widget(user_id_chat)
 
 # État de la conversation — chargement depuis Supabase si première visite

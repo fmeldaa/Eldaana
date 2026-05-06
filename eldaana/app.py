@@ -904,6 +904,9 @@ box-shadow:0 0 16px rgba(251,146,60,0.4);}}
     # ── Bascule de langue FR ↔ EN ─────────────────────────────────────────────
     if st.button(_t("btn_lang"), use_container_width=True):
         st.session_state.lang = "en" if st.session_state.get("lang", "fr") == "fr" else "fr"
+        # Réinitialiser le greeting pour qu'il soit régénéré dans la nouvelle langue
+        st.session_state.pop("display_messages", None)
+        st.session_state.pop("messages", None)
         st.rerun()
 
     st.markdown("<br>", unsafe_allow_html=True)

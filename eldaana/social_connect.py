@@ -86,21 +86,26 @@ NETWORKS = {
     },
 }
 
+def _ico(slug: str, color: str | None = None) -> str:
+    """Construit une URL Iconify. color = hex sans # (ex: 'FFFC00')."""
+    url = f"https://api.iconify.design/{slug}.svg"
+    return url if not color else f"{url}?color=%23{color}"
+
+# logos: = couleurs natives  |  simple-icons: = monochrome → couleur forcée via ?color=
 RESEAUX_LOGOS = {
-    "Instagram":   "logos:instagram-icon",
-    "Facebook":    "logos:facebook",
-    "TikTok":      "logos:tiktok-icon",
-    "Twitter / X": "logos:x",
-    "LinkedIn":    "logos:linkedin-icon",
-    "Snapchat":    "logos:snapchat",
-    "WhatsApp":    "logos:whatsapp-icon",
-    "Email":       "logos:google-gmail",
-    "Spotify":     "logos:spotify-icon",
-    "YouTube":     "logos:youtube-icon",
-    "Deezer":      "logos:deezer-icon",
-    "Shazam":      "logos:shazam",
+    "Instagram":   _ico("logos:instagram-icon"),
+    "Facebook":    _ico("logos:facebook"),
+    "TikTok":      _ico("logos:tiktok-icon"),
+    "Twitter / X": _ico("logos:x"),
+    "LinkedIn":    _ico("logos:linkedin-icon"),
+    "Snapchat":    _ico("simple-icons:snapchat",  "FFFC00"),
+    "WhatsApp":    _ico("logos:whatsapp-icon"),
+    "Email":       _ico("logos:google-gmail"),
+    "Spotify":     _ico("logos:spotify-icon"),
+    "YouTube":     _ico("logos:youtube-icon"),
+    "Deezer":      _ico("simple-icons:deezer",    "A238FF"),
+    "Shazam":      _ico("simple-icons:shazam",    "0088FF"),
 }
-# URL pattern : https://api.iconify.design/{slug}.svg  (couleurs natives, pas besoin de préciser)
 
 NETWORKS_EN = {
     "Instagram": {
@@ -193,7 +198,7 @@ def show_social_connect(profile: dict):
         with cols[i % 4]:
             icon_slug = RESEAUX_LOGOS.get(name)
             if icon_slug:
-                url = f"https://api.iconify.design/{icon_slug}.svg"
+                url = icon_slug  # déjà une URL complète (produite par _ico())
                 st.markdown(
                     f'<div style="display:flex;align-items:center;height:32px;">'
                     f'<img src="{url}" width="18" height="18" '
@@ -224,7 +229,7 @@ def show_social_connect(profile: dict):
         net_info = NETWORKS_EN.get(name, info) if lang == "en" else info
         icon_slug = RESEAUX_LOGOS.get(name)
         if icon_slug:
-            url = f"https://api.iconify.design/{icon_slug}.svg"
+            url = icon_slug  # déjà une URL complète
             st.markdown(
                 f'<img src="{url}" width="18" height="18" '
                 f'style="vertical-align:middle;margin-right:6px;">'

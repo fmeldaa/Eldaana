@@ -427,30 +427,46 @@ def show_onboarding() -> bool:
 # ── Formulaire profil enrichi ──────────────────────────────────────────────────
 
 def show_profile_form(profile: dict):
-    # ── CSS : checkboxes — coche VIOLETTE sur fond blanc ──────────────────────
-    # Cibler uniquement [data-testid="stCheckbox"] pour ne PAS toucher les radios
+    # ── CSS : coche VIOLETTE sur fond blanc (Streamlit 1.40+ baseweb) ─────────
     st.markdown("""
 <style>
-[data-testid="stCheckbox"] [role="checkbox"] {
-    border: 2px solid #D1D5DB !important;
+/* ── Checkbox : fond blanc + coche violette ── */
+/* Boîte vide : bordure gris clair */
+[data-testid="stCheckbox"] [data-baseweb="checkbox"] > div:first-child {
     background-color: #fff !important;
+    border: 2px solid #D1D5DB !important;
     border-radius: 4px !important;
     transition: border-color .15s;
 }
-[data-testid="stCheckbox"] [role="checkbox"]:hover {
+/* Hover : bordure violette */
+[data-testid="stCheckbox"]:hover [data-baseweb="checkbox"] > div:first-child {
     border-color: #7C3AED !important;
 }
-[data-testid="stCheckbox"] [role="checkbox"][aria-checked="true"] {
+/* Coché via :has(input:checked) — fond blanc, bordure violette */
+[data-testid="stCheckbox"]:has(input[type="checkbox"]:checked) [data-baseweb="checkbox"] > div:first-child {
     background-color: #fff !important;
     border-color: #7C3AED !important;
 }
-[data-testid="stCheckbox"] [role="checkbox"][aria-checked="true"] svg {
-    display: block !important;
-    opacity: 1 !important;
-}
-[data-testid="stCheckbox"] [role="checkbox"][aria-checked="true"] svg *  {
+/* Coche SVG → violette */
+[data-testid="stCheckbox"]:has(input[type="checkbox"]:checked) [data-baseweb="checkbox"] svg,
+[data-testid="stCheckbox"]:has(input[type="checkbox"]:checked) [data-baseweb="checkbox"] svg * {
     fill: #7C3AED !important;
     stroke: #7C3AED !important;
+    color: #7C3AED !important;
+}
+
+/* ── Radio buttons (Enfants Non/Oui) : cercle visible ── */
+[data-testid="stRadio"] [data-baseweb="radio"] > div:first-child {
+    border: 2px solid #D1D5DB !important;
+    border-radius: 50% !important;
+    background: #fff !important;
+}
+[data-testid="stRadio"] [data-baseweb="radio"]:hover > div:first-child {
+    border-color: #7C3AED !important;
+}
+[data-testid="stRadio"]:has(input[type="radio"]:checked) [data-baseweb="radio"]:has(input:checked) > div:first-child {
+    border-color: #7C3AED !important;
+    background: #7C3AED !important;
 }
 </style>
 """, unsafe_allow_html=True)

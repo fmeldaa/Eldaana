@@ -543,7 +543,34 @@ def show_email_page(profile: dict):
 
     if not token:
         st.info(_t("email_connect_info"))
-        connected = show_gmail_connect(user_id)
+
+        st.markdown("### Connecte ta boîte email")
+
+        # ── Gmail ──────────────────────────────────────────────────────────────
+        col1, col2 = st.columns([1, 8])
+        with col1:
+            st.image("https://cdn.simpleicons.org/gmail/EA4335", width=24)
+        with col2:
+            connected = show_gmail_connect(user_id)
+
+        # ── Outlook ────────────────────────────────────────────────────────────
+        col1, col2 = st.columns([1, 8])
+        with col1:
+            st.image("https://cdn.simpleicons.org/microsoftoutlook/0078D4", width=24)
+        with col2:
+            if st.button("Connecter ma boîte Outlook",
+                         use_container_width=True, key="connect_outlook"):
+                st.info("Connexion Outlook bientôt disponible")
+
+        # ── Autre fournisseur ──────────────────────────────────────────────────
+        col1, col2 = st.columns([1, 8])
+        with col1:
+            st.image("https://cdn.simpleicons.org/maildotru/005FF9", width=24)
+        with col2:
+            if st.button("Autre fournisseur (IMAP / SMTP)",
+                         use_container_width=True, key="connect_other"):
+                st.info("Configuration manuelle bientôt disponible")
+
         if not connected:
             return
         token = load_gmail_token(user_id)

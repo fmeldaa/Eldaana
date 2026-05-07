@@ -86,6 +86,21 @@ NETWORKS = {
     },
 }
 
+RESEAUX_LOGOS = {
+    "Instagram":  ("instagram",          "E4405F"),
+    "Facebook":   ("facebook",           "1877F2"),
+    "TikTok":     ("tiktok",             "000000"),
+    "Twitter / X":("x",                  "000000"),
+    "LinkedIn":   ("linkedin",           "0A66C2"),
+    "Snapchat":   ("snapchat",           "FFFC00"),
+    "WhatsApp":   ("whatsapp",           "25D366"),
+    "Email":      ("gmail",              "EA4335"),
+    "Spotify":    ("spotify",            "1DB954"),
+    "YouTube":    ("youtube",            "FF0000"),
+    "Deezer":     ("deezer",             "A238FF"),
+    "Shazam":     ("shazam",             "0088FF"),
+}
+
 NETWORKS_EN = {
     "Instagram": {
         "question": "Paste your Instagram bio or describe what you post (travel, food, fashion, sport…)",
@@ -163,16 +178,32 @@ def show_social_connect(profile: dict):
 
     st.markdown(_t("soc_select_networks"))
 
-    # Sélection des réseaux actifs avec des checkboxes
+    # Sélection des réseaux actifs avec des checkboxes + vrais logos
     selected = []
     cols = st.columns(4)
     for i, (name, info) in enumerate(NETWORKS.items()):
         with cols[i % 4]:
-            active = st.checkbox(
-                f"{info['emoji']} {name}",
-                value=(name in social),
-                key=f"social_check_{name}"
-            )
+            logo = RESEAUX_LOGOS.get(name)
+            if logo:
+                slug, color = logo
+                logo_col, cb_col = st.columns([1, 5])
+                with logo_col:
+                    st.image(
+                        f"https://cdn.simpleicons.org/{slug}/{color}",
+                        width=20,
+                    )
+                with cb_col:
+                    active = st.checkbox(
+                        name,
+                        value=(name in social),
+                        key=f"social_check_{name}",
+                    )
+            else:
+                active = st.checkbox(
+                    f"{info['emoji']} {name}",
+                    value=(name in social),
+                    key=f"social_check_{name}",
+                )
             if active:
                 selected.append(name)
 
@@ -183,11 +214,22 @@ def show_social_connect(profile: dict):
     for name in selected:
         info = NETWORKS[name]
         net_info = NETWORKS_EN.get(name, info) if lang == "en" else info
-        st.markdown(
-            f"<span style='font-size:1.1rem;font-weight:600;color:{info['color']}'>"
-            f"{info['emoji']} {name}</span>",
-            unsafe_allow_html=True
-        )
+        logo = RESEAUX_LOGOS.get(name)
+        if logo:
+            slug, color = logo
+            st.markdown(
+                f'<img src="https://cdn.simpleicons.org/{slug}/{color}" '
+                f'width="18" style="vertical-align:middle;margin-right:6px;">'
+                f'<span style="font-size:1.1rem;font-weight:600;color:#{color}">'
+                f'{name}</span>',
+                unsafe_allow_html=True,
+            )
+        else:
+            st.markdown(
+                f"<span style='font-size:1.1rem;font-weight:600;color:{info['color']}'>"
+                f"{info['emoji']} {name}</span>",
+                unsafe_allow_html=True,
+            )
         val = st.text_area(
             net_info["question"],
             value=social.get(name, {}).get("description", ""),

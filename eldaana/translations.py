@@ -439,6 +439,8 @@ _STRINGS: dict[str, dict[str, str]] = {
         "pf_wardrobe_style_label": "Style vestimentaire",
         "pf_wardrobe_style_ph":    "Ex : Style casual, couleurs neutres…",
         "pf_wardrobe_photos":      "Photos de tenues",
+        "pf_learn_ph":             "Eldaana apprendra ça en discutant avec toi",
+        "pf_completion":           "🧠 Eldaana te connaît à **{pct}%**",
 
         # ── Dates ───────────────────────────────────────────────────────────
         "days":   ["Lundi","Mardi","Mercredi","Jeudi","Vendredi","Samedi","Dimanche"],
@@ -873,6 +875,8 @@ _STRINGS: dict[str, dict[str, str]] = {
         "pf_wardrobe_style_label": "Style description",
         "pf_wardrobe_style_ph":    "e.g. Casual style, neutral colours…",
         "pf_wardrobe_photos":      "Outfit photos",
+        "pf_learn_ph":             "Eldaana will learn this by chatting with you",
+        "pf_completion":           "🧠 Eldaana knows you **{pct}%**",
 
         # ── Dates ───────────────────────────────────────────────────────────
         "days":   ["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"],

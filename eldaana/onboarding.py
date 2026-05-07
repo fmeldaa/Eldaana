@@ -16,6 +16,7 @@ from linkedin_auth import show_linkedin_button, linkedin_to_profile
 from storage import db_load, db_save
 from cloudinary_storage import upload_profile_photo, get_profile_photo_url, invalidate_photo_cache
 from translations import t as _t, t_list as _tl
+from tier_access import get_user_tier
 
 # ── Configuration des pays supportés ─────────────────────────────────────────
 COUNTRY_CONFIG = {
@@ -446,11 +447,85 @@ def show_onboarding() -> bool:
     return False
 
 
+# ── Indicateur de complétion profil ───────────────────────────────────────────
+
+def _profile_completion(profile: dict, tier: str) -> int:
+    """
+    Retourne le pourcentage de complétion du profil selon le tier.
+    Mapping sur les 16 questions du CDC (Phase 2) — les champs non encore
+    collectés (Q11, Q13-Q16) comptent 0 jusqu'à la Phase 2.
+    """
+    def _ok(val):
+        if val is None:
+            return False
+        if isinstance(val, bool):
+            return True
+        if isinstance(val, (int, float)):
+            return val > 0
+        if isinstance(val, str):
+            return bool(val.strip())
+        if isinstance(val, list):
+            return len(val) > 0
+        if isinstance(val, dict):
+            return bool(val)
+        return bool(val)
+
+    fam = profile.get("famille") or {}
+
+    checks = {
+        # ── Freemium (Q01-Q05) ──────────────────────────────────────────────
+        "Q01": _ok(profile.get("ville")),                               # localisation
+        "Q02": _ok(profile.get("date_naissance")) or int(profile.get("age") or 0) > 0,  # âge
+        "Q03": _ok(profile.get("situation_maritale")),                  # situation amoureuse
+        "Q04": _ok(profile.get("profession")),                          # activité
+        "Q05": _ok(profile.get("hobbies")),                             # passion / hobbies
+        # ── Essentiel (Q06-Q10) ─────────────────────────────────────────────
+        "Q06": fam.get("a_enfants") is not None,                        # enfants
+        "Q07": _ok(profile.get("habitudes_alimentaires")),              # régime
+        "Q08": _ok(profile.get("transport")),                           # transport
+        "Q09": _ok(profile.get("social_networks")),                     # réseaux sociaux
+        "Q10": _ok(profile.get("hobbies")),                             # hobbies secondaires
+        # ── Premium (Q11-Q16) — Phase 2 ─────────────────────────────────────
+        "Q11": False,                                                    # valeurs
+        "Q12": _ok(profile.get("heure_reveil")),                        # routine matin
+        "Q13": False,                                                    # activité physique
+        "Q14": False,                                                    # sommeil
+        "Q15": False,                                                    # objectifs
+        "Q16": False,                                                    # style communication
+    }
+
+    pools = {
+        "free":      ["Q01", "Q02", "Q03", "Q04", "Q05"],
+        "essential": ["Q01", "Q02", "Q03", "Q04", "Q05",
+                      "Q06", "Q07", "Q08", "Q09", "Q10"],
+        "premium":   ["Q01", "Q02", "Q03", "Q04", "Q05",
+                      "Q06", "Q07", "Q08", "Q09", "Q10",
+                      "Q11", "Q12", "Q13", "Q14", "Q15", "Q16"],
+    }
+    qids = pools.get(tier, pools["free"])
+    filled = sum(1 for q in qids if checks.get(q, False))
+    return round(filled / len(qids) * 100)
+
+
 # ── Formulaire profil enrichi ──────────────────────────────────────────────────
 
 def show_profile_form(profile: dict):
     st.markdown(_t("pf_title"))
     st.caption(_t("pf_subtitle"))
+
+    # ── Indicateur de complétion ──────────────────────────────────────────────
+    _uid  = get_active_user_id() or ""
+    _tier = get_user_tier(_uid) if _uid else "free"
+    _pct  = _profile_completion(profile, _tier)
+    st.markdown(
+        f'<div style="background:#f5f0ff;border:1px solid #e9d5ff;border-radius:12px;'
+        f'padding:10px 16px;margin-bottom:12px;">'
+        f'🧠 {_t("pf_completion", pct=_pct).replace("**", "")}'
+        f'<div style="background:#e9d5ff;border-radius:8px;height:6px;margin-top:8px;">'
+        f'<div style="background:#7B2FBE;width:{_pct}%;height:6px;border-radius:8px;"></div>'
+        f'</div></div>',
+        unsafe_allow_html=True,
+    )
 
     # Canonical FR lists for storage (data compatibility with existing profiles)
     _GENDER_OPTS_FR  = ["Femme", "Homme", "Non-binaire", "Préfère ne pas préciser"]
@@ -508,8 +583,10 @@ def show_profile_form(profile: dict):
     st.markdown(_t("pf_identity"))
     c1, c2 = st.columns(2)
     with c1:
-        prenom = st.text_input(_t("pf_prenom"), value=profile.get("prenom", ""))
-        ville  = st.text_input(_t("pf_ville"),  value=profile.get("ville",  ""))
+        prenom = st.text_input(_t("pf_prenom"), value=profile.get("prenom", ""),
+                               placeholder=_t("pf_learn_ph"))
+        ville  = st.text_input(_t("pf_ville"),  value=profile.get("ville",  ""),
+                               placeholder=_t("pf_learn_ph"))
         age    = st.number_input(_t("pf_age"), min_value=13, max_value=120,
                                  value=max(13, int(profile.get("age") or 13)))
         _ddn_str = profile.get("date_naissance", "")
@@ -533,7 +610,7 @@ def show_profile_form(profile: dict):
         sexe = _GENDER_OPTS_FR[sexe_sel_idx] if sexe_sel_idx < len(_GENDER_OPTS_FR) else _sexe_stored
 
         profession = st.text_input(_t("pf_profession"), value=profile.get("profession", ""),
-                                   placeholder=_t("pf_profession_ph"))
+                                   placeholder=_t("pf_learn_ph"))
         budget_mensuel = st.number_input(
             _t("pf_budget"),
             min_value=0, max_value=50000,
@@ -572,7 +649,7 @@ def show_profile_form(profile: dict):
 
     hobbies = st.text_area(_t("pf_hobbies"),
                            value=", ".join(profile.get("hobbies", [])),
-                           placeholder=_t("pf_hobbies_ph"))
+                           placeholder=_t("pf_learn_ph"))
 
     st.markdown(_t("pf_lifestyle"))
     c3, c4 = st.columns(2)
@@ -627,7 +704,7 @@ def show_profile_form(profile: dict):
     trajet_desc = st.text_input(
         _t("pf_trajet_label"),
         value=transport_info.get("trajet_desc", ""),
-        placeholder=_t("pf_trajet_ph"),
+        placeholder=_t("pf_learn_ph"),
     )
 
     # ── Réveil ──
@@ -644,7 +721,7 @@ def show_profile_form(profile: dict):
     if not isinstance(gdr, dict):
         gdr = {"description": "", "photos": []}
     garde_desc = st.text_area(_t("pf_wardrobe_style_label"), value=gdr.get("description", ""),
-                              placeholder=_t("pf_wardrobe_style_ph"))
+                              placeholder=_t("pf_learn_ph"))
     photos = st.file_uploader(_t("pf_wardrobe_photos"), type=["jpg", "jpeg", "png"],
                               accept_multiple_files=True)
 

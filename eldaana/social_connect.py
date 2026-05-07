@@ -166,6 +166,13 @@ def show_social_connect(profile: dict):
     Affiche le formulaire de connexion vie numérique.
     Enrichit le profil avec les données saisies.
     """
+    # CSS : alignement vertical des colonnes de la grille réseaux
+    st.markdown("""<style>
+[data-testid="stHorizontalBlock"] [data-testid="stHorizontalBlock"] {
+    align-items: center !important;
+}
+</style>""", unsafe_allow_html=True)
+
     st.markdown(_t("soc_title"))
     st.caption(_t("soc_subtitle"))
 
@@ -178,7 +185,7 @@ def show_social_connect(profile: dict):
 
     st.markdown(_t("soc_select_networks"))
 
-    # Sélection des réseaux actifs avec des checkboxes + vrais logos
+    # Sélection des réseaux actifs — logo HTML 18×18 + checkbox, grille 4 colonnes
     selected = []
     cols = st.columns(4)
     for i, (name, info) in enumerate(NETWORKS.items()):
@@ -186,18 +193,19 @@ def show_social_connect(profile: dict):
             logo = RESEAUX_LOGOS.get(name)
             if logo:
                 slug, color = logo
-                logo_col, cb_col = st.columns([1, 5])
-                with logo_col:
-                    st.image(
-                        f"https://cdn.simpleicons.org/{slug}/{color}",
-                        width=20,
-                    )
-                with cb_col:
-                    active = st.checkbox(
-                        name,
-                        value=(name in social),
-                        key=f"social_check_{name}",
-                    )
+                st.markdown(
+                    f'<div style="display:flex;align-items:center;gap:8px;height:32px;">'
+                    f'<img src="https://cdn.simpleicons.org/{slug}/{color}" '
+                    f'width="18" height="18" '
+                    f'style="vertical-align:middle;display:inline-block;" />'
+                    f'</div>',
+                    unsafe_allow_html=True,
+                )
+                active = st.checkbox(
+                    name,
+                    value=(name in social),
+                    key=f"social_check_{name}",
+                )
             else:
                 active = st.checkbox(
                     f"{info['emoji']} {name}",

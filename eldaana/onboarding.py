@@ -427,31 +427,21 @@ def show_onboarding() -> bool:
 # ── Formulaire profil enrichi ──────────────────────────────────────────────────
 
 def show_profile_form(profile: dict):
-    # ── CSS : checkboxes + radio ───────────────────────────────────────────────
+    # ── CSS : checkboxes ──────────────────────────────────────────────────────
     st.markdown("""<style>
-/* CHECKBOXES — Transport, Réseaux, Consentements */
-[data-testid="stCheckbox"] label > div:first-child,
-[data-baseweb="checkbox"] > span:first-child {
+[data-baseweb="checkbox"] span:first-child,
+[data-baseweb="checkbox"] div:first-child {
+    background-color: white !important;
     border: 2px solid #7B2FBE !important;
     border-radius: 4px !important;
 }
-[data-testid="stCheckbox"] label > div[data-checked="true"]:first-child,
-[data-baseweb="checkbox"] [aria-checked="true"] > span:first-child,
-[data-baseweb="checkbox"] input:checked ~ span:first-child {
+[data-baseweb="checkbox"]:has(input:checked) span:first-child,
+[data-baseweb="checkbox"]:has(input:checked) div:first-child {
     background-color: #7B2FBE !important;
     border-color: #7B2FBE !important;
 }
-[data-testid="stCheckbox"] svg,
 [data-baseweb="checkbox"] svg {
     fill: white !important;
-    color: white !important;
-}
-
-/* RADIO — Enfants Oui/Non */
-[data-testid="stRadio"] [aria-checked="true"] > div:first-child,
-[data-baseweb="radio"] [aria-checked="true"] > div:first-child {
-    background-color: #7B2FBE !important;
-    border-color: #7B2FBE !important;
 }
 </style>""", unsafe_allow_html=True)
 

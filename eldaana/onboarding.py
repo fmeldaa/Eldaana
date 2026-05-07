@@ -427,20 +427,33 @@ def show_onboarding() -> bool:
 # ── Formulaire profil enrichi ──────────────────────────────────────────────────
 
 def show_profile_form(profile: dict):
-    # ── CSS : radio buttons visibles (les checkboxes utilisent le thème natif) ─
+    # ── CSS : radio buttons + checkboxes dans le form ─────────────────────────
     st.markdown("""
 <style>
+/* Radio buttons (Enfants Non/Oui) */
 [data-testid="stRadio"] [data-baseweb="radio"] > div:first-child {
     border: 2px solid #D1D5DB !important;
     border-radius: 50% !important;
     background: #fff !important;
 }
 [data-testid="stRadio"] [data-baseweb="radio"]:hover > div:first-child {
-    border-color: #7C3AED !important;
+    border-color: #7B2FBE !important;
 }
 [data-testid="stRadio"]:has(input[type="radio"]:checked) [data-baseweb="radio"]:has(input:checked) > div:first-child {
-    border-color: #7C3AED !important;
-    background: #7C3AED !important;
+    border-color: #7B2FBE !important;
+    background: #7B2FBE !important;
+}
+
+/* Checkboxes dans le form : fill violet + coche blanche (= même style que Consentements) */
+[data-testid="stForm"] [data-testid="stCheckbox"]:has(input[type="checkbox"]:checked)
+  [data-baseweb="checkbox"] > div:first-child {
+    background-color: #7B2FBE !important;
+    border-color: #7B2FBE !important;
+}
+[data-testid="stForm"] [data-testid="stCheckbox"]:has(input[type="checkbox"]:checked)
+  [data-baseweb="checkbox"] svg * {
+    fill: #fff !important;
+    stroke: #fff !important;
 }
 </style>
 """, unsafe_allow_html=True)
@@ -496,6 +509,27 @@ def show_profile_form(profile: dict):
                 st.success(_t("pf_photo_ok"))
                 st.rerun()
 
+    # ── Enfants — HORS du form pour re-render conditionnel immédiat ──────────
+    _fam_outer = profile.get("famille", {})
+    _enf_opts  = [_t("pf_children_no"), _t("pf_children_yes")]
+    enf_choice = st.radio(
+        _t("pf_children"),
+        _enf_opts,
+        horizontal=True,
+        index=1 if _fam_outer.get("a_enfants") else 0,
+        key="enf_radio_outer",
+    )
+    a_enfants = "Oui" if enf_choice == _t("pf_children_yes") else "Non"
+    if a_enfants == "Oui":
+        nb_enfants = st.number_input(
+            _t("pf_nb_children"),
+            min_value=0, max_value=20,
+            value=int(_fam_outer.get("nb_enfants") or 0),
+            key="nb_enfants_outer",
+        )
+    else:
+        nb_enfants = 0
+
     with st.form("profile_form"):
         st.markdown(_t("pf_identity"))
         c1, c2 = st.columns(2)
@@ -547,26 +581,6 @@ def show_profile_form(profile: dict):
         sit_sel_idx = _idx_display(sit_opts_display, sit_display)
         situation = _SIT_OPTS_FR[sit_sel_idx] if sit_sel_idx < len(_SIT_OPTS_FR) else _sit_stored
 
-        fam = profile.get("famille", {})
-        _enf_opts = [_t("pf_children_no"), _t("pf_children_yes")]
-        _enf_idx  = 1 if fam.get("a_enfants") else 0
-        enf_choice = st.radio(
-            _t("pf_children"),
-            _enf_opts,
-            horizontal=True,
-            index=_enf_idx,
-            key="enf_radio",
-        )
-        a_enfants = "Oui" if enf_choice == _t("pf_children_yes") else "Non"
-        # Nombre d'enfants : visible uniquement si "Oui"
-        if a_enfants == "Oui":
-            nb_enfants = st.number_input(
-                _t("pf_nb_children"),
-                min_value=0, max_value=20,
-                value=int(fam.get("nb_enfants") or 0),
-            )
-        else:
-            nb_enfants = 0
         hobbies = st.text_area(_t("pf_hobbies"),
                                value=", ".join(profile.get("hobbies", [])),
                                placeholder=_t("pf_hobbies_ph"))

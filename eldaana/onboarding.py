@@ -514,22 +514,11 @@ def show_profile_form(profile: dict):
     st.caption(_t("pf_subtitle"))
 
     # ── Indicateur de complétion ──────────────────────────────────────────────
-    try:
-        _uid  = get_active_user_id() or ""
-        _tier = get_user_tier(_uid) if _uid else "free"
-        _pct  = _profile_completion(profile, _tier)
-        st.write(f"DEBUG uid={_uid!r} tier={_tier!r} pct={_pct}")  # DEBUG — à supprimer
-        st.markdown(
-            f'<div style="background:#f5f0ff;border:1px solid #e9d5ff;border-radius:12px;'
-            f'padding:10px 16px;margin-bottom:12px;">'
-            f'🧠 {_t("pf_completion", pct=_pct).replace("**", "")}'
-            f'<div style="background:#e9d5ff;border-radius:8px;height:6px;margin-top:8px;">'
-            f'<div style="background:#7B2FBE;width:{_pct}%;height:6px;border-radius:8px;"></div>'
-            f'</div></div>',
-            unsafe_allow_html=True,
-        )
-    except Exception as _e:
-        st.write(f"DEBUG ERREUR indicateur: {_e}")  # DEBUG — à supprimer
+    _uid  = get_active_user_id() or ""
+    _tier = get_user_tier(_uid) if _uid else "free"
+    _pct  = _profile_completion(profile, _tier)
+    st.markdown(_t("pf_completion", pct=_pct))
+    st.progress(_pct / 100)
 
     # Canonical FR lists for storage (data compatibility with existing profiles)
     _GENDER_OPTS_FR  = ["Femme", "Homme", "Non-binaire", "Préfère ne pas préciser"]

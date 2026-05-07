@@ -444,13 +444,13 @@ def show_profile_form(profile: dict):
     background: #7B2FBE !important;
 }
 
-/* Checkboxes dans le form : fill violet + coche blanche (= même style que Consentements) */
-[data-testid="stForm"] [data-testid="stCheckbox"]:has(input[type="checkbox"]:checked)
+/* Checkboxes : fill violet + coche blanche (transport et autres) */
+[data-testid="stCheckbox"]:has(input[type="checkbox"]:checked)
   [data-baseweb="checkbox"] > div:first-child {
     background-color: #7B2FBE !important;
     border-color: #7B2FBE !important;
 }
-[data-testid="stForm"] [data-testid="stCheckbox"]:has(input[type="checkbox"]:checked)
+[data-testid="stCheckbox"]:has(input[type="checkbox"]:checked)
   [data-baseweb="checkbox"] svg * {
     fill: #fff !important;
     stroke: #fff !important;
@@ -510,13 +510,13 @@ def show_profile_form(profile: dict):
                 st.rerun()
 
     # ── Enfants — HORS du form pour re-render conditionnel immédiat ──────────
-    _fam_outer = profile.get("famille", {})
+    _fam_outer = profile.get("famille") or {}
     _enf_opts  = [_t("pf_children_no"), _t("pf_children_yes")]
     enf_choice = st.radio(
         _t("pf_children"),
         _enf_opts,
         horizontal=True,
-        index=1 if _fam_outer.get("a_enfants") else 0,
+        index=1 if _fam_outer.get("a_enfants") not in (False, None, "Non", 0, "") else 0,
         key="enf_radio_outer",
     )
     a_enfants = "Oui" if enf_choice == _t("pf_children_yes") else "Non"

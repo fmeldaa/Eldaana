@@ -1171,6 +1171,24 @@ if user_input:
     with st.chat_message("user", avatar=_user_avatar):
         st.markdown(user_input)
 
+    # ── Étape E : détection de réponse à une question d'onboarding ───────────
+    _ob_pending = st.session_state.get("pending_onboarding_qid")
+    if _ob_pending:
+        try:
+            from onboarding_engine import record_answer as _ob_record
+            from onboarding import save_profile as _ob_save_fn
+            _ob_result = _ob_record(
+                profile, _ob_pending, user_input,
+                lang=st.session_state.get("lang", "fr"),
+            )
+            if _ob_result.get("extracted"):
+                _ob_save_fn(profile)  # persiste le profil enrichi (Ajustement 2 + 5)
+        except Exception:
+            pass  # non-critique — jamais casser la réponse principale
+        finally:
+            st.session_state.pop("pending_onboarding_qid", None)
+            st.session_state["ob_last_was_question"] = False
+
     # ── Détection automatique d'achats ───────────────────────────────────────
     user_id   = profile.get("user_id", "")
     purchases = detect_purchases_in_message(user_input)
@@ -1365,6 +1383,41 @@ if user_input:
                 f = prepare_audio_async(sent_buffer.strip())
                 if f:
                     tts_futures.append(f)
+
+        # ── Étape D : injection question d'onboarding après la réponse ────────
+        try:
+            from onboarding_engine import maybe_ask_question as _ob_maybe
+            from onboarding import save_profile as _ob_save_d
+            _ob_ctx = {
+                "session_message_count": sum(
+                    1 for _m in st.session_state.get("messages", [])
+                    if _m.get("role") == "user"
+                ),
+                "session_questions_asked":  st.session_state.get("ob_questions_asked", 0),
+                "last_message_was_question": st.session_state.get("ob_last_was_question", False),
+                "lang": st.session_state.get("lang", "fr"),
+                "mode": "voice" if _voice_mode else "text",
+                "tier": st.session_state.get("_tier_cached", "free"),
+            }
+            _ob_q = _ob_maybe(profile, _ob_ctx)
+            if _ob_q:
+                _q_suffix = f"\n\n{_ob_q['text']}"
+                full_reply += _q_suffix
+                reply_placeholder.markdown(full_reply)
+                st.session_state["pending_onboarding_qid"] = _ob_q["qid"]
+                st.session_state["ob_questions_asked"] = (
+                    st.session_state.get("ob_questions_asked", 0) + 1
+                )
+                st.session_state["ob_last_was_question"] = True
+                if _voice_on:
+                    _f_ob = prepare_audio_async(_ob_q["text"])
+                    if _f_ob:
+                        tts_futures.append(_f_ob)
+                _ob_save_d(profile)  # persiste onboarding_state (Ajustement 2)
+            else:
+                st.session_state["ob_last_was_question"] = False
+        except Exception:
+            pass  # non-critique — jamais casser la réponse principale
 
         # ── Lecture audio ─────────────────────────────────────────────────────
         if _voice_on:

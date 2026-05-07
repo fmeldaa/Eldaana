@@ -5,12 +5,11 @@ from system_prompt import get_system_prompt, get_voice_mode_suffix
 from onboarding import (
     is_onboarding_done,
     show_onboarding,
+    show_profile_form,
     load_profile,
-    save_profile,
     profile_summary,
     logout,
 )
-from profile_page import render_profile_page
 from weather import get_weather, build_briefing, build_wakeup_message
 from voice import speak, stop, VOICE_OPTIONS, get_voice_options, prepare_audio_async, speak_from_prefetched, estimate_speech_duration  # noqa
 from voice_input import show_mic_button, show_speaking_indicator, inject_mic_auto_trigger
@@ -517,27 +516,7 @@ if st.session_state.page == "profile":
         st.markdown('<p class="eldaana-title">Eldaana</p>', unsafe_allow_html=True)
         st.markdown(f'<p class="eldaana-subtitle">'+_t('page_profile')+'</p>', unsafe_allow_html=True)
     st.divider()
-
-    # Migre photo_url depuis Cloudinary si pas encore stocké dans le profil
-    if not profile.get("photo_url"):
-        from cloudinary_storage import get_profile_photo_url as _get_photo
-        _uid = profile.get("user_id") or st.session_state.get("user_id", "")
-        _existing = _get_photo(_uid) if _uid else None
-        if _existing:
-            profile["photo_url"] = _existing
-
-    def _save_profile_cb(new_profile: dict):
-        from cloudinary_storage import upload_profile_photo, get_profile_photo_url, invalidate_photo_cache
-        _uid = new_profile.get("user_id") or st.session_state.get("user_id", "")
-        photo_file = new_profile.pop("photo_file_pending", None)
-        if photo_file and _uid:
-            url = upload_profile_photo(photo_file.getbuffer(), _uid)
-            if url:
-                new_profile["photo_url"] = url
-                invalidate_photo_cache(_uid)
-        save_profile(new_profile)
-
-    render_profile_page(profile=profile, save_profile_callback=_save_profile_cb)
+    show_profile_form(profile)
     st.markdown("<br>", unsafe_allow_html=True)
     if st.button(_t("back_to_chat")):
         st.session_state.page = "chat"

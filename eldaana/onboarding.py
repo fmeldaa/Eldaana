@@ -424,3 +424,266 @@ def show_onboarding() -> bool:
     return False
 
 
+# ── Formulaire profil enrichi ──────────────────────────────────────────────────
+
+def show_profile_form(profile: dict):
+    # ── CSS : checkboxes ──────────────────────────────────────────────────────
+    st.markdown("""<style>
+[data-baseweb="checkbox"] span:first-child,
+[data-baseweb="checkbox"] div:first-child {
+    background-color: white !important;
+    border: 2px solid #7B2FBE !important;
+    border-radius: 4px !important;
+}
+[data-baseweb="checkbox"]:has(input:checked) span:first-child,
+[data-baseweb="checkbox"]:has(input:checked) div:first-child {
+    background-color: #7B2FBE !important;
+    border-color: #7B2FBE !important;
+}
+[data-baseweb="checkbox"] svg {
+    fill: white !important;
+}
+</style>""", unsafe_allow_html=True)
+
+    st.markdown(_t("pf_title"))
+    st.caption(_t("pf_subtitle"))
+
+    # Canonical FR lists for storage (data compatibility with existing profiles)
+    _GENDER_OPTS_FR  = ["Femme", "Homme", "Non-binaire", "Préfère ne pas préciser"]
+    _ORIENT_OPTS_FR  = ["Hétérosexuel(le)", "Homosexuel(le)", "Bisexuel(le)", "Autre", "Préfère ne pas préciser"]
+    _SIT_OPTS_FR     = ["Célibataire", "En couple", "Marié(e) / Pacsé(e)", "Divorcé(e)", "Veuf/Veuve", "C'est compliqué"]
+    _ALIM_OPTS_FR    = ["Omnivore", "Végétarien(ne)", "Vegan", "Pescétarien(ne)", "Sans gluten", "Halal", "Casher", "Autre"]
+    _TRANSP_OPTS_FR  = ["Voiture", "Transport en commun", "Vélo", "À pied", "Moto / Scooter", "Télétravail", "Mixte"]
+
+    # Translated display lists
+    sexe_opts_display   = _tl("pf_gender_opts")
+    orient_opts_display = _tl("pf_orient_opts")
+    sit_opts_display    = _tl("pf_sit_opts")
+    alim_opts_display   = _tl("pf_alim_opts")
+    transp_opts_display = _tl("pf_transp_opts")
+
+    def _idx_fr(fr_list, display_list, stored_val, default=0):
+        """Find index in FR list for a stored value, then return same index for display list."""
+        idx = fr_list.index(stored_val) if stored_val in fr_list else default
+        return idx
+
+    def _idx_display(display_list, val, default=0):
+        return display_list.index(val) if val in display_list else default
+
+    # ── Photo de profil (hors formulaire pour mise à jour immédiate) ─────────────
+    PHOTOS_DIR.mkdir(parents=True, exist_ok=True)
+    uid = get_active_user_id() or ""
+    photo_path = PHOTOS_DIR / f"{uid}.jpg" if uid else None
+    col_ph1, col_ph2 = st.columns([1, 3])
+    with col_ph1:
+        photo_url = get_profile_photo_url(uid) if uid else None
+        if photo_url:
+            st.markdown(
+                f'<img src="{photo_url}" style="width:90px;height:90px;'
+                f'border-radius:50%;object-fit:cover;display:block;">',
+                unsafe_allow_html=True,
+            )
+        else:
+            st.markdown(
+                '<div style="width:90px;height:90px;border-radius:50%;'
+                'background:linear-gradient(135deg,#C084FC,#818CF8);'
+                'display:flex;align-items:center;justify-content:center;'
+                'font-size:36px;">👤</div>', unsafe_allow_html=True
+            )
+    with col_ph2:
+        uploaded = st.file_uploader(_t("pf_photo"), type=["jpg","jpeg","png"],
+                                    key="profile_photo_upload")
+        if uploaded and uid:
+            url = upload_profile_photo(uploaded.getbuffer(), uid)
+            if url:
+                invalidate_photo_cache(uid)
+                st.success(_t("pf_photo_ok"))
+                st.rerun()
+
+    # ── Formulaire profil (sans st.form → rendu conditionnel immédiat) ───────
+    st.markdown(_t("pf_identity"))
+    c1, c2 = st.columns(2)
+    with c1:
+        prenom = st.text_input(_t("pf_prenom"), value=profile.get("prenom", ""))
+        ville  = st.text_input(_t("pf_ville"),  value=profile.get("ville",  ""))
+        age    = st.number_input(_t("pf_age"), min_value=13, max_value=120,
+                                 value=max(13, int(profile.get("age") or 13)))
+        _ddn_str = profile.get("date_naissance", "")
+        date_naissance = st.text_input(
+            _t("pf_ddn"),
+            value=_ddn_str,
+            placeholder=_t("pf_ddn_ph"),
+            help=_t("pf_ddn_help"),
+        )
+        poids  = st.number_input(_t("pf_poids"), min_value=0, max_value=700,
+                                 value=int(profile.get("poids") or 0),
+                                 help=_t("pf_poids_help"))
+        taille = st.number_input(_t("pf_taille"), min_value=0, max_value=300,
+                                 value=int(profile.get("taille") or 0),
+                                 help=_t("pf_taille_help"))
+    with c2:
+        _sexe_stored = profile.get("sexe", "")
+        _sexe_idx = _idx_fr(_GENDER_OPTS_FR, sexe_opts_display, _sexe_stored)
+        sexe_display = st.selectbox(_t("pf_sexe"), sexe_opts_display, index=_sexe_idx)
+        sexe_sel_idx = _idx_display(sexe_opts_display, sexe_display)
+        sexe = _GENDER_OPTS_FR[sexe_sel_idx] if sexe_sel_idx < len(_GENDER_OPTS_FR) else _sexe_stored
+
+        profession = st.text_input(_t("pf_profession"), value=profile.get("profession", ""),
+                                   placeholder=_t("pf_profession_ph"))
+        budget_mensuel = st.number_input(
+            _t("pf_budget"),
+            min_value=0, max_value=50000,
+            value=int(profile.get("budget_mensuel") or 0),
+            step=50,
+            help=_t("pf_budget_help"),
+        )
+
+    st.markdown(_t("pf_personal"))
+    _orient_stored = profile.get("orientation_sexuelle", "")
+    _orient_idx = _idx_fr(_ORIENT_OPTS_FR, orient_opts_display, _orient_stored)
+    orient_display = st.selectbox(_t("pf_orientation"), orient_opts_display, index=_orient_idx)
+    orient_sel_idx = _idx_display(orient_opts_display, orient_display)
+    orientation = _ORIENT_OPTS_FR[orient_sel_idx] if orient_sel_idx < len(_ORIENT_OPTS_FR) else _orient_stored
+
+    _sit_stored = profile.get("situation_maritale", "")
+    _sit_idx = _idx_fr(_SIT_OPTS_FR, sit_opts_display, _sit_stored)
+    sit_display = st.selectbox(_t("pf_situation"), sit_opts_display, index=_sit_idx)
+    sit_sel_idx = _idx_display(sit_opts_display, sit_display)
+    situation = _SIT_OPTS_FR[sit_sel_idx] if sit_sel_idx < len(_SIT_OPTS_FR) else _sit_stored
+
+    # ── Enfants (case à cocher — conditionnel immédiat) ──────────────────────
+    _fam_outer = profile.get("famille") or {}
+    _enf_default = _fam_outer.get("a_enfants") not in (False, None, "Non", 0, "")
+    a_enfants_cb = st.checkbox(_t("pf_children_cb"), value=_enf_default, key="enf_cb")
+    a_enfants = "Oui" if a_enfants_cb else "Non"
+    if a_enfants_cb:
+        nb_enfants = st.number_input(
+            _t("pf_nb_children"),
+            min_value=0, max_value=20,
+            value=int(_fam_outer.get("nb_enfants") or 0),
+            key="nb_enfants_outer",
+        )
+    else:
+        nb_enfants = 0
+
+    hobbies = st.text_area(_t("pf_hobbies"),
+                           value=", ".join(profile.get("hobbies", [])),
+                           placeholder=_t("pf_hobbies_ph"))
+
+    st.markdown(_t("pf_lifestyle"))
+    c3, c4 = st.columns(2)
+    with c3:
+        _alim_stored = profile.get("habitudes_alimentaires", "")
+        _alim_idx = _idx_fr(_ALIM_OPTS_FR, alim_opts_display, _alim_stored)
+        alim_display = st.selectbox(_t("pf_diet"), alim_opts_display, index=_alim_idx)
+        alim_sel_idx = _idx_display(alim_opts_display, alim_display)
+        alim = _ALIM_OPTS_FR[alim_sel_idx] if alim_sel_idx < len(_ALIM_OPTS_FR) else _alim_stored
+    with c4:
+        st.markdown(_t("pf_transport"))
+        saved_transport = profile.get("transport", "")
+        # saved_transport stores FR canonical values; match against FR list
+        saved_list = [s.strip() for s in saved_transport.split(",")] if saved_transport else []
+        transport_checks = {
+            fr_val: st.checkbox(disp_val, value=(fr_val in saved_list), key=f"tr_{fr_val}")
+            for fr_val, disp_val in zip(_TRANSP_OPTS_FR, transp_opts_display)
+        }
+        transport = ", ".join([fr_val for fr_val, checked in transport_checks.items() if checked])
+
+    # ── Détail transport pour les alertes ──
+    st.markdown(_t("pf_transport_lines_section"))
+    transport_info = profile.get("transport_detail", {}) or {}
+    all_lines = [
+        "RER A", "RER B", "RER C", "RER D", "RER E",
+        "Métro 1", "Métro 2", "Métro 3", "Métro 4", "Métro 5",
+        "Métro 6", "Métro 7", "Métro 8", "Métro 9", "Métro 10",
+        "Métro 11", "Métro 12", "Métro 13", "Métro 14",
+        "Transilien H", "Transilien J", "Transilien K", "Transilien L",
+        "Transilien N", "Transilien P", "Transilien R", "Transilien U",
+        "TGV", "Intercités", "TER", "Autre ligne",
+    ]
+    tc_lines = st.multiselect(
+        _t("pf_lines_label"),
+        all_lines,
+        default=transport_info.get("lines", []),
+        placeholder=_t("pf_lines_ph"),
+    )
+    c5, c6 = st.columns(2)
+    with c5:
+        depart_heure = st.text_input(
+            _t("pf_depart_label"),
+            value=transport_info.get("depart_heure", ""),
+            placeholder="Ex : 08:00",
+        )
+    with c6:
+        has_car = st.checkbox(
+            _t("pf_has_car"),
+            value=transport_info.get("has_car", False),
+            key="has_car"
+        )
+    trajet_desc = st.text_input(
+        _t("pf_trajet_label"),
+        value=transport_info.get("trajet_desc", ""),
+        placeholder=_t("pf_trajet_ph"),
+    )
+
+    # ── Réveil ──
+    st.markdown(_t("pf_wakeup_section"))
+    heure_reveil = st.text_input(
+        _t("pf_wakeup_label"),
+        value=profile.get("heure_reveil", ""),
+        placeholder=_t("pf_wakeup_ph"),
+        help=_t("pf_wakeup_help"),
+    )
+
+    st.markdown(_t("pf_wardrobe_section"))
+    gdr = profile.get("garde_robe", {}) or {}
+    if not isinstance(gdr, dict):
+        gdr = {"description": "", "photos": []}
+    garde_desc = st.text_area(_t("pf_wardrobe_style_label"), value=gdr.get("description", ""),
+                              placeholder=_t("pf_wardrobe_style_ph"))
+    photos = st.file_uploader(_t("pf_wardrobe_photos"), type=["jpg", "jpeg", "png"],
+                              accept_multiple_files=True)
+
+    saved = st.button(_t("pf_save"), use_container_width=True, type="primary")
+
+    if saved:
+        saved_photos = list(gdr.get("photos", []))
+        if photos:
+            WARDROBE_DIR.mkdir(parents=True, exist_ok=True)
+            for p in photos:
+                dest = WARDROBE_DIR / p.name
+                with open(dest, "wb") as f:
+                    f.write(p.getbuffer())
+                if p.name not in saved_photos:
+                    saved_photos.append(p.name)
+
+        profile.update({
+            "prenom":         prenom.strip(),
+            "ville":          ville.strip(),
+            "age":            int(age) if age else None,
+            "date_naissance": date_naissance.strip(),
+            "poids":          int(poids) if poids else None,
+            "taille":         int(taille) if taille else None,
+            "budget_mensuel": int(budget_mensuel) if budget_mensuel else 0,
+            "sexe":           sexe,
+            "profession":     profession.strip(),
+            "orientation_sexuelle": orientation,
+            "situation_maritale":   situation,
+            "famille":   {"a_enfants": a_enfants == "Oui",
+                          "nb_enfants": int(nb_enfants) if a_enfants == "Oui" else 0},
+            "hobbies":   [h.strip() for h in hobbies.split(",") if h.strip()],
+            "habitudes_alimentaires": alim,
+            "transport": transport,
+            "transport_detail": {
+                "lines":        tc_lines,
+                "depart_heure": depart_heure.strip(),
+                "has_car":      has_car,
+                "trajet_desc":  trajet_desc.strip(),
+            },
+            "garde_robe": {"description": garde_desc, "photos": saved_photos},
+            "heure_reveil": heure_reveil.strip(),
+            "onboarding_lifestyle_complete": True,
+        })
+        save_profile(profile)
+        st.success(_t("pf_saved"))
+        st.rerun()

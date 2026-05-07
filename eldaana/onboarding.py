@@ -427,6 +427,33 @@ def show_onboarding() -> bool:
 # ── Formulaire profil enrichi ──────────────────────────────────────────────────
 
 def show_profile_form(profile: dict):
+    # ── CSS : checkboxes avec coche violette visible ───────────────────────────
+    st.markdown("""
+<style>
+/* Carré de la checkbox : bordure violet clair */
+[data-baseweb="checkbox"] [role="checkbox"] {
+    border: 2px solid #9CA3AF !important;
+    border-radius: 3px !important;
+    transition: background .15s, border-color .15s;
+}
+/* Coché : fond violet + coche blanche visible */
+[data-baseweb="checkbox"] [role="checkbox"][aria-checked="true"] {
+    background-color: #7C3AED !important;
+    border-color: #7C3AED !important;
+}
+[data-baseweb="checkbox"] [role="checkbox"][aria-checked="true"] svg {
+    display: block !important;
+    opacity: 1 !important;
+}
+[data-baseweb="checkbox"] [role="checkbox"][aria-checked="true"] svg path,
+[data-baseweb="checkbox"] [role="checkbox"][aria-checked="true"] svg polyline,
+[data-baseweb="checkbox"] [role="checkbox"][aria-checked="true"] svg line {
+    fill: white !important;
+    stroke: white !important;
+}
+</style>
+""", unsafe_allow_html=True)
+
     st.markdown(_t("pf_title"))
     st.caption(_t("pf_subtitle"))
 
@@ -530,14 +557,16 @@ def show_profile_form(profile: dict):
         situation = _SIT_OPTS_FR[sit_sel_idx] if sit_sel_idx < len(_SIT_OPTS_FR) else _sit_stored
 
         fam = profile.get("famille", {})
-        st.markdown(_t("pf_children"))
-        a_enfants_val = "Oui" if fam.get("a_enfants") else "Non"
-        col_enf1, col_enf2 = st.columns(2)
-        with col_enf1:
-            enf_non = st.checkbox(_t("pf_children_no"), value=(a_enfants_val == "Non"), key="enf_non")
-        with col_enf2:
-            enf_oui = st.checkbox(_t("pf_children_yes"), value=(a_enfants_val == "Oui"), key="enf_oui")
-        a_enfants = "Oui" if enf_oui else "Non"
+        _enf_opts = [_t("pf_children_no"), _t("pf_children_yes")]
+        _enf_idx  = 1 if fam.get("a_enfants") else 0
+        enf_choice = st.radio(
+            _t("pf_children"),
+            _enf_opts,
+            horizontal=True,
+            index=_enf_idx,
+            key="enf_radio",
+        )
+        a_enfants = "Oui" if enf_choice == _t("pf_children_yes") else "Non"
         nb_enfants = st.number_input(
             _t("pf_nb_children"),
             min_value=0, max_value=20,

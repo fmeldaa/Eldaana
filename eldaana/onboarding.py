@@ -427,29 +427,30 @@ def show_onboarding() -> bool:
 # ── Formulaire profil enrichi ──────────────────────────────────────────────────
 
 def show_profile_form(profile: dict):
-    # ── CSS : checkboxes avec coche violette visible ───────────────────────────
+    # ── CSS : checkboxes — coche VIOLETTE sur fond blanc ──────────────────────
+    # Cibler uniquement [data-testid="stCheckbox"] pour ne PAS toucher les radios
     st.markdown("""
 <style>
-/* Carré de la checkbox : bordure violet clair */
-[data-baseweb="checkbox"] [role="checkbox"] {
-    border: 2px solid #9CA3AF !important;
-    border-radius: 3px !important;
-    transition: background .15s, border-color .15s;
+[data-testid="stCheckbox"] [role="checkbox"] {
+    border: 2px solid #D1D5DB !important;
+    background-color: #fff !important;
+    border-radius: 4px !important;
+    transition: border-color .15s;
 }
-/* Coché : fond violet + coche blanche visible */
-[data-baseweb="checkbox"] [role="checkbox"][aria-checked="true"] {
-    background-color: #7C3AED !important;
+[data-testid="stCheckbox"] [role="checkbox"]:hover {
     border-color: #7C3AED !important;
 }
-[data-baseweb="checkbox"] [role="checkbox"][aria-checked="true"] svg {
+[data-testid="stCheckbox"] [role="checkbox"][aria-checked="true"] {
+    background-color: #fff !important;
+    border-color: #7C3AED !important;
+}
+[data-testid="stCheckbox"] [role="checkbox"][aria-checked="true"] svg {
     display: block !important;
     opacity: 1 !important;
 }
-[data-baseweb="checkbox"] [role="checkbox"][aria-checked="true"] svg path,
-[data-baseweb="checkbox"] [role="checkbox"][aria-checked="true"] svg polyline,
-[data-baseweb="checkbox"] [role="checkbox"][aria-checked="true"] svg line {
-    fill: white !important;
-    stroke: white !important;
+[data-testid="stCheckbox"] [role="checkbox"][aria-checked="true"] svg *  {
+    fill: #7C3AED !important;
+    stroke: #7C3AED !important;
 }
 </style>
 """, unsafe_allow_html=True)

@@ -556,7 +556,7 @@ def show_email_page(profile: dict):
         # ── Outlook ────────────────────────────────────────────────────────────
         col1, col2 = st.columns([1, 8])
         with col1:
-            st.image("https://cdn.simpleicons.org/microsoftoutlook/0078D4", width=24)
+            st.image("https://cdn.simpleicons.org/outlookdotcom/0078D4", width=24)
         with col2:
             if st.button("Connecter ma boîte Outlook",
                          use_container_width=True, key="connect_outlook"):
@@ -565,7 +565,15 @@ def show_email_page(profile: dict):
         # ── Autre fournisseur ──────────────────────────────────────────────────
         col1, col2 = st.columns([1, 8])
         with col1:
-            st.image("https://cdn.simpleicons.org/maildotru/005FF9", width=24)
+            st.markdown(
+                '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" '
+                'viewBox="0 0 24 24" fill="none" stroke="#7B2FBE" stroke-width="2" '
+                'stroke-linecap="round" stroke-linejoin="round">'
+                '<rect x="2" y="4" width="20" height="16" rx="2"/>'
+                '<path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/>'
+                '</svg>',
+                unsafe_allow_html=True,
+            )
         with col2:
             if st.button("Autre fournisseur (IMAP / SMTP)",
                          use_container_width=True, key="connect_other"):

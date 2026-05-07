@@ -370,7 +370,7 @@ _STRINGS: dict[str, dict[str, str]] = {
         "humeur_expander":     "Ton humeur du jour",
 
         # ── Email Gmail ──────────────────────────────────────────────────
-        "email_gmail_connect_btn": "📧 Connecter ma boîte Gmail",
+        "email_gmail_connect_btn": "Connecter ma boîte Gmail",
         "email_gmail_connected_ok": "✅ Gmail connecté !",
         "email_oauth_error":       "Erreur OAuth : {e}",
 
@@ -808,7 +808,7 @@ _STRINGS: dict[str, dict[str, str]] = {
         "humeur_expander":     "Your mood today",
 
         # ── Email Gmail ──────────────────────────────────────────────────
-        "email_gmail_connect_btn": "📧 Connect my Gmail inbox",
+        "email_gmail_connect_btn": "Connect my Gmail inbox",
         "email_gmail_connected_ok": "✅ Gmail connected!",
         "email_oauth_error":       "OAuth error: {e}",
 

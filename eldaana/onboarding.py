@@ -389,9 +389,10 @@ def show_onboarding() -> bool:
             for e in errors:
                 st.error(e)
         else:
-            # Détermine l'ID : Google sub, Facebook ID, ou nouvel UUID
+            # Détermine l'ID : Google sub, Facebook ID, LinkedIn sub, ou nouvel UUID
             user_id = (prefill.get("google_sub")
                        or prefill.get("fb_id")
+                       or prefill.get("li_sub")
                        or str(uuid.uuid4()))
 
             _country_cfg = COUNTRY_CONFIG.get(country_label, COUNTRY_CONFIG["🇫🇷 France"])

@@ -87,19 +87,20 @@ NETWORKS = {
 }
 
 RESEAUX_LOGOS = {
-    "Instagram":  ("instagram",          "E4405F"),
-    "Facebook":   ("facebook",           "1877F2"),
-    "TikTok":     ("tiktok",             "000000"),
-    "Twitter / X":("x",                  "000000"),
-    "LinkedIn":   ("linkedin",           "0A66C2"),
-    "Snapchat":   ("snapchat",           "FFFC00"),
-    "WhatsApp":   ("whatsapp",           "25D366"),
-    "Email":      ("gmail",              "EA4335"),
-    "Spotify":    ("spotify",            "1DB954"),
-    "YouTube":    ("youtube",            "FF0000"),
-    "Deezer":     ("deezer",             "A238FF"),
-    "Shazam":     ("shazam",             "0088FF"),
+    "Instagram":   "logos:instagram-icon",
+    "Facebook":    "logos:facebook",
+    "TikTok":      "logos:tiktok-icon",
+    "Twitter / X": "logos:x",
+    "LinkedIn":    "logos:linkedin-icon",
+    "Snapchat":    "logos:snapchat",
+    "WhatsApp":    "logos:whatsapp-icon",
+    "Email":       "logos:google-gmail",
+    "Spotify":     "logos:spotify-icon",
+    "YouTube":     "logos:youtube-icon",
+    "Deezer":      "logos:deezer-icon",
+    "Shazam":      "logos:shazam",
 }
+# URL pattern : https://api.iconify.design/{slug}.svg  (couleurs natives, pas besoin de préciser)
 
 NETWORKS_EN = {
     "Instagram": {
@@ -190,13 +191,12 @@ def show_social_connect(profile: dict):
     cols = st.columns(4)
     for i, (name, info) in enumerate(NETWORKS.items()):
         with cols[i % 4]:
-            logo = RESEAUX_LOGOS.get(name)
-            if logo:
-                slug, color = logo
+            icon_slug = RESEAUX_LOGOS.get(name)
+            if icon_slug:
+                url = f"https://api.iconify.design/{icon_slug}.svg"
                 st.markdown(
-                    f'<div style="display:flex;align-items:center;gap:8px;height:32px;">'
-                    f'<img src="https://cdn.simpleicons.org/{slug}/{color}" '
-                    f'width="18" height="18" '
+                    f'<div style="display:flex;align-items:center;height:32px;">'
+                    f'<img src="{url}" width="18" height="18" '
                     f'style="vertical-align:middle;display:inline-block;" />'
                     f'</div>',
                     unsafe_allow_html=True,
@@ -222,13 +222,13 @@ def show_social_connect(profile: dict):
     for name in selected:
         info = NETWORKS[name]
         net_info = NETWORKS_EN.get(name, info) if lang == "en" else info
-        logo = RESEAUX_LOGOS.get(name)
-        if logo:
-            slug, color = logo
+        icon_slug = RESEAUX_LOGOS.get(name)
+        if icon_slug:
+            url = f"https://api.iconify.design/{icon_slug}.svg"
             st.markdown(
-                f'<img src="https://cdn.simpleicons.org/{slug}/{color}" '
-                f'width="18" style="vertical-align:middle;margin-right:6px;">'
-                f'<span style="font-size:1.1rem;font-weight:600;color:#{color}">'
+                f'<img src="{url}" width="18" height="18" '
+                f'style="vertical-align:middle;margin-right:6px;">'
+                f'<span style="font-size:1.1rem;font-weight:600;color:{info["color"]}">'
                 f'{name}</span>',
                 unsafe_allow_html=True,
             )

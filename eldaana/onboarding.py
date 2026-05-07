@@ -427,35 +427,9 @@ def show_onboarding() -> bool:
 # ── Formulaire profil enrichi ──────────────────────────────────────────────────
 
 def show_profile_form(profile: dict):
-    # ── CSS : coche VIOLETTE sur fond blanc (Streamlit 1.40+ baseweb) ─────────
+    # ── CSS : radio buttons visibles (les checkboxes utilisent le thème natif) ─
     st.markdown("""
 <style>
-/* ── Checkbox : fond blanc + coche violette ── */
-/* Boîte vide : bordure gris clair */
-[data-testid="stCheckbox"] [data-baseweb="checkbox"] > div:first-child {
-    background-color: #fff !important;
-    border: 2px solid #D1D5DB !important;
-    border-radius: 4px !important;
-    transition: border-color .15s;
-}
-/* Hover : bordure violette */
-[data-testid="stCheckbox"]:hover [data-baseweb="checkbox"] > div:first-child {
-    border-color: #7C3AED !important;
-}
-/* Coché via :has(input:checked) — fond blanc, bordure violette */
-[data-testid="stCheckbox"]:has(input[type="checkbox"]:checked) [data-baseweb="checkbox"] > div:first-child {
-    background-color: #fff !important;
-    border-color: #7C3AED !important;
-}
-/* Coche SVG → violette */
-[data-testid="stCheckbox"]:has(input[type="checkbox"]:checked) [data-baseweb="checkbox"] svg,
-[data-testid="stCheckbox"]:has(input[type="checkbox"]:checked) [data-baseweb="checkbox"] svg * {
-    fill: #7C3AED !important;
-    stroke: #7C3AED !important;
-    color: #7C3AED !important;
-}
-
-/* ── Radio buttons (Enfants Non/Oui) : cercle visible ── */
 [data-testid="stRadio"] [data-baseweb="radio"] > div:first-child {
     border: 2px solid #D1D5DB !important;
     border-radius: 50% !important;
@@ -584,11 +558,15 @@ def show_profile_form(profile: dict):
             key="enf_radio",
         )
         a_enfants = "Oui" if enf_choice == _t("pf_children_yes") else "Non"
-        nb_enfants = st.number_input(
-            _t("pf_nb_children"),
-            min_value=0, max_value=20,
-            value=int(fam.get("nb_enfants") or 0),
-        )
+        # Nombre d'enfants : visible uniquement si "Oui"
+        if a_enfants == "Oui":
+            nb_enfants = st.number_input(
+                _t("pf_nb_children"),
+                min_value=0, max_value=20,
+                value=int(fam.get("nb_enfants") or 0),
+            )
+        else:
+            nb_enfants = 0
         hobbies = st.text_area(_t("pf_hobbies"),
                                value=", ".join(profile.get("hobbies", [])),
                                placeholder=_t("pf_hobbies_ph"))

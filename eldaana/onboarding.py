@@ -427,24 +427,6 @@ def show_onboarding() -> bool:
 # ── Formulaire profil enrichi ──────────────────────────────────────────────────
 
 def show_profile_form(profile: dict):
-    # ── CSS : checkboxes ──────────────────────────────────────────────────────
-    st.markdown("""<style>
-[data-baseweb="checkbox"] span:first-child,
-[data-baseweb="checkbox"] div:first-child {
-    background-color: white !important;
-    border: 2px solid #7B2FBE !important;
-    border-radius: 4px !important;
-}
-[data-baseweb="checkbox"]:has(input:checked) span:first-child,
-[data-baseweb="checkbox"]:has(input:checked) div:first-child {
-    background-color: #7B2FBE !important;
-    border-color: #7B2FBE !important;
-}
-[data-baseweb="checkbox"] svg {
-    fill: white !important;
-}
-</style>""", unsafe_allow_html=True)
-
     st.markdown(_t("pf_title"))
     st.caption(_t("pf_subtitle"))
 

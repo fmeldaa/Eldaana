@@ -207,7 +207,8 @@ def _sync_social_photo(uid: str, photo_url: str):
         return
     try:
         import requests as _req
-        resp = _req.get(photo_url, timeout=10)
+        resp = _req.get(photo_url, timeout=10,
+                        headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"})
         if resp.status_code == 200:
             upload_profile_photo(resp.content, uid)
             invalidate_photo_cache(uid)
@@ -406,6 +407,9 @@ def show_onboarding() -> bool:
                 "fb_id":          prefill.get("fb_id", ""),
                 "fb_email":       prefill.get("fb_email", ""),
                 "fb_picture":     prefill.get("fb_picture", ""),
+                "li_sub":         prefill.get("li_sub", ""),
+                "li_email":       prefill.get("li_email", ""),
+                "li_picture":     prefill.get("li_picture", ""),
                 # Localisation
                 "country":             _country_cfg["code"],
                 "country_label":       country_label,

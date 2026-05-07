@@ -12,6 +12,7 @@ import uuid
 from pathlib import Path
 from google_auth import show_google_button, google_to_profile
 from facebook_auth import show_facebook_button, facebook_to_profile
+from linkedin_auth import show_linkedin_button, linkedin_to_profile
 from storage import db_load, db_save
 from cloudinary_storage import upload_profile_photo, get_profile_photo_url, invalidate_photo_cache
 from translations import t as _t, t_list as _tl
@@ -274,8 +275,7 @@ def show_onboarding() -> bool:
     with col_fb:
         facebook_info = show_facebook_button()
     with col_li:
-        st.markdown(f'<button onclick="alert(\'LinkedIn — bientôt disponible !\')" style="{_btn}">'
-                    f'{_LOGO_LINKEDIN} LinkedIn</button>', unsafe_allow_html=True)
+        linkedin_info = show_linkedin_button()
     with col_x:
         st.markdown(f'<button onclick="alert(\'X — bientôt disponible !\')" style="{_btn}">'
                     f'{_LOGO_X} Twitter</button>', unsafe_allow_html=True)
@@ -307,14 +307,31 @@ def show_onboarding() -> bool:
         st.session_state["social_prefill"] = prefill_data
         st.rerun()
 
+    # ── Callback LinkedIn ─────────────────────────────────────────────────────
+    if linkedin_info:
+        li_sub = linkedin_info.get("sub", "")
+        existing = db_load(li_sub) if li_sub else None
+        if existing and existing.get("onboarding_complete"):
+            st.session_state["user_id"] = li_sub
+            prefill_li = linkedin_to_profile(linkedin_info)
+            _sync_social_photo(li_sub, prefill_li.get("li_picture", ""))
+            return True
+        prefill_data = linkedin_to_profile(linkedin_info)
+        _sync_social_photo(li_sub, prefill_data.get("li_picture", ""))
+        st.session_state["social_prefill"] = prefill_data
+        st.rerun()
+
     # ── Formulaire ─────────────────────────────────────────────────────────────
     prefill      = st.session_state.get("social_prefill", {})
     from_social  = bool(prefill)
     from_fb      = from_social and bool(prefill.get("fb_id"))
+    from_li      = from_social and bool(prefill.get("li_sub"))
 
     if from_social:
         if from_fb:
-            st.success(_t("ob_fb_ok", prenom=prefill.get('prenom', '')))
+            st.success(_t("ob_fb_ok",     prenom=prefill.get('prenom', '')))
+        elif from_li:
+            st.success(_t("ob_li_ok",     prenom=prefill.get('prenom', '')))
         else:
             st.success(_t("ob_google_ok", prenom=prefill.get('prenom', '')))
         st.markdown(_t("ob_form_google"))

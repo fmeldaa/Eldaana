@@ -65,8 +65,8 @@ def show_google_button() -> dict | None:
         # Décoder le state : "<token>|<platform>" (Google) ou "<token>|<platform>|fb" (Facebook)
         state_parts = state.split("|", 2)
 
-        # Ignorer les callbacks Facebook (state se termine par "|fb")
-        if len(state_parts) >= 3 and state_parts[2] == "fb":
+        # Ignorer les callbacks Facebook ("|fb") et LinkedIn ("|li")
+        if len(state_parts) >= 3 and state_parts[2] in ("fb", "li"):
             return None
 
         platform = state_parts[1] if len(state_parts) > 1 else "web"

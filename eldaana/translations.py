@@ -185,6 +185,7 @@ _STRINGS: dict[str, dict[str, str]] = {
         "ob_err_city":        "Votre ville est requise.",
         "ob_google_ok":       "✅ Connecté avec Google — bonjour **{prenom}** !",
         "ob_fb_ok":           "✅ Connecté avec Facebook — bonjour **{prenom}** !",
+        "ob_li_ok":           "✅ Connecté avec LinkedIn — bonjour **{prenom}** !",
         "ob_gender_opts":     ["Femme", "Homme", "Non-binaire", "Préfère ne pas préciser"],
 
         # ── Profile form ─────────────────────────────────────────────────────────────
@@ -618,6 +619,7 @@ _STRINGS: dict[str, dict[str, str]] = {
         "ob_err_city":        "Your city is required.",
         "ob_google_ok":       "✅ Connected with Google — hello **{prenom}**!",
         "ob_fb_ok":           "✅ Connected with Facebook — hello **{prenom}**!",
+        "ob_li_ok":           "✅ Connected with LinkedIn — hello **{prenom}**!",
         "ob_gender_opts":     ["Female", "Male", "Non-binary", "Prefer not to say"],
 
         # ── Profile form ─────────────────────────────────────────────────────────────

@@ -427,36 +427,33 @@ def show_onboarding() -> bool:
 # ── Formulaire profil enrichi ──────────────────────────────────────────────────
 
 def show_profile_form(profile: dict):
-    # ── CSS : radio buttons + checkboxes dans le form ─────────────────────────
-    st.markdown("""
-<style>
-/* Radio buttons (Enfants Non/Oui) */
-[data-testid="stRadio"] [data-baseweb="radio"] > div:first-child {
-    border: 2px solid #D1D5DB !important;
-    border-radius: 50% !important;
-    background: #fff !important;
+    # ── CSS : checkboxes + radio ───────────────────────────────────────────────
+    st.markdown("""<style>
+/* CHECKBOXES — Transport, Réseaux, Consentements */
+[data-testid="stCheckbox"] label > div:first-child,
+[data-baseweb="checkbox"] > span:first-child {
+    border: 2px solid #7B2FBE !important;
+    border-radius: 4px !important;
 }
-[data-testid="stRadio"] [data-baseweb="radio"]:hover > div:first-child {
-    border-color: #7B2FBE !important;
-}
-[data-testid="stRadio"]:has(input[type="radio"]:checked) [data-baseweb="radio"]:has(input:checked) > div:first-child {
-    border-color: #7B2FBE !important;
-    background: #7B2FBE !important;
-}
-
-/* Checkboxes : fill violet + coche blanche (transport et autres) */
-[data-testid="stCheckbox"]:has(input[type="checkbox"]:checked)
-  [data-baseweb="checkbox"] > div:first-child {
+[data-testid="stCheckbox"] label > div[data-checked="true"]:first-child,
+[data-baseweb="checkbox"] [aria-checked="true"] > span:first-child,
+[data-baseweb="checkbox"] input:checked ~ span:first-child {
     background-color: #7B2FBE !important;
     border-color: #7B2FBE !important;
 }
-[data-testid="stCheckbox"]:has(input[type="checkbox"]:checked)
-  [data-baseweb="checkbox"] svg * {
-    fill: #fff !important;
-    stroke: #fff !important;
+[data-testid="stCheckbox"] svg,
+[data-baseweb="checkbox"] svg {
+    fill: white !important;
+    color: white !important;
 }
-</style>
-""", unsafe_allow_html=True)
+
+/* RADIO — Enfants Oui/Non */
+[data-testid="stRadio"] [aria-checked="true"] > div:first-child,
+[data-baseweb="radio"] [aria-checked="true"] > div:first-child {
+    background-color: #7B2FBE !important;
+    border-color: #7B2FBE !important;
+}
+</style>""", unsafe_allow_html=True)
 
     st.markdown(_t("pf_title"))
     st.caption(_t("pf_subtitle"))
@@ -564,18 +561,12 @@ def show_profile_form(profile: dict):
     sit_sel_idx = _idx_display(sit_opts_display, sit_display)
     situation = _SIT_OPTS_FR[sit_sel_idx] if sit_sel_idx < len(_SIT_OPTS_FR) else _sit_stored
 
-    # ── Enfants (conditionnel immédiat — fonctionne car hors st.form) ─────────
+    # ── Enfants (case à cocher — conditionnel immédiat) ──────────────────────
     _fam_outer = profile.get("famille") or {}
-    _enf_opts  = [_t("pf_children_no"), _t("pf_children_yes")]
-    enf_choice = st.radio(
-        _t("pf_children"),
-        _enf_opts,
-        horizontal=True,
-        index=1 if _fam_outer.get("a_enfants") not in (False, None, "Non", 0, "") else 0,
-        key="enf_radio_outer",
-    )
-    a_enfants = "Oui" if enf_choice == _t("pf_children_yes") else "Non"
-    if a_enfants == "Oui":
+    _enf_default = _fam_outer.get("a_enfants") not in (False, None, "Non", 0, "")
+    a_enfants_cb = st.checkbox(_t("pf_children_cb"), value=_enf_default, key="enf_cb")
+    a_enfants = "Oui" if a_enfants_cb else "Non"
+    if a_enfants_cb:
         nb_enfants = st.number_input(
             _t("pf_nb_children"),
             min_value=0, max_value=20,

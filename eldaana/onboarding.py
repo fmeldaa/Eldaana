@@ -336,6 +336,7 @@ def show_onboarding() -> bool:
 
     ville = st.text_input(
         _t("ob_city"),
+        value=prefill.get("ville", ""),
         placeholder=_t("ob_city_ph"),
         help=_t("ob_city_help"),
     )
@@ -483,8 +484,8 @@ def show_profile_form(profile: dict):
         with c1:
             prenom = st.text_input(_t("pf_prenom"), value=profile.get("prenom", ""))
             ville  = st.text_input(_t("pf_ville"),  value=profile.get("ville",  ""))
-            age    = st.number_input(_t("pf_age"), min_value=11, max_value=120,
-                                     value=max(11, int(profile.get("age") or 11)))
+            age    = st.number_input(_t("pf_age"), min_value=13, max_value=120,
+                                     value=max(13, int(profile.get("age") or 13)))
             _ddn_str = profile.get("date_naissance", "")
             date_naissance = st.text_input(
                 _t("pf_ddn"),

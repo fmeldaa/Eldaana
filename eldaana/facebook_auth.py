@@ -90,7 +90,7 @@ def show_facebook_button() -> dict | None:
         "client_id":     app_id,
         "redirect_uri":  redirect_uri,
         "response_type": "code",
-        "scope":         "email,public_profile",
+        "scope":         "email,public_profile,user_birthday,user_location,user_hometown",
         "state":         _state,
     })
 
@@ -157,7 +157,8 @@ def _fetch_user_info(access_token: str) -> dict | None:
         resp = _http.get(
             FACEBOOK_USERINFO,
             params={
-                "fields":       "id,name,first_name,last_name,email,picture.type(large)",
+                "fields":       "id,name,first_name,last_name,email,picture.type(large),"
+                                "birthday,location,hometown,age_range",
                 "access_token": access_token,
             },
             timeout=5,
@@ -169,24 +170,72 @@ def _fetch_user_info(access_token: str) -> dict | None:
         return None
 
 
+def _parse_fb_birthday(birthday_str: str) -> tuple[str, int | None]:
+    """
+    Facebook birthday formats :
+      "MM/DD/YYYY" → date complète
+      "MM/DD"      → jour/mois sans année
+      "YYYY"       → année uniquement
+    Retourne (date_naissance DD/MM/YYYY ou brut, age ou None)
+    """
+    if not birthday_str:
+        return "", None
+    from datetime import date as _date
+    parts = birthday_str.split("/")
+    try:
+        if len(parts) == 3:
+            month, day, year = int(parts[0]), int(parts[1]), int(parts[2])
+            today = _date.today()
+            age = today.year - year - ((today.month, today.day) < (month, day))
+            return f"{day:02d}/{month:02d}/{year}", age
+        elif len(parts) == 1 and len(parts[0]) == 4:
+            year = int(parts[0])
+            age  = _date.today().year - year
+            return parts[0], age
+    except (ValueError, IndexError):
+        pass
+    return birthday_str, None
+
+
+def _parse_fb_location(fb_info: dict) -> str:
+    """
+    Extrait la ville depuis location ou hometown.
+    location.name = "Paris, France" → "Paris"
+    """
+    for field in ("location", "hometown"):
+        loc = fb_info.get(field, {})
+        if isinstance(loc, dict) and loc.get("name"):
+            return loc["name"].split(",")[0].strip()
+    return ""
+
+
 def facebook_to_profile(fb_info: dict) -> dict:
     """Convertit les infos Facebook en données de profil Eldaana."""
     full_name  = fb_info.get("name", "")
     first_name = fb_info.get("first_name", full_name.split()[0] if full_name else "")
     last_name  = fb_info.get("last_name",  full_name.split()[-1] if " " in full_name else "")
 
-    # La photo est imbriquée dans picture.data.url
+    # Photo : imbriquée dans picture.data.url
     picture_url = ""
     pic_data = fb_info.get("picture", {})
     if isinstance(pic_data, dict):
         picture_url = pic_data.get("data", {}).get("url", "")
 
+    # Date de naissance + âge
+    ddn_str, age = _parse_fb_birthday(fb_info.get("birthday", ""))
+
+    # Ville (location ou hometown)
+    ville = _parse_fb_location(fb_info)
+
     return {
-        "prenom":       first_name.strip(),
-        "nom":          last_name.strip(),
-        "fb_email":     fb_info.get("email", ""),
-        "fb_picture":   picture_url,
-        "fb_id":        fb_info.get("id", ""),
-        # google_email reste vide pour distinguer les comptes Facebook
-        "google_email": fb_info.get("email", ""),  # partagé pour Stripe
+        "prenom":         first_name.strip(),
+        "nom":            last_name.strip(),
+        "fb_email":       fb_info.get("email", ""),
+        "fb_picture":     picture_url,
+        "fb_id":          fb_info.get("id", ""),
+        "google_email":   fb_info.get("email", ""),  # partagé pour Stripe
+        # Champs enrichis pré-remplis si disponibles
+        "date_naissance": ddn_str,
+        "age":            age,
+        "ville":          ville,
     }
